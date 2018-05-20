@@ -8,6 +8,7 @@
 
 //#include "matrix.h"
 
+
 #define FIRST_K_COMPONENTS 100
 
 /* function definition */
