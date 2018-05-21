@@ -1,2 +1,0 @@
----- ff_vf_edgedetect Matches (1 in 1 files) ----
-Vf_edgedetect.c (libavfilter):AVFilter ff_vf_edgedetect = {
