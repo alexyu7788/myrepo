@@ -1,23 +1,21 @@
-CC= g++
-RM=rm
+export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
 
-CFLAGS += -Wall -g -O2 
-CFLAGS := $(shell pkg-config --cflags gsl protobuf libprotobuf-c) $(CFLAGS)
-LDLIBS := $(shell pkg-config --libs gsl protobuf libprotobuf-c) $(LDLIBS)
-#CFLAGS := $(shell pkg-config --cflags gsl protobuf) $(CFLAGS)
-#LDLIBS := $(shell pkg-config --libs gsl protobuf) $(LDLIBS)
-EXAMPLES= gen_param
+CC=g++
+CFLAGS= -Wall -O2 -Ipthread $(shell pkg-config --cflags sdl2 SDL2_image SDL2_ttf gsl protobuf libprotobuf-c)
+LIBS=-Lpthread $(shell pkg-config --libs sdl2 SDL2_image SDL2_ttf gsl protobuf libprotobuf-c)
+RM=rm -rf
+TARGET=gen_param
+#FILES=$(wildcard *.c)
+OBJS=$(patsubst %.cpp,%.o,$(wildcard *cpp))
 
-SRC := $(wildcard *.c)
-OBJS := $(SRC:.c=.o)
+all:$(OBJS)
+	$(CC) $(CFLAGS) $(LIBS) -o $(TARGET) $(OBJS)
 
-$(EXAMPLES): $(OBJS)
-	$(CC) $(OBJS) $(LDLIBS) $(CFLAGS) -o $@
-
-%.o: %.c
-	$(CC) $< $(CFLAGS) $(LDLIBS) -c
-
-.PHONY= clean
+%.o:%.cpp
+	$(CC) $(CFLAGS) $(LIBS) -c $< -o $@ 
 
 clean:
-	$(RM) $(OBJS) $(EXAMPLES)
+	$(RM) $(OBJS) $(TARGET)
+
+.PHONY:clean
+
