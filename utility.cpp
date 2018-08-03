@@ -17,13 +17,13 @@ using namespace FCWS;
 using namespace google::protobuf::io;
 #endif
 
-unsigned long long get_time()
+unsigned long long GetTime()
 {
 	struct timeval now_time;
 
 	gettimeofday(&now_time, NULL);
 
-	return ((unsigned long long)now_time.tv_sec * 1000) + (now_time.tv_usec / 1000);;
+	return ((unsigned long long)now_time.tv_sec * 1000) + (now_time.tv_usec / 1000);
 }
 
 void print_matrix(char *name, gsl_matrix *m)
@@ -598,7 +598,7 @@ int model_save(char *model_name, gsl_matrix *m)
 
 	}
 
-	start_time = get_time();
+	start_time = GetTime();
 
 	len = fcws__models__get_packed_size(&models);
 	buf = (uint8_t*)malloc(sizeof(uint8_t)*len);
@@ -651,7 +651,7 @@ fail:
 		free(models.vm);
 	}
 
-	end_time = get_time();
+	end_time = GetTime();
 
 	printf("%s costs %llu ms.\n", __func__, end_time - start_time);
 
@@ -763,7 +763,7 @@ int model_load(char *model_name, gsl_matrix **m1, gsl_matrix **m2)
 
 	unsigned long long start_time, end_time;
 
-	start_time = get_time();
+	start_time = GetTime();
 
 	if (*m1)
 		gsl_matrix_free(*m1);
@@ -914,7 +914,7 @@ fail:
 	if (models)
 		fcws__models__free_unpacked(models, NULL);
 
-	end_time = get_time();
+	end_time = GetTime();
 	printf("%s costs %llu ms.\n", __func__, end_time - start_time);
 
 	return rtn;

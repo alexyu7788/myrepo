@@ -11,9 +11,14 @@
 //#include <cjson/cJSON.h>
 //#include <cjson/cJSON_Utils.h>
 
+#include "models2.pb-c.h"
+
 #define MAX_FN_L    255
 
-unsigned long long get_time();
+static const char *search_vehicle_model_pattern[FCWS__VEHICLE__MODEL__TYPE__TOTAL] = {"Compact", "Middle", "Large", "SUV", "Bus", "Truck", "Motocycle", "Bike"};
+static const char *search_local_model_pattern[FCWS__POSITION__TYPE__TOTAL] = {"Left", "Right", "Center"};
+
+unsigned long long GetTime();
 void print_matrix(char *name, gsl_matrix *m);
 void print_vector(char *name, gsl_vector *v);
 void print_matrix_float(char *name, gsl_matrix_float *m);

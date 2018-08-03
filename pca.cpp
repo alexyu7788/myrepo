@@ -227,7 +227,7 @@ gsl_vector* cal_mean(gsl_matrix *m)
 	float value;
 	unsigned long long start_time, end_time;
 
-	start_time = get_time();
+	start_time = GetTime();
 
 	assert(m != NULL);
 	rows = m->size1;
@@ -244,7 +244,7 @@ gsl_vector* cal_mean(gsl_matrix *m)
 		gsl_vector_set(mean, i, value);
 	}
 
-	end_time = get_time();
+	end_time = GetTime();
 	printf("time costs of %s %llu ms\n", __func__, end_time - start_time);
 
 	return mean;
@@ -259,7 +259,7 @@ gsl_matrix* cal_covariance(gsl_matrix *m, gsl_vector *mean)
 	int rows, cols;
 	unsigned long long start_time, end_time;
 
-	start_time = get_time();
+	start_time = GetTime();
 
 	rows = m->size1;
 	cols = m->size2;
@@ -286,7 +286,7 @@ gsl_matrix* cal_covariance(gsl_matrix *m, gsl_vector *mean)
 //	gsl_matrix_minmax(covariance_matrix, &min, &max);
 //	printf("%s: max: %f, min: %f\n", __func__, max, min);
 
-	end_time = get_time();
+	end_time = GetTime();
 	printf("time costs of %s %llu ms\n", __func__, end_time - start_time);
 
 	return covariance_matrix;
@@ -303,7 +303,7 @@ int cal_eigenvalue_eigenvector(gsl_matrix *m, gsl_vector **eval, gsl_matrix **ev
 
 	unsigned long long start_time, end_time;
 
-	start_time = get_time();
+	start_time = GetTime();
 
 	rows = m->size1;
 	cols = m->size2;
@@ -332,7 +332,7 @@ int cal_eigenvalue_eigenvector(gsl_matrix *m, gsl_vector **eval, gsl_matrix **ev
     	gsl_matrix_free(pEVctor);
     }
 
-	end_time = get_time();
+	end_time = GetTime();
 	printf("time costs of %s %llu ms\n", __func__, end_time - start_time);
 
 	return ret;
