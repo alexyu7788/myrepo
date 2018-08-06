@@ -128,7 +128,7 @@ void CVehicleModel::SetPCAAndICAComponents(int pca_first_k_components, int pca_c
 	}
 }
 
-void CVehicleModel::SetOutputPath(char *output_folder)
+void CVehicleModel::SetOutputPath(string output_folder)
 {
 	for (int i=FCWS__POSITION__TYPE__LEFT ; i<FCWS__POSITION__TYPE__TOTAL ; i++)
 	{
@@ -155,7 +155,7 @@ int CVehicleModel::PickUpFiles(vector<string> & feedin, int rows, int cols)
 
 		for (it = feedin.begin(); it != feedin.end() ; it++)
 		{
-	//		printf("%s\n", it->c_str());
+//			printf("%s\n", it->c_str());
 			if (strlen((char*)it->c_str()))
 			{
 				pch = strstr((char*)it->c_str(), search_vehicle_model_pattern[(int)m_vm_type]);
@@ -174,7 +174,7 @@ int CVehicleModel::PickUpFiles(vector<string> & feedin, int rows, int cols)
 		{
 			if (m_local_model[i])
 			{
-				m_local_model[i]->PickUpFiles(m_filelist, rows, cols);
+				m_local_model[i]->PickUpFiles(m_filelist);
 			}
 		}
 

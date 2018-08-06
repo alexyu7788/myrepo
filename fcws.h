@@ -21,6 +21,14 @@ using namespace std;
 
 //Group of VehicleModel
 class FCWS {
+protected:
+
+		vector<string>			m_filelist;
+		int m_vm_count;
+		CVehicleModel*			m_vm[FCWS__VEHICLE__MODEL__TYPE__TOTAL];
+		pthread_t 				m_threads[FCWS__VEHICLE__MODEL__TYPE__TOTAL];
+		FCWS__Models*			m_models;
+
 public:
 		FCWS();
 
@@ -30,28 +38,21 @@ public:
 
 		int SaveTo(char *model_name);
 
+		bool LoadFiles(string infolder);
+
 		int FeedFiles(vector<string> & feedin, int rows, int cols);
 
 		int DoTraining(int pca_first_k_components, 
 					   int pca_compoments_offset, 
 					   int ica_first_k_components, 
 					   int ica_compoments_offset,
-					   char *output_folder);
+					   string output_folder);
 
 protected:
 		int Init();
 
 		static void* StartTrainingThreads(void *arg);
 
-protected:
-
-		int m_vm_count;
-		CVehicleModel*			m_vm[FCWS__VEHICLE__MODEL__TYPE__TOTAL];
-		pthread_t 				m_threads[FCWS__VEHICLE__MODEL__TYPE__TOTAL];
-		FCWS__Models*			m_models;
-
-
-
-
+		void CreateOutputFolder(string out);
 };
 #endif

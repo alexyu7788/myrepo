@@ -1,7 +1,8 @@
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #include "localmodel.h"
 #include "utility.h"
@@ -12,7 +13,8 @@
 
 CLocalModel::CLocalModel(FCWS__VehicleModel__Type vm_type, FCWS__Position__Type pos_type)
 {
-	m_output_folder = NULL;
+//	m_output_folder = NULL;
+	m_output_folder.clear();
 
 	m_vm_name = strdup(search_vehicle_model_pattern[vm_type]);
 	m_vm_type = vm_type;
@@ -214,12 +216,16 @@ void CLocalModel::SetPCAAndICAComponents(int pca_first_k_components, int pca_com
 	m_ica_compoments_offset 	= ica_compoments_offset;
 }
 
-void CLocalModel::SetOutputPath(char *output_folder)
+void CLocalModel::SetOutputPath(string output_folder)
 {
+#if 1
+	m_output_folder = output_folder;
+#else
 	if (m_output_folder)
 		free (m_output_folder);
 
 	m_output_folder = strdup(output_folder);
+#endif
 }
 
 int CLocalModel::PickUpFiles(vector<string> & feedin, int rows, int cols)
@@ -227,13 +233,13 @@ int CLocalModel::PickUpFiles(vector<string> & feedin, int rows, int cols)
 	char temp[MAX_FN_L];
 	char *pch = NULL;
 	vector<string>::iterator it;
-
+	int w = 0, h = 0;
 
 
 	if (feedin.size() > 0)
 	{
-		image_w = rows;
-		image_h = cols;
+//		image_w = rows;
+//		image_h = cols;
 
 		m_filelist.clear();
 
@@ -243,20 +249,33 @@ int CLocalModel::PickUpFiles(vector<string> & feedin, int rows, int cols)
 
 		for (it = feedin.begin(); it != feedin.end() ; it++)
 		{
-	//		printf("%s\n", it->c_str());
+//			printf("%s\n", it->c_str());
 			if (strlen((char*)it->c_str()))
 			{
 				pch = strstr((char*)it->c_str(), search_local_model_pattern[(int)m_pos_type]);
 				if (pch)
 				{
-					// printf("%s\n", it->c_str());
-					m_filelist.push_back(it->c_str());
+					// format: XXX_Right_220_30.yuv
+					sscanf(pch, "%*[^_]_%d_%d", &w, &h);
+					printf("%s\n", it->c_str());
+
+					if (image_w == 0 && image_h == 0)
+					{
+						image_w = w;
+						image_h = h;
+					}
+
+					if (image_w && image_w == w && image_h && image_h == h)
+						m_filelist.push_back(it->c_str());
+
 					it->clear();
 				}
 			}
 		}
 
 //		printf("%d %d\n\n", m_filelist.size(), feedin.size());
+
+		sort(m_filelist.begin(), m_filelist.end());
 
 		GenImageMat();
 	}
@@ -343,8 +362,36 @@ int CLocalModel::DoTraining()
 
 				ret = FastICA(&m_residual_FirstKEigVector.matrix, compc, K, W, A, S);
 
+				printf("FastICA is done.\n");
+
 				WriteBackMatrixToImages(m_reconstruction, "recontruct");
 				WriteBackMatrixToImages(m_residual_reconstruction, "residual_recontruct");
+				WriteBackMatrixToImages(S, "fastICA");
+
+				if (K)
+				{
+					gsl_matrix_free(K);
+					K = NULL;
+				}
+
+				if (W)
+				{
+					gsl_matrix_free(W);
+					W = NULL;
+				}
+
+				if (A)
+				{
+					gsl_matrix_free(A);
+					A = NULL;
+				}
+
+				if (S)
+				{
+					gsl_matrix_free(S);
+					S = NULL;
+				}
+
 			}
 		}
 		else
@@ -386,7 +433,7 @@ int	CLocalModel::GenImageMat()
 			{
 				if ((fd = fopen(m_filelist[i].c_str(), "r")) != NULL)
 				{
-					// printf("open %s\n", m_filelist[i].c_str());
+//					printf("open %s\n", m_filelist[i].c_str());
 					fread(temp, 1, y_size, fd);
 					image_y = gsl_vector_uchar_view_array(temp, y_size);
 					image_matrix_column_view = gsl_matrix_column(m_image_matrix, i);
@@ -400,6 +447,8 @@ int	CLocalModel::GenImageMat()
 					fclose(fd);
 					fd = NULL;
 				}
+				else
+					printf("Can not open %s\n", m_filelist[i].c_str());
 			}
 		}
 		else
@@ -501,7 +550,7 @@ int CLocalModel::CalEigenSpace(gsl_matrix* covar, gsl_vector** eval, gsl_matrix*
 
 	rows = covar->size1;
 	cols = covar->size2;
-//	printf("%s: rows:%d, cols: %d\n", __func__, rows, cols);
+	printf("%s: rows:%d, cols: %d\n", __func__, rows, cols);
 
 	pEValue = gsl_vector_alloc(rows);
 	gsl_vector_set_zero(pEValue);
@@ -979,6 +1028,23 @@ gsl_matrix* CLocalModel::ICA_compute(gsl_matrix *X)
 	return Wd;
 }
 
+/**
+ * Main FastICA function. Centers and whitens the input
+ * matrix, calls the ICA computation function ICA_compute()
+ * and computes the output matrixes.
+ *
+ * http://tumic.wz.cz/fel/online/libICA/
+ *
+ * X: 		pre-processed data matrix [rows, cols]
+ * compc: 	number of components to be extracted
+ * K: 		pre-whitening matrix that projects data onto the first compc principal components
+ * W:		estimated un-mixing matrix
+ * A: 		estimated mixing matrix
+ * S:		estimated source matrix
+ *
+ * Ref: 	https://en.wikipedia.org/wiki/FastICA
+ *
+ */
 int CLocalModel::FastICA
 (
 	gsl_matrix *X,
@@ -1023,7 +1089,30 @@ int CLocalModel::FastICA
 
 	// SVD on V
 	// refer to  https://www.gnu.org/software/gsl/doc/html/linalg.html#singular-value-decomposition
+#if 0
+	gsl_matrix *SVD_WorkMat;
+	gsl_vector *SVD_WorkVect;
+
+	SVD_WorkMat = gsl_matrix_alloc(V->size2, V->size2);
+	SVD_WorkVect = gsl_vector_alloc(V->size2);
+	// printf("%s %d: %dx%d, %d\n", __func__, __LINE__, SVD_WorkMat->size1, SVD_WorkMat->size2, SVD_WorkVect->size);
+	gsl_linalg_SV_decomp_mod(V, SVD_WorkMat, D, d, SVD_WorkVect);
+
+	if (SVD_WorkMat)
+	{
+		gsl_matrix_free(SVD_WorkMat);
+		SVD_WorkMat = NULL;
+	}
+
+	if (SVD_WorkVect)
+	{
+		gsl_vector_free(SVD_WorkVect);
+		SVD_WorkVect = NULL;
+	}
+#else
+	// The Jacobi method can compute singular values to higher relative accuracy than Golub-Reinsch algorithms
 	gsl_linalg_SV_decomp_jacobi(V, D, d);	//?????
+#endif
 
 	// D <- diag(c(1/sqrt(d))
 	for (i=0 ; i<d->size ; i++)
@@ -1129,14 +1218,15 @@ end:
 	return ret;
 }
 
-void CLocalModel::WriteBackMatrixToImages(gsl_matrix *x,  char *postfix)
+void CLocalModel::WriteBackMatrixToImages(gsl_matrix *x, string postfix)
 {
 	assert(x != NULL);
-	assert(postfix != NULL);
+	assert(postfix.size() != 0);
 
+	int need_sync = 0;
 	int i, j, y_size, yuv_size, rows, cols;
-	char fn[MAX_FN_L] = {0}, ext[MAX_FN_L] = {0};
-	char filename[MAX_FN_L] = {0}, *pch1, *pch2;
+	size_t slash, dot;
+	string filename;
 	FILE *out_fd = NULL;
 	unsigned char pixel_data;
 	gsl_vector_view x_column_view;
@@ -1145,6 +1235,8 @@ void CLocalModel::WriteBackMatrixToImages(gsl_matrix *x,  char *postfix)
 
 	rows = x->size1;
 	cols = x->size2;
+
+	printf("postfix %s(%d,%d)\n", postfix.c_str(), rows, cols);
 
 	xu = gsl_matrix_uchar_alloc(rows, cols);
 
@@ -1160,37 +1252,53 @@ void CLocalModel::WriteBackMatrixToImages(gsl_matrix *x,  char *postfix)
 		}
 	}
 
-	for (i=0 ; i<cols ; i++)
+	for (i=0 ; i<cols && i<m_filelist[i].size() ; i++)
 	{
 		xu_column_view = gsl_matrix_uchar_column(xu, i);
 
-		pch1 = strrchr((char*)m_filelist[i].c_str(), '/');
-		pch2 = strrchr((char*)m_filelist[i].c_str(), '.');
-		strncpy(fn, pch1 + 1, pch2 - pch1 - 1);
-		strcpy(ext, pch2);
-		memset(filename, 0, sizeof(char) * MAX_FN_L);
-		snprintf(filename, MAX_FN_L, "%s/%s_%s%s", m_output_folder, fn, postfix, ext);
+		slash = m_filelist[i].find_last_of("/");
+		dot   = m_filelist[i].find_last_of(".");
 
-		if ((out_fd = fopen(filename, "w")) != NULL)
+		if (slash != string::npos && dot != string::npos)
 		{
-			y_size = xu_column_view.vector.size;
-			yuv_size = y_size + (y_size >> 1);
+			filename.clear();
+			filename = m_output_folder;
+			filename.append("/");
+			filename.append(m_filelist[i].c_str(), slash + 1, dot - slash - 1);
+			filename.append("_");
+			filename.append(postfix);
+			filename.append(m_filelist[i], dot, m_filelist[i].size());
 
-			for (j=0 ; j<y_size ; j++)
+			printf("fn %s\n", filename.c_str());
+
+			if ((out_fd = fopen(filename.c_str(), "w")) != NULL)
 			{
-				pixel_data = gsl_vector_uchar_get(&xu_column_view.vector, j);
-				fwrite(&pixel_data, 1, sizeof(pixel_data), out_fd);
-			}
+				y_size = xu_column_view.vector.size;
+				yuv_size = y_size + (y_size >> 1);
 
-			for (j=y_size ; j<yuv_size ; j++)
-			{
-				pixel_data = 128;
-				fwrite(&pixel_data, 1, sizeof(pixel_data), out_fd);
-			}
+				for (j=0 ; j<y_size ; j++)
+				{
+					pixel_data = gsl_vector_uchar_get(&xu_column_view.vector, j);
+					fwrite(&pixel_data, 1, sizeof(pixel_data), out_fd);
+				}
 
-			fclose(out_fd);
-			out_fd = NULL;
+				for (j=y_size ; j<yuv_size ; j++)
+				{
+					pixel_data = 128;
+					fwrite(&pixel_data, 1, sizeof(pixel_data), out_fd);
+				}
+
+				fclose(out_fd);
+				out_fd = NULL;
+
+				need_sync++;
+			}
+			else
+				printf("Can not open %s\n", filename.c_str());
 		}
 	}
+
+	if (need_sync)
+		sync();
 
 }

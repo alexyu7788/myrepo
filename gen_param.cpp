@@ -56,7 +56,7 @@ int main(int argc, char *argv[])
     DIR *dir = NULL;
     struct stat st;
     vector<string> feedin;
-
+    string infolder, outfolder;
 
 
     while ((ch = getopt(argc, argv, "s:d:o:k:")) != -1)
@@ -65,9 +65,11 @@ int main(int argc, char *argv[])
     	{
     	case 's':
     		src_folder = optarg;
+    		infolder = optarg;
     		break;
     	case 'o':
     		dst_folder = optarg;
+    		outfolder = optarg;
     		break;
     	case 'd':
     		sscanf(optarg, "%d:%d", &w, &h);
@@ -80,6 +82,23 @@ int main(int argc, char *argv[])
     	}
     }
 
+#if 1
+	FCWS *fcws = new FCWS();
+
+	if (fcws)
+	{
+		if (fcws->LoadFiles(infolder))
+		{
+			//		models->LoadFrom(model_name);
+			//		fcws->FeedFiles(feedin, w, h);
+			//
+					fcws->DoTraining(first_k_coms, 0, 0, 0, outfolder);
+			//		fcws->SaveTo(model_name);
+		}
+
+		delete fcws;
+	}
+#else
     // Create a new output folder
     snprintf(output_folder, MAX_FN_L, "%s_%d_%d", dst_folder, w, h);
     if (stat(output_folder, &st) != -1)
@@ -187,16 +206,17 @@ int main(int argc, char *argv[])
 //				model_save(model_name, &FirstKEigVector.matrix);
 //				model_load(model_name, &tmp1, &tmp2);
 
-				FCWS *fcws = new FCWS();
-				if (fcws)
-				{
+//				FCWS *fcws = new FCWS();
+//				if (fcws && fcws->LoadFiles(infolder, outfolder))
+//				{
 //					models->LoadFrom(model_name);
-					fcws->FeedFiles(feedin, w, h);
-					fcws->DoTraining(first_k_coms, 0, 0, 0, output_folder);
+//					fcws->FeedFiles(feedin, w, h);
+
+//					fcws->DoTraining(first_k_coms, 0, 0, 0, output_folder);
 //					fcws->SaveTo(model_name);
 
-					delete fcws;
-				}
+//					delete fcws;
+//				}
 
 //				if (tmp1 && tmp2)
 //				{
@@ -299,6 +319,7 @@ int main(int argc, char *argv[])
     }
 
 //    create_monitor();
+#endif
 
     return 0;
 }

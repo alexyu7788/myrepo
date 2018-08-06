@@ -5,6 +5,7 @@
 #include <error.h>
 #include <sys/time.h>
 #include <unistd.h>
+#include <dirent.h>
 
 #include "fcws.h"
 #include "utility.h"
@@ -37,6 +38,8 @@ FCWS::~FCWS()
 			m_vm[i] = NULL;
 		}
 	}
+
+	m_filelist.clear();
 }
 
 int FCWS::LoadFrom(char *model_name)
@@ -152,6 +155,63 @@ int FCWS::SaveTo(char *model_name)
 	return rtn;
 }
 
+bool FCWS::LoadFiles(string infolder)
+{
+	bool success = true;
+	DIR *dir = NULL;
+	struct dirent *entry;
+	string temp;
+
+	printf("infolder %s\n", infolder.c_str());
+
+	dir = opendir(infolder.c_str());
+
+	if (dir == NULL)
+	{
+		printf("Can not open directory %s\n", infolder.c_str());
+		return false;
+	}
+
+	m_filelist.clear();
+
+    while ((entry = readdir(dir)) != NULL)
+    {
+    	if (entry->d_type & DT_REG)
+    	{
+    		temp.clear();
+    		temp.append(infolder);
+    		temp.append("/");
+    		temp.append(entry->d_name);
+
+    		m_filelist.push_back(temp);
+    	}
+    }
+
+    if (m_filelist.size() == 0)
+    {
+    	closedir(dir);
+    	dir = NULL;
+
+		printf("There is no file in directory %s\n", infolder.c_str());
+		return false;
+    }
+
+    sort(m_filelist.begin(), m_filelist.end());
+
+	for (int i=FCWS__VEHICLE__MODEL__TYPE__Compact ; i<FCWS__VEHICLE__MODEL__TYPE__TOTAL ; i++)
+	{
+		if (m_vm[i])
+			m_vm[i]->PickUpFiles(m_filelist);
+	}
+
+	closedir(dir);
+	dir = NULL;
+
+	m_filelist.clear();
+
+	return success;
+}
+
 int FCWS::FeedFiles(vector<string> & feedin, int rows, int cols)
 {
 	printf("\n~~~~~~~~[FCWS::FeedFiles] Start~~~~~~~~\n");
@@ -174,10 +234,12 @@ int FCWS::DoTraining
 	int pca_compoments_offset, 
 	int ica_first_k_components, 
 	int ica_compoments_offset,
-	char *output_folder
+	string output_folder
 )
 {
 	printf("\n~~~~~~~~[FCWS::DoTraining] Start~~~~~~~~\n");
+
+	CreateOutputFolder(output_folder);
 
 	// Start training threads.
 	for (int i=0 ; i<FCWS__VEHICLE__MODEL__TYPE__TOTAL ; i++)
@@ -216,7 +278,19 @@ void* FCWS::StartTrainingThreads(void *arg)
 	return NULL;
 }
 
+void FCWS::CreateOutputFolder(string out)
+{
+	struct stat st;
+	char cmd[256];
 
+	if (stat(out.c_str(), &st) == 0)
+	{
+		snprintf(cmd, sizeof(cmd), "rm -f %s/*", out.c_str());
+		system(cmd);
+	}
+	else
+		mkdir(out.c_str(), S_IRWXU | S_IRWXG | S_IRWXO);
+}
 
 
 

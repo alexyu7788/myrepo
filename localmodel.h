@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <algorithm>
 #include <gsl/gsl_vector.h>
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_eigen.h>
@@ -16,6 +17,46 @@
 using namespace std;
 
 class CLocalModel {
+protected:
+		string					m_output_folder;
+
+		char*					m_vm_name;
+		FCWS__VehicleModel__Type m_vm_type;
+
+		char* 					m_local_name;
+		FCWS__Position__Type	m_pos_type;
+		vector<string>			m_filelist;
+
+		int 					m_pca_first_k_components;
+		int 					m_pca_compoments_offset;
+		int 					m_ica_first_k_components;
+		int 					m_ica_compoments_offset;
+
+		int						m_para_count;
+		CParam*					m_para[FCWS__PARA__TYPE__TOTAL];
+
+		int						image_w;
+		int						image_h;
+		gsl_matrix*				m_image_matrix;
+
+		gsl_vector*				m_mean;
+		gsl_matrix*				m_covar;
+		gsl_vector*				m_eval;
+		gsl_matrix*				m_evec;
+		gsl_matrix_view 		m_FirstKEigVector;
+		gsl_matrix*				m_projection;
+		gsl_matrix*				m_reconstruction;
+		gsl_matrix*				m_residual;
+
+		gsl_vector*				m_residual_mean;
+		gsl_matrix*				m_residual_covar;
+		gsl_vector*				m_residual_eval;
+		gsl_matrix*				m_residual_evec;
+		gsl_matrix_view 		m_residual_FirstKEigVector;
+		gsl_matrix*				m_residual_projection;
+		gsl_matrix*				m_residual_reconstruction;
+		gsl_matrix*				m_residual_residual;
+
 public:
 		CLocalModel(FCWS__VehicleModel__Type vm_type, FCWS__Position__Type pos_type);
 
@@ -31,9 +72,9 @@ public:
 
 		void SetPCAAndICAComponents(int pca_first_k_components, int pca_compoments_offset, int ica_first_k_components, int ica_compoments_offset);
 
-		void SetOutputPath(char *output_folder);
+		void SetOutputPath(string output_folder);
 
-		int PickUpFiles(vector<string> & feedin, int rows, int cols);
+		int PickUpFiles(vector<string> & feedin, int rows = 0, int cols = 0);
 
 		int Init();
 
@@ -90,46 +131,6 @@ protected:
 
 		gsl_matrix* ICA_compute(gsl_matrix *X);
 
-		void WriteBackMatrixToImages(gsl_matrix *x,  char *postfix);
-
-protected:
-		char*					m_output_folder;
-
-		char*					m_vm_name;
-		FCWS__VehicleModel__Type m_vm_type;
-
-		char* 					m_local_name;
-		FCWS__Position__Type	m_pos_type;
-		vector<string>			m_filelist;
-
-		int 					m_pca_first_k_components;
-		int 					m_pca_compoments_offset;
-		int 					m_ica_first_k_components;
-		int 					m_ica_compoments_offset;
-
-		int						m_para_count;
-		CParam*					m_para[FCWS__PARA__TYPE__TOTAL];
-
-		int						image_w;
-		int						image_h;
-		gsl_matrix*				m_image_matrix;
-
-		gsl_vector*				m_mean;
-		gsl_matrix*				m_covar;
-		gsl_vector*				m_eval;
-		gsl_matrix*				m_evec;
-		gsl_matrix_view 		m_FirstKEigVector;
-		gsl_matrix*				m_projection;
-		gsl_matrix*				m_reconstruction;
-		gsl_matrix*				m_residual;
-
-		gsl_vector*				m_residual_mean;
-		gsl_matrix*				m_residual_covar;
-		gsl_vector*				m_residual_eval;
-		gsl_matrix*				m_residual_evec;
-		gsl_matrix_view 		m_residual_FirstKEigVector;
-		gsl_matrix*				m_residual_projection;
-		gsl_matrix*				m_residual_reconstruction;
-		gsl_matrix*				m_residual_residual;
+		void WriteBackMatrixToImages(gsl_matrix *x, string postfix);
 };
 #endif
