@@ -11,22 +11,22 @@ message Para {
         TOTAL = 2;
     }
 
-    required Type para_type = 1 [default = UnKonwn];
+    required Type type = 1 [default = UnKonwn];
     required int32 rows = 2;
     required int32 cols = 3;
     repeated double data = 4 [packed = true];
 }
 
-message Position {
+message Local {
     enum Type {
         UnKonwn = -1;
         LEFT = 0;
         RIGHT = 1;
-        TOP = 2;
+        CENTER = 2;
         TOTAL = 3;
     }
 
-    required Type pos = 1 [default = UnKonwn];
+    required Type local = 1 [default = UnKonwn];
     repeated Para para = 2;
 }
 
@@ -46,7 +46,8 @@ message Vehicle_Model {
     }
 
     required Type type = 1 [default = UnKonwn];
-    repeated Position position = 2;
+    repeated Local local = 2;
+
 }
 
 /* Models */

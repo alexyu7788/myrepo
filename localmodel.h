@@ -24,7 +24,7 @@ protected:
 		FCWS__VehicleModel__Type m_vm_type;
 
 		char* 					m_local_name;
-		FCWS__Position__Type	m_pos_type;
+		FCWS__Local__Type		m_local_type;
 		vector<string>			m_filelist;
 
 		int 					m_pca_first_k_components;
@@ -58,13 +58,13 @@ protected:
 		gsl_matrix*				m_residual_residual;
 
 public:
-		CLocalModel(FCWS__VehicleModel__Type vm_type, FCWS__Position__Type pos_type);
+		CLocalModel(FCWS__VehicleModel__Type vm_type, FCWS__Local__Type local_type);
 
 		~CLocalModel();
 
-		int Set(FCWS__Position__Type pos, FCWS__Para__Type para_type, gsl_matrix *from);
+		int Set(FCWS__Local__Type local_type, FCWS__Para__Type para_type, gsl_matrix *from);
 
-		int Set(FCWS__Position__Type pos, FCWS__Para__Type para_type, int rows, int cols, double *from);
+		int Set(FCWS__Local__Type local_type, FCWS__Para__Type para_type, int rows, int cols, double *from);
 
 		int Set(FCWS__Para__Type para_type, gsl_matrix *from);
 
@@ -80,7 +80,7 @@ public:
 
 //		Para* GetParaObj(FCWS__Para__Type para_type);
 
-		FCWS__Position__Type GetPosType();
+		FCWS__Local__Type GetLocalType();
 
 		void DeleteParaObj(FCWS__Para__Type para_type);
 

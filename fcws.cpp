@@ -53,7 +53,7 @@ int FCWS::LoadFrom(char *model_name)
 	FILE *fd = NULL;
 	FCWS__Models *models = NULL;
 	FCWS__VehicleModel__Type vm_type;
-	FCWS__Position__Type pos_type;
+	FCWS__Local__Type pos_type;
 	FCWS__Para__Type para_type;
 
 	unsigned long long start_time, end_time;
@@ -93,23 +93,23 @@ int FCWS::LoadFrom(char *model_name)
 
 			if (m_vm[vm_type])
 			{
-				for (j=0 ; j<models->vm[i]->n_position ; j++)
+				for (j=0 ; j<models->vm[i]->n_local ; j++)
 				{
-					if (models->vm[i]->position[j])
+					if (models->vm[i]->local[j])
 					{
-						pos_type = models->vm[i]->position[j]->pos;
+						pos_type = models->vm[i]->local[j]->local;
 
-						for (k=0 ; k<models->vm[i]->position[j]->n_para ; k++)
+						for (k=0 ; k<models->vm[i]->local[j]->n_para ; k++)
 						{
-							if (models->vm[i]->position[j]->para[k])
+							if (models->vm[i]->local[j]->para[k])
 							{
-								para_type = models->vm[i]->position[j]->para[k]->para_type;
+								para_type = models->vm[i]->local[j]->para[k]->type;
 
-								rows = models->vm[i]->position[j]->para[k]->rows;
-								cols = models->vm[i]->position[j]->para[k]->cols;
+								rows = models->vm[i]->local[j]->para[k]->rows;
+								cols = models->vm[i]->local[j]->para[k]->cols;
 
 //								printf("%d %d %d (%d:%d)\n", vm_type, pos_type, para_type, rows, cols);
-								m_vm[vm_type]->Set(vm_type, pos_type, para_type, rows, cols, models->vm[i]->position[j]->para[k]->data);
+								m_vm[vm_type]->Set(vm_type, pos_type, para_type, rows, cols, models->vm[i]->local[j]->para[k]->data);
 							}
 						}
 					}
@@ -157,7 +157,6 @@ int FCWS::SaveTo(char *model_name)
 
 bool FCWS::LoadFiles(string infolder)
 {
-	bool success = true;
 	DIR *dir = NULL;
 	struct dirent *entry;
 	string temp;
@@ -209,7 +208,7 @@ bool FCWS::LoadFiles(string infolder)
 
 	m_filelist.clear();
 
-	return success;
+	return true;
 }
 
 int FCWS::FeedFiles(vector<string> & feedin, int rows, int cols)

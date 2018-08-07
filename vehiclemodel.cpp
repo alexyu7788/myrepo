@@ -13,9 +13,9 @@ CVehicleModel::CVehicleModel(FCWS__VehicleModel__Type vm_type)
 
 	m_filelist.clear();
 
-	for (int i=FCWS__POSITION__TYPE__LEFT ; i<FCWS__POSITION__TYPE__TOTAL ; i++)
+	for (int i=FCWS__LOCAL__TYPE__LEFT ; i<FCWS__LOCAL__TYPE__TOTAL ; i++)
 	{
-		m_local_model[i] = new CLocalModel(m_vm_type, (FCWS__Position__Type)i);
+		m_local_model[i] = new CLocalModel(m_vm_type, (FCWS__Local__Type)i);
 	}
 }
 
@@ -33,7 +33,7 @@ CVehicleModel::~CVehicleModel()
 
 	m_filelist.clear();
 
-	for (int i=FCWS__POSITION__TYPE__LEFT ; i<FCWS__POSITION__TYPE__TOTAL ; i++)
+	for (int i=FCWS__LOCAL__TYPE__LEFT ; i<FCWS__LOCAL__TYPE__TOTAL ; i++)
 	{
 		if (m_local_model[i])
 		{
@@ -53,14 +53,14 @@ int CVehicleModel::StartTrainingThreads()
 	pthread_create(&m_monitor_thread, NULL, MonitorThread, this);
 
 	// Start Training Threads.
-	for (int i=0 ; i<FCWS__POSITION__TYPE__TOTAL ; i++)
+	for (int i=0 ; i<FCWS__LOCAL__TYPE__TOTAL ; i++)
 	{
 		if (m_local_model[i])
 			pthread_create(&m_thread[i], NULL, TrainingProcess, m_local_model[i]);
 	}
 
 	// Join Training Threads.
-	for (int i=0 ; i<FCWS__POSITION__TYPE__TOTAL ; i++)
+	for (int i=0 ; i<FCWS__LOCAL__TYPE__TOTAL ; i++)
 	{
 		if (m_thread[i])
 			pthread_join(m_thread[i], NULL);
@@ -75,7 +75,7 @@ int CVehicleModel::StartTrainingThreads()
 	return 0;
 }
 
-int CVehicleModel::Set(FCWS__VehicleModel__Type vm_type, FCWS__Position__Type pos, FCWS__Para__Type para_type, gsl_matrix *from)
+int CVehicleModel::Set(FCWS__VehicleModel__Type vm_type, FCWS__Local__Type pos, FCWS__Para__Type para_type, gsl_matrix *from)
 {
 	assert(from != NULL);
 
@@ -98,7 +98,7 @@ int CVehicleModel::Set(FCWS__VehicleModel__Type vm_type, FCWS__Position__Type po
 	return 0;
 }
 
-int CVehicleModel::Set(FCWS__VehicleModel__Type vm_type, FCWS__Position__Type pos, FCWS__Para__Type para_type, int rows, int cols, double *from)
+int CVehicleModel::Set(FCWS__VehicleModel__Type vm_type, FCWS__Local__Type pos, FCWS__Para__Type para_type, int rows, int cols, double *from)
 {
 	assert(from != NULL);
 
@@ -119,7 +119,7 @@ int CVehicleModel::Set(FCWS__VehicleModel__Type vm_type, FCWS__Position__Type po
 
 void CVehicleModel::SetPCAAndICAComponents(int pca_first_k_components, int pca_compoments_offset, int ica_first_k_components, int ica_compoments_offset)
 {
-	for (int i=FCWS__POSITION__TYPE__LEFT ; i<FCWS__POSITION__TYPE__TOTAL ; i++)
+	for (int i=FCWS__LOCAL__TYPE__LEFT ; i<FCWS__LOCAL__TYPE__TOTAL ; i++)
 	{
 		if (m_local_model[i])
 		{
@@ -130,7 +130,7 @@ void CVehicleModel::SetPCAAndICAComponents(int pca_first_k_components, int pca_c
 
 void CVehicleModel::SetOutputPath(string output_folder)
 {
-	for (int i=FCWS__POSITION__TYPE__LEFT ; i<FCWS__POSITION__TYPE__TOTAL ; i++)
+	for (int i=FCWS__LOCAL__TYPE__LEFT ; i<FCWS__LOCAL__TYPE__TOTAL ; i++)
 	{
 		if (m_local_model[i])
 		{
@@ -170,7 +170,7 @@ int CVehicleModel::PickUpFiles(vector<string> & feedin, int rows, int cols)
 
 	//	printf("%d %d\n\n", m_filelist.size(), feedin.size());
 
-		for (int i=FCWS__POSITION__TYPE__LEFT ; i<FCWS__POSITION__TYPE__TOTAL ; i++)
+		for (int i=FCWS__LOCAL__TYPE__LEFT ; i<FCWS__LOCAL__TYPE__TOTAL ; i++)
 		{
 			if (m_local_model[i])
 			{

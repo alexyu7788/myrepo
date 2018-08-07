@@ -1,1 +1,7 @@
 PCA and ICA
+
+1. Generate .cpp & .h of protobuf
+    a. Enter proto directory.
+    b. Execute proto --c_out=. model2.proto
+    c. Copy .c to ../.cpp & .h to ../
+

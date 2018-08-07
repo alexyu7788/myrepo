@@ -11,7 +11,7 @@
 #define TOLERANCE		0.0001
 #define ALPHA			1
 
-CLocalModel::CLocalModel(FCWS__VehicleModel__Type vm_type, FCWS__Position__Type pos_type)
+CLocalModel::CLocalModel(FCWS__VehicleModel__Type vm_type, FCWS__Local__Type local_type)
 {
 //	m_output_folder = NULL;
 	m_output_folder.clear();
@@ -19,12 +19,12 @@ CLocalModel::CLocalModel(FCWS__VehicleModel__Type vm_type, FCWS__Position__Type 
 	m_vm_name = strdup(search_vehicle_model_pattern[vm_type]);
 	m_vm_type = vm_type;
 
-	m_local_name = strdup(search_local_model_pattern[pos_type]);
-	m_pos_type = pos_type;
+	m_local_name = strdup(search_local_model_pattern[local_type]);
+	m_local_type = local_type;
 
 	m_para_count = 0;
 
-	for (int i=FCWS__POSITION__TYPE__LEFT ; i<FCWS__PARA__TYPE__TOTAL ; i++)
+	for (int i=FCWS__PARA__TYPE__PCA ; i<FCWS__PARA__TYPE__TOTAL ; i++)
 	{
 		m_para[i] = new CParam((FCWS__Para__Type)i);
 	}
@@ -65,7 +65,7 @@ CLocalModel::~CLocalModel()
 	if (m_local_name)
 		free(m_local_name);
 
-	m_pos_type = FCWS__POSITION__TYPE__UnKonwn;
+	m_local_type = FCWS__LOCAL__TYPE__UnKonwn;
 	m_para_count = 0;
 
 	for (int i=0 ; i<FCWS__PARA__TYPE__TOTAL ; i++)
@@ -128,11 +128,11 @@ CLocalModel::~CLocalModel()
 
 }
 
-int CLocalModel::Set(FCWS__Position__Type pos, FCWS__Para__Type para_type, gsl_matrix *from)
+int CLocalModel::Set(FCWS__Local__Type local_type, FCWS__Para__Type para_type, gsl_matrix *from)
 {
 	assert(from != NULL);
 
-	m_pos_type = pos;
+	m_local_type = local_type;
 
 	if (m_para[para_type])
 	{
@@ -149,11 +149,11 @@ int CLocalModel::Set(FCWS__Position__Type pos, FCWS__Para__Type para_type, gsl_m
 	return 0;
 }
 
-int CLocalModel::Set(FCWS__Position__Type pos, FCWS__Para__Type para_type, int rows, int cols, double *from)
+int CLocalModel::Set(FCWS__Local__Type local_type, FCWS__Para__Type para_type, int rows, int cols, double *from)
 {
 	assert(from != NULL);
 
-	m_pos_type = pos;
+	m_local_type = local_type;
 
 	if (m_para[para_type])
 	{
@@ -252,7 +252,7 @@ int CLocalModel::PickUpFiles(vector<string> & feedin, int rows, int cols)
 //			printf("%s\n", it->c_str());
 			if (strlen((char*)it->c_str()))
 			{
-				pch = strstr((char*)it->c_str(), search_local_model_pattern[(int)m_pos_type]);
+				pch = strstr((char*)it->c_str(), search_local_model_pattern[(int)m_local_type]);
 				if (pch)
 				{
 					// format: XXX_Right_220_30.yuv
@@ -296,9 +296,9 @@ int CLocalModel::PickUpFiles(vector<string> & feedin, int rows, int cols)
 //	return NULL;
 //}
 
-FCWS__Position__Type CLocalModel::GetPosType()
+FCWS__Local__Type CLocalModel::GetLocalType()
 {
-	return m_pos_type;
+	return m_local_type;
 }
 
 void CLocalModel::DeleteParaObj(FCWS__Para__Type para_type)
@@ -400,7 +400,7 @@ int CLocalModel::DoTraining()
 		}
 	}
 
-	// printf("[LocalModel::DoTraining %d] Done\n", m_pos_type);
+	// printf("[LocalModel::DoTraining %d] Done\n", m_local_type);
 
 	return ret;
 }
