@@ -34,19 +34,21 @@ public:
 
 		~FCWS();
 
-		int LoadFrom(char *model_name);
+		int LoadModel(string model_name);
 
-		int SaveTo(char *model_name);
+		int SaveModel(string model_name);
 
 		bool LoadFiles(string infolder);
 
 		int FeedFiles(vector<string> & feedin, int rows, int cols);
 
-		int DoTraining(int pca_first_k_components, 
+		int DoTraining(int pca_first_k_components,
 					   int pca_compoments_offset, 
 					   int ica_first_k_components, 
 					   int ica_compoments_offset,
 					   string output_folder);
+
+		int DoDectection(uint8_t *image, uint32_t width, uint32_t height);
 
 protected:
 		int Init();

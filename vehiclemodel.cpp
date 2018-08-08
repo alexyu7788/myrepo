@@ -75,46 +75,65 @@ int CVehicleModel::StartTrainingThreads()
 	return 0;
 }
 
-int CVehicleModel::Set(FCWS__VehicleModel__Type vm_type, FCWS__Local__Type pos, FCWS__Para__Type para_type, gsl_matrix *from)
+int CVehicleModel::SetParam(FCWS__VehicleModel__Type vm_type, FCWS__Local__Type local_type, FCWS__Para__Type para_type, gsl_matrix *from)
 {
 	assert(from != NULL);
 
 	m_vm_type = vm_type;
 
-	if (m_local_model[pos] == NULL)
+	if (m_local_model[local_type] == NULL)
 	{
-		m_local_model[pos] = new CLocalModel(m_vm_type, pos);
-		m_local_model[pos]->Set(pos, para_type, from);
+		m_local_model[local_type] = new CLocalModel(m_vm_type, local_type);
+		m_local_model[local_type]->SetParam(local_type, para_type, from);
 	}
 	else
 	{
 //		if (m_local_model[pos]->GetParaObj(para_type))
 //			m_local_model[pos]->DeleteParaObj(para_type);
 
-		m_local_model[pos]->Set(para_type, from);
+		m_local_model[local_type]->SetParam(para_type, from);
 
 	}
 
 	return 0;
 }
 
-int CVehicleModel::Set(FCWS__VehicleModel__Type vm_type, FCWS__Local__Type pos, FCWS__Para__Type para_type, int rows, int cols, double *from)
+int CVehicleModel::LoadParam(FCWS__VehicleModel__Type vm_type, FCWS__Local__Type local_type, FCWS__Para__Type para_type, int rows, int cols, double *from)
 {
 	assert(from != NULL);
 
+//	if (from == NULL)
+//	{
+//		if (m_local_model[local_type])
+//		{
+//			delete m_local_model[local_type];
+//			m_local_model[local_type] = NULL;
+//		}
+//
+//		return -1;
+//	}
+
 	m_vm_type = vm_type;
 
-	if (m_local_model[pos] == NULL)
+	if (m_local_model[local_type] == NULL)
 	{
-		m_local_model[pos] = new CLocalModel(m_vm_type, pos);
-		m_local_model[pos]->Set(pos, para_type, rows, cols, from);
+		m_local_model[local_type] = new CLocalModel(m_vm_type, local_type);
+		m_local_model[local_type]->LoadParam(local_type, para_type, rows, cols, from);
 	}
 	else
 	{
-		m_local_model[pos]->Set(para_type, rows, cols, from);
+		m_local_model[local_type]->LoadParam(para_type, rows, cols, from);
 	}
 
 	return 0;
+}
+
+bool CVehicleModel::SaveParam(FCWS__Local__Type local_type, FCWS__Para__Type para_type, FCWS__Para *param)
+{
+	if (m_local_model[local_type])
+		return m_local_model[local_type]->SaveParam(para_type, param);
+
+	return false;
 }
 
 void CVehicleModel::SetPCAAndICAComponents(int pca_first_k_components, int pca_compoments_offset, int ica_first_k_components, int ica_compoments_offset)

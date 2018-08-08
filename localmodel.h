@@ -62,13 +62,15 @@ public:
 
 		~CLocalModel();
 
-		int Set(FCWS__Local__Type local_type, FCWS__Para__Type para_type, gsl_matrix *from);
+		int SetParam(FCWS__Local__Type local_type, FCWS__Para__Type para_type, gsl_matrix *from);
 
-		int Set(FCWS__Local__Type local_type, FCWS__Para__Type para_type, int rows, int cols, double *from);
+		int LoadParam(FCWS__Local__Type local_type, FCWS__Para__Type para_type, int rows, int cols, double *from);
 
-		int Set(FCWS__Para__Type para_type, gsl_matrix *from);
+		int SetParam(FCWS__Para__Type para_type, gsl_matrix *from);
 
-		int Set(FCWS__Para__Type para_type, int rows, int cols, double *from);
+		int LoadParam(FCWS__Para__Type para_type, int rows, int cols, double *from);
+
+		bool SaveParam(FCWS__Para__Type para_type, FCWS__Para *param);
 
 		void SetPCAAndICAComponents(int pca_first_k_components, int pca_compoments_offset, int ica_first_k_components, int ica_compoments_offset);
 

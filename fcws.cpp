@@ -42,9 +42,9 @@ FCWS::~FCWS()
 	m_filelist.clear();
 }
 
-int FCWS::LoadFrom(char *model_name)
+int FCWS::LoadModel(string model_name)
 {
-	assert(model_name != NULL);
+	assert(model_name.size() != 0);
 
 	int rtn = 0;
 	int i, j, k, rows, cols;
@@ -53,14 +53,14 @@ int FCWS::LoadFrom(char *model_name)
 	FILE *fd = NULL;
 	FCWS__Models *models = NULL;
 	FCWS__VehicleModel__Type vm_type;
-	FCWS__Local__Type pos_type;
+	FCWS__Local__Type local_type;
 	FCWS__Para__Type para_type;
 
 	unsigned long long start_time, end_time;
 
 	start_time = GetTime();
 
-	if ((fd = fopen(model_name, "r")) == NULL)
+	if ((fd = fopen(model_name.c_str(), "r")) == NULL)
 	{
 		rtn = -1;
 		goto fail;
@@ -97,7 +97,7 @@ int FCWS::LoadFrom(char *model_name)
 				{
 					if (models->vm[i]->local[j])
 					{
-						pos_type = models->vm[i]->local[j]->local;
+						local_type = models->vm[i]->local[j]->local;
 
 						for (k=0 ; k<models->vm[i]->local[j]->n_para ; k++)
 						{
@@ -108,8 +108,17 @@ int FCWS::LoadFrom(char *model_name)
 								rows = models->vm[i]->local[j]->para[k]->rows;
 								cols = models->vm[i]->local[j]->para[k]->cols;
 
-//								printf("%d %d %d (%d:%d)\n", vm_type, pos_type, para_type, rows, cols);
-								m_vm[vm_type]->Set(vm_type, pos_type, para_type, rows, cols, models->vm[i]->local[j]->para[k]->data);
+								if (para_type != -1 && rows && cols)
+								{
+									m_vm[vm_type]->LoadParam(vm_type, local_type, para_type, rows, cols, models->vm[i]->local[j]->para[k]->data);
+
+									printf("%s of %s of %s (%d:%d) is loaded\n",
+											search_param_pattern[para_type],
+											search_local_model_pattern[local_type],
+											search_vehicle_model_pattern[vm_type],
+											rows,
+											cols);
+								}
 							}
 						}
 					}
@@ -141,17 +150,123 @@ fail:
 	return rtn;
 }
 
-int FCWS::SaveTo(char *model_name)
+int FCWS::SaveModel(string model_name)
 {
-	assert(model_name != NULL);
+	assert(model_name.size() != 0);
 
 	int rtn = 0;
+	int i, j, k, rows, cols;
+	size_t len;
+	uint8_t *buf = NULL;
+	FILE *fd = NULL;
+	FCWS__Models models = FCWS__MODELS__INIT;
+	FCWS__VehicleModel__Type vm_type;
+	FCWS__Local__Type local_type;
+	FCWS__Para__Type para_type;
+
+	models.n_vm = FCWS__VEHICLE__MODEL__TYPE__TOTAL;
+	models.vm = (FCWS__VehicleModel**)malloc(sizeof(FCWS__VehicleModel*) * models.n_vm);
+
+	for (i=FCWS__VEHICLE__MODEL__TYPE__Compact ; i<FCWS__VEHICLE__MODEL__TYPE__TOTAL ; i++)
+	{
+		models.vm[i] = (FCWS__VehicleModel*)malloc(sizeof(FCWS__VehicleModel));
+
+		if (models.vm[i])
+		{
+			fcws__vehicle__model__init(models.vm[i]);
+
+			models.vm[i]->type 		= (FCWS__VehicleModel__Type)i;
+			models.vm[i]->n_local 	= FCWS__LOCAL__TYPE__TOTAL;
+			models.vm[i]->local 	= (FCWS__Local**)malloc(sizeof(FCWS__Local*) * models.vm[i]->n_local);
+
+			for (j=FCWS__LOCAL__TYPE__LEFT ; j<FCWS__LOCAL__TYPE__TOTAL ; j++)
+			{
+				models.vm[i]->local[j] = (FCWS__Local*)malloc(sizeof(FCWS__Local));
+
+				if (models.vm[i]->local[j])
+				{
+					fcws__local__init(models.vm[i]->local[j]);
+
+					models.vm[i]->local[j]->local 	= (FCWS__Local__Type)j;
+					models.vm[i]->local[j]->n_para 	= FCWS__PARA__TYPE__TOTAL;
+					models.vm[i]->local[j]->para	= (FCWS__Para**)malloc(sizeof(FCWS__Para*) * models.vm[i]->local[j]->n_para);
+
+					for (k=FCWS__PARA__TYPE__PCA ; k<FCWS__PARA__TYPE__TOTAL ; k++)
+					{
+						models.vm[i]->local[j]->para[k] = (FCWS__Para*)malloc(sizeof(FCWS__Para));
+
+						if (models.vm[i]->local[j]->para[k])
+						{
+							fcws__para__init(models.vm[i]->local[j]->para[k]);
+
+							if (false == m_vm[i]->SaveParam((FCWS__Local__Type)j, (FCWS__Para__Type)k, models.vm[i]->local[j]->para[k]))
+							{
+								models.vm[i]->local[j]->para[k]->type = FCWS__PARA__TYPE__UnKonwn;
+								models.vm[i]->local[j]->para[k]->cols = models.vm[i]->local[j]->para[k]->rows = models.vm[i]->local[j]->para[k]->n_data = 0;
+								models.vm[i]->local[j]->para[k]->data = NULL;
+							}
+						}
+					}
+				}
+			}
+		}
+	}
 
 
+	len = fcws__models__get_packed_size(&models);
+	buf = (uint8_t*)malloc(sizeof(uint8_t)*len);
+	fcws__models__pack(&models, buf);
 
+	if ((fd = fopen(model_name.c_str(), "w")) == NULL)
+	{
+		rtn = -1;
+		goto fail;
+	}
 
+	fseek(fd, 0, SEEK_SET);
+	fwrite(buf, 1, len, fd);
 
+fail:
 
+	if (fd)
+		fclose(fd);
+
+	if (buf)
+		free(buf);
+
+	if (models.n_vm > 0 && models.vm)
+	{
+//		printf("models.n_vm %d\n", models.n_vm);
+
+		for (i=0 ; i<models.n_vm ; i++)
+		{
+//			printf("models.vm[%d]\n", i);
+			if (models.vm[i])
+			{
+				for (j=0 ; j<models.vm[i]->n_local ; j++)
+				{
+					if (models.vm[i]->local[j])
+					{
+						for (k=0 ; k<models.vm[i]->local[j]->n_para  ; k++ )
+						{
+							if (models.vm[i]->local[j]->para[k]->data)
+								free(models.vm[i]->local[j]->para[k]->data);
+
+							free(models.vm[i]->local[j]->para[k]);
+						}
+
+						free(models.vm[i]->local[j]);
+					}
+				}
+
+				free(models.vm[i]);
+			}
+		}
+
+		free(models.vm);
+	}
+
+	return rtn;
 	return rtn;
 }
 
@@ -264,6 +379,22 @@ int FCWS::DoTraining
 	}
 
 	printf("~~~~~~~~[FCWS::DoTraining] Done~~~~~~~~\n");
+
+	return 0;
+}
+
+int FCWS::DoDectection(uint8_t *image, uint32_t width, uint32_t height)
+{
+	if (image == NULL || width == 0 || height == 0)
+		return -1;
+
+
+
+
+
+
+
+
 
 	return 0;
 }

@@ -21,9 +21,11 @@ public:
 
 		~CParam();
 
-		int 	Set(FCWS__Para__Type type, int rows, int cols, double *data);
+		int 	LoadParam(FCWS__Para__Type type, int rows, int cols, double *data);
 
-		int 	Set(FCWS__Para__Type type, gsl_matrix *from);
+		int 	SetParam(FCWS__Para__Type type, gsl_matrix *from);
+
+		bool	SaveParam(FCWS__Para *param);
 
 		FCWS__Para__Type GetType();
 
@@ -34,6 +36,7 @@ public:
 		void 	SetData(int row, int col, double d);
 
 		double	GetData(int row, int col);
+
 
 //		Para* 	GetObj();
 

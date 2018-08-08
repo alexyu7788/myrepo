@@ -550,43 +550,43 @@ int model_save(char *model_name, gsl_matrix *m)
 		{
 //			printf("models.vm[%d]\n", i);
 			models.vm[i]->type = (_FCWS__VehicleModel__Type)i;
-			models.vm[i]->n_position = FCWS__POSITION__TYPE__TOTAL;
-			models.vm[i]->position = (FCWS__Position**)malloc(sizeof(FCWS__Position*) * models.vm[i]->n_position);
+			models.vm[i]->n_local = FCWS__LOCAL__TYPE__TOTAL;
+			models.vm[i]->local = (FCWS__Local**)malloc(sizeof(FCWS__Local*) * models.vm[i]->n_local);
 
-			for (j=FCWS__POSITION__TYPE__LEFT ; j<FCWS__POSITION__TYPE__TOTAL ; j++)
+			for (j=FCWS__LOCAL__TYPE__LEFT ; j<FCWS__LOCAL__TYPE__TOTAL ; j++)
 			{
-				models.vm[i]->position[j] = (FCWS__Position*)malloc(sizeof(FCWS__Position));
-				fcws__position__init(models.vm[i]->position[j]);
+				models.vm[i]->local[j] = (FCWS__Local*)malloc(sizeof(FCWS__Local));
+				fcws__local__init(models.vm[i]->local[j]);
 
-				if (models.vm[i]->position[j])
+				if (models.vm[i]->local[j])
 				{
 //					printf("models.vm[%d]->position[%d]\n", i, j);
-					models.vm[i]->position[j]->pos = (_FCWS__Position__Type)j;
-					models.vm[i]->position[j]->n_para = FCWS__PARA__TYPE__TOTAL;
-					models.vm[i]->position[j]->para = (FCWS__Para**)malloc(sizeof(FCWS__Para*) * models.vm[i]->position[j]->n_para);
+					models.vm[i]->local[j]->local = (FCWS__Local__Type)j;
+					models.vm[i]->local[j]->n_para = FCWS__PARA__TYPE__TOTAL;
+					models.vm[i]->local[j]->para = (FCWS__Para**)malloc(sizeof(FCWS__Para*) * models.vm[i]->local[j]->n_para);
 
 					for (k=FCWS__PARA__TYPE__PCA ; k<FCWS__PARA__TYPE__TOTAL ; k++)
 					{
-						models.vm[i]->position[j]->para[k] = (FCWS__Para*)malloc(sizeof(FCWS__Para));
-						fcws__para__init(models.vm[i]->position[j]->para[k]);
+						models.vm[i]->local[j]->para[k] = (FCWS__Para*)malloc(sizeof(FCWS__Para));
+						fcws__para__init(models.vm[i]->local[j]->para[k]);
 
-						if (models.vm[i]->position[j]->para[k])
+						if (models.vm[i]->local[j]->para[k])
 						{
 //							printf("models.vm[%d]->position[%d]->para[%d]\n", i, j, k);
-							models.vm[i]->position[j]->para[k]->para_type = (_FCWS__Para__Type)k;
-							models.vm[i]->position[j]->para[k]->rows = m->size1;
-							models.vm[i]->position[j]->para[k]->cols = m->size2;
-							models.vm[i]->position[j]->para[k]->n_data = (m->size1 * m->size2);
-							models.vm[i]->position[j]->para[k]->data = (double*)malloc(sizeof(double)*models.vm[i]->position[j]->para[k]->n_data);
+							models.vm[i]->local[j]->para[k]->type = (_FCWS__Para__Type)k;
+							models.vm[i]->local[j]->para[k]->rows = m->size1;
+							models.vm[i]->local[j]->para[k]->cols = m->size2;
+							models.vm[i]->local[j]->para[k]->n_data = (m->size1 * m->size2);
+							models.vm[i]->local[j]->para[k]->data = (double*)malloc(sizeof(double)*models.vm[i]->local[j]->para[k]->n_data);
 
-							if (models.vm[i]->position[j]->para[k]->data)
+							if (models.vm[i]->local[j]->para[k]->data)
 							{
 //								printf("models.vm[%d]->position[%d]->para[%d]->data\n", i, j, k);
 								for (int r=0 ; r<m->size1 ; r++)
 								{
 									for (int c=0 ; c<m->size2 ; c++)
 									{
-										models.vm[i]->position[j]->para[k]->data[r*m->size2+c] = gsl_matrix_get(m, r, c);
+										models.vm[i]->local[j]->para[k]->data[r*m->size2+c] = gsl_matrix_get(m, r, c);
 									}
 								}
 							}
@@ -630,19 +630,19 @@ fail:
 //			printf("models.vm[%d]\n", i);
 			if (models.vm[i])
 			{
-				for (j=0 ; j<models.vm[i]->n_position ; j++)
+				for (j=0 ; j<models.vm[i]->n_local ; j++)
 				{
-					if (models.vm[i]->position[j])
+					if (models.vm[i]->local[j])
 					{
-						for (k=0 ; k<models.vm[i]->position[j]->n_para  ; k++ )
+						for (k=0 ; k<models.vm[i]->local[j]->n_para  ; k++ )
 						{
-							if (models.vm[i]->position[j]->para[k]->data)
-								free(models.vm[i]->position[j]->para[k]->data);
+							if (models.vm[i]->local[j]->para[k]->data)
+								free(models.vm[i]->local[j]->para[k]->data);
 
-							free(models.vm[i]->position[j]->para[k]);
+							free(models.vm[i]->local[j]->para[k]);
 						}
 
-						free(models.vm[i]->position[j]);
+						free(models.vm[i]->local[j]);
 					}
 				}
 				free(models.vm[i]);
@@ -799,23 +799,23 @@ int model_load(char *model_name, gsl_matrix **m1, gsl_matrix **m2)
 	{
 		printf("models->vm[%d]->type=%d\n", i, models->vm[i]->type);
 
-		for (j=0 ; j<models->vm[i]->n_position ; j++)
+		for (j=0 ; j<models->vm[i]->n_local ; j++)
 		{
-			if (models->vm[i]->position[j])
+			if (models->vm[i]->local[j])
 			{
-				printf("models->vm[%d]->position[%d]->pos=%d\n", i, j, models->vm[i]->position[j]->pos);
+				printf("models->vm[%d]->local[%d]->local=%d\n", i, j, models->vm[i]->local[j]->local);
 
-				for (k=0 ; k<models->vm[i]->position[j]->n_para ; k++)
+				for (k=0 ; k<models->vm[i]->local[j]->n_para ; k++)
 				{
-					if (models->vm[i]->position[j]->para[k])
+					if (models->vm[i]->local[j]->para[k])
 					{
-						printf("models->vm[%d]->position[%d]->para[%d]->para_type=%d\n", i, j, k, models->vm[i]->position[j]->para[k]->para_type);
-						printf("models->vm[%d]->position[%d]->para[%d]->rows=%d\n", i, j, k, models->vm[i]->position[j]->para[k]->rows);
-						printf("models->vm[%d]->position[%d]->para[%d]->cols=%d\n", i, j, k, models->vm[i]->position[j]->para[k]->cols);
-						printf("models->vm[%d]->position[%d]->para[%d]->n_data=%d\n", i, j, k, models->vm[i]->position[j]->para[k]->n_data);
+						printf("models->vm[%d]->local[%d]->para[%d]->para_type=%d\n", i, j, k, models->vm[i]->local[j]->para[k]->type);
+						printf("models->vm[%d]->local[%d]->para[%d]->rows=%d\n", i, j, k, models->vm[i]->local[j]->para[k]->rows);
+						printf("models->vm[%d]->local[%d]->para[%d]->cols=%d\n", i, j, k, models->vm[i]->local[j]->para[k]->cols);
+						printf("models->vm[%d]->local[%d]->para[%d]->n_data=%d\n", i, j, k, models->vm[i]->local[j]->para[k]->n_data);
 
-						rows = models->vm[i]->position[j]->para[k]->rows;
-						cols = models->vm[i]->position[j]->para[k]->cols;
+						rows = models->vm[i]->local[j]->para[k]->rows;
+						cols = models->vm[i]->local[j]->para[k]->cols;
 
 						if (!pm1 && ((pm1 = gsl_matrix_alloc(rows, cols)) != NULL))
 						{
@@ -823,7 +823,7 @@ int model_load(char *model_name, gsl_matrix **m1, gsl_matrix **m2)
 							{
 								for (int c=0 ; c<cols ; c++)
 								{
-									gsl_matrix_set(pm1, r, c, models->vm[i]->position[j]->para[k]->data[r*cols+c]);
+									gsl_matrix_set(pm1, r, c, models->vm[i]->local[j]->para[k]->data[r*cols+c]);
 								}
 
 							}
@@ -837,7 +837,7 @@ int model_load(char *model_name, gsl_matrix **m1, gsl_matrix **m2)
 							{
 								for (int c=0 ; c<cols ; c++)
 								{
-									gsl_matrix_set(pm2, r, c, models->vm[i]->position[j]->para[k]->data[r*cols+c]);
+									gsl_matrix_set(pm2, r, c, models->vm[i]->local[j]->para[k]->data[r*cols+c]);
 								}
 
 							}

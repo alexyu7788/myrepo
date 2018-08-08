@@ -128,7 +128,7 @@ CLocalModel::~CLocalModel()
 
 }
 
-int CLocalModel::Set(FCWS__Local__Type local_type, FCWS__Para__Type para_type, gsl_matrix *from)
+int CLocalModel::SetParam(FCWS__Local__Type local_type, FCWS__Para__Type para_type, gsl_matrix *from)
 {
 	assert(from != NULL);
 
@@ -142,14 +142,14 @@ int CLocalModel::Set(FCWS__Local__Type local_type, FCWS__Para__Type para_type, g
 
 	m_para[para_type] = new CParam(para_type);
 
-	m_para[para_type]->Set(para_type, from);
+	m_para[para_type]->SetParam(para_type, from);
 
 	m_para_count++;
 
 	return 0;
 }
 
-int CLocalModel::Set(FCWS__Local__Type local_type, FCWS__Para__Type para_type, int rows, int cols, double *from)
+int CLocalModel::LoadParam(FCWS__Local__Type local_type, FCWS__Para__Type para_type, int rows, int cols, double *from)
 {
 	assert(from != NULL);
 
@@ -163,14 +163,14 @@ int CLocalModel::Set(FCWS__Local__Type local_type, FCWS__Para__Type para_type, i
 
 	m_para[para_type] = new CParam(para_type);
 
-	m_para[para_type]->Set(para_type, rows, cols, from);
+	m_para[para_type]->LoadParam(para_type, rows, cols, from);
 
 	m_para_count++;
 
 	return 0;
 }
 
-int CLocalModel::Set(FCWS__Para__Type para_type, gsl_matrix *from)
+int CLocalModel::SetParam(FCWS__Para__Type para_type, gsl_matrix *from)
 {
 	assert(from != NULL);
 
@@ -182,14 +182,14 @@ int CLocalModel::Set(FCWS__Para__Type para_type, gsl_matrix *from)
 	}
 
 	m_para[para_type] = new CParam(para_type);
-	m_para[para_type]->Set(para_type, from);
+	m_para[para_type]->SetParam(para_type, from);
 
 	m_para_count++;
 
 	return 0;
 }
 
-int CLocalModel::Set(FCWS__Para__Type para_type, int rows, int cols, double *from)
+int CLocalModel::LoadParam(FCWS__Para__Type para_type, int rows, int cols, double *from)
 {
 	assert(from != NULL);
 
@@ -201,11 +201,19 @@ int CLocalModel::Set(FCWS__Para__Type para_type, int rows, int cols, double *fro
 	}
 
 	m_para[para_type] = new CParam(para_type);
-	m_para[para_type]->Set(para_type, rows, cols, from);
+	m_para[para_type]->LoadParam(para_type, rows, cols, from);
 
 	m_para_count++;
 
 	return 0;
+}
+
+bool CLocalModel::SaveParam(FCWS__Para__Type para_type, FCWS__Para *param)
+{
+	if (m_para[para_type])
+		return m_para[para_type]->SaveParam(param);
+
+	return false;
 }
 
 void CLocalModel::SetPCAAndICAComponents(int pca_first_k_components, int pca_compoments_offset, int ica_first_k_components, int ica_compoments_offset)
@@ -218,14 +226,7 @@ void CLocalModel::SetPCAAndICAComponents(int pca_first_k_components, int pca_com
 
 void CLocalModel::SetOutputPath(string output_folder)
 {
-#if 1
 	m_output_folder = output_folder;
-#else
-	if (m_output_folder)
-		free (m_output_folder);
-
-	m_output_folder = strdup(output_folder);
-#endif
 }
 
 int CLocalModel::PickUpFiles(vector<string> & feedin, int rows, int cols)
@@ -329,6 +330,12 @@ int CLocalModel::DoTraining()
 				  &m_reconstruction,
 				  &m_residual);
 
+		printf("1st-order PCA of %s of %s is done.\n",
+				search_local_model_pattern[m_local_type],
+				search_vehicle_model_pattern[m_vm_type]);
+
+		SetParam(FCWS__PARA__TYPE__PCA, &m_FirstKEigVector.matrix);
+
 		if (ret == GSL_SUCCESS)
 		{
 			// PCA of residual images.
@@ -345,9 +352,13 @@ int CLocalModel::DoTraining()
 				  &m_residual_residual
 				);
 
+			SetParam(FCWS__PARA__TYPE__PCA2, &m_residual_FirstKEigVector.matrix);
+
 			if (ret == GSL_SUCCESS)
 			{
-				printf("2nd order PCA is done.\n");
+				printf("2nd-order PCA of %s of %s is done.\n",
+						search_local_model_pattern[m_local_type],
+						search_vehicle_model_pattern[m_vm_type]);
 
 				int compc = 2;
 				gsl_matrix *K, *W, *A, *S;
@@ -362,11 +373,15 @@ int CLocalModel::DoTraining()
 
 				ret = FastICA(&m_residual_FirstKEigVector.matrix, compc, K, W, A, S);
 
-				printf("FastICA is done.\n");
+				printf("FastICA of %s of %s is done.\n",
+						search_local_model_pattern[m_local_type],
+						search_vehicle_model_pattern[m_vm_type]);
 
-				WriteBackMatrixToImages(m_reconstruction, "recontruct");
-				WriteBackMatrixToImages(m_residual_reconstruction, "residual_recontruct");
-				WriteBackMatrixToImages(S, "fastICA");
+				SetParam(FCWS__PARA__TYPE__ICA, S);
+
+//				WriteBackMatrixToImages(m_reconstruction, "recontruct");
+//				WriteBackMatrixToImages(m_residual_reconstruction, "residual_recontruct");
+//				WriteBackMatrixToImages(S, "fastICA");
 
 				if (K)
 				{
@@ -550,7 +565,7 @@ int CLocalModel::CalEigenSpace(gsl_matrix* covar, gsl_vector** eval, gsl_matrix*
 
 	rows = covar->size1;
 	cols = covar->size2;
-	printf("%s: rows:%d, cols: %d\n", __func__, rows, cols);
+//	printf("%s: rows:%d, cols: %d\n", __func__, rows, cols);
 
 	pEValue = gsl_vector_alloc(rows);
 	gsl_vector_set_zero(pEValue);
@@ -576,7 +591,7 @@ int CLocalModel::CalEigenSpace(gsl_matrix* covar, gsl_vector** eval, gsl_matrix*
     }
 
 	end_time = GetTime();
-	printf("%s of %s of %s: %llums\n", __func__, m_local_name, m_vm_name, end_time - start_time);
+//	printf("%s of %s of %s: %llums\n", __func__, m_local_name, m_vm_name, end_time - start_time);
 
 	return ret;
 }
@@ -1236,7 +1251,7 @@ void CLocalModel::WriteBackMatrixToImages(gsl_matrix *x, string postfix)
 	rows = x->size1;
 	cols = x->size2;
 
-	printf("postfix %s(%d,%d)\n", postfix.c_str(), rows, cols);
+	printf("[%s] postfix %s(%d,%d)\n", __func__, postfix.c_str(), rows, cols);
 
 	xu = gsl_matrix_uchar_alloc(rows, cols);
 

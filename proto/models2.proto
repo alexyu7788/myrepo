@@ -6,9 +6,10 @@ package FCWS;
 message Para {
     enum Type {
         UnKonwn = -1;
-        PCA = 0;
-        ICA = 1;
-        TOTAL = 2;
+        PCA     = 0; /* 1st-order pca */
+        PCA2    = 1; /* 2nd-order pca */
+        ICA     = 2;
+        TOTAL   = 3;
     }
 
     required Type type = 1 [default = UnKonwn];

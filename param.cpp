@@ -22,13 +22,13 @@ CParam::~CParam()
 	}
 }
 
-int CParam::Set(FCWS__Para__Type type, int rows, int cols, double *data)
+int CParam::LoadParam(FCWS__Para__Type type, int rows, int cols, double *data)
 {
 	assert(rows > 0);
 	assert(cols > 0);
 	assert(data != NULL);
 
-	int r, c;
+	unsigned int r, c;
 
 	if (m_data)
 		gsl_matrix_free(m_data);
@@ -46,11 +46,11 @@ int CParam::Set(FCWS__Para__Type type, int rows, int cols, double *data)
 	return 0;
 }
 
-int CParam::Set(FCWS__Para__Type type, gsl_matrix *from)
+int CParam::SetParam(FCWS__Para__Type type, gsl_matrix *from)
 {
 	assert(from != NULL);
 
-	int r, c;
+	unsigned int r, c;
 
 	r = from->size1;
 	c = from->size2;
@@ -67,6 +67,41 @@ int CParam::Set(FCWS__Para__Type type, gsl_matrix *from)
 	m_para_type = type;
 
 	return 0;
+}
+
+bool CParam::SaveParam(FCWS__Para *param)
+{
+	assert(param != NULL);
+
+	unsigned int r, c;
+
+	if (m_data == NULL)
+	{
+//		printf("[%s][%s] There is no any data yet.\n", __FILE__, __func__);
+		return false;
+	}
+
+	param->type = m_para_type;
+	param->rows = m_data->size1;
+	param->cols = m_data->size2;
+	param->n_data = (m_data->size1 * m_data->size2);
+	param->data = (double*)malloc(sizeof(double) * param->n_data);
+
+	if (param->data == NULL)
+	{
+		printf("[%s][%s] Can not allocate memory.\n", __FILE__, __func__);
+		return false;
+	}
+
+	for (r=0 ; r<m_data->size1 ; r++)
+	{
+		for (c=0 ; c<m_data->size2 ; c++)
+		{
+			param->data[r*m_data->size2 + c] = gsl_matrix_get(m_data, r, c);
+		}
+	}
+
+	return true;
 }
 
 FCWS__Para__Type CParam::GetType()
@@ -100,6 +135,7 @@ double CParam::GetData(int row, int col)
 
 	return gsl_matrix_get(m_data, row, col);
 }
+
 
 //Para* Para::GetObj()
 //{
