@@ -1,6 +1,6 @@
 PCA and ICA
 
-1. Generate .cpp & .h of protobuf
+1. Generate .cpp & .h of protobuf-c
     a. Enter proto directory.
     b. Execute proto --c_out=. model2.proto
     c. Copy .c to ../.cpp & .h to ../
