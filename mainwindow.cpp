@@ -129,23 +129,23 @@ bool CMainWindow::Init()
 
         m_selector[SELECTOR_CENTER] = new CSelector(m_width, m_height);
         m_selector[SELECTOR_CENTER]->SetColor(0xFF, 0, 0);
-        m_selector[SELECTOR_CENTER]->SetGeometryInfo(50, 4, 220, 30);
+        m_selector[SELECTOR_CENTER]->SetGeometryInfo(85, 10, 75, 20);
         m_selector[SELECTOR_CENTER]->SetTitle(m_renderer, "Center");
 
         m_selector[SELECTOR_LEFT] = new CSelector(m_width, m_height);
         m_selector[SELECTOR_LEFT]->SetColor(0, 0xFF, 0);
-        m_selector[SELECTOR_LEFT]->SetGeometryInfo(3, 115, 50, 50);
+        m_selector[SELECTOR_LEFT]->SetGeometryInfo(3, 115, 30, 50);
         m_selector[SELECTOR_LEFT]->SetTitle(m_renderer, "Left");
 
         m_selector[SELECTOR_RIGHT] = new CSelector(m_width, m_height);
         m_selector[SELECTOR_RIGHT]->SetColor(0, 0, 0xFF);
-        m_selector[SELECTOR_RIGHT]->SetGeometryInfo(260, 115, 50, 50);
+        m_selector[SELECTOR_RIGHT]->SetGeometryInfo(260, 115, 30, 50);
         m_selector[SELECTOR_RIGHT]->SetTitle(m_renderer, "Right");
 
-        m_selector[SELECTOR_PLATE] = new CSelector(m_width, m_height);
-        m_selector[SELECTOR_PLATE]->SetColor(0xFF, 0xFF, 0);
-        m_selector[SELECTOR_PLATE]->SetGeometryInfo(120, 115, 75, 50);
-        m_selector[SELECTOR_PLATE]->SetTitle(m_renderer, "Plate");
+        // m_selector[SELECTOR_PLATE] = new CSelector(m_width, m_height);
+        // m_selector[SELECTOR_PLATE]->SetColor(0xFF, 0xFF, 0);
+        // m_selector[SELECTOR_PLATE]->SetGeometryInfo(120, 115, 75, 50);
+        // m_selector[SELECTOR_PLATE]->SetTitle(m_renderer, "Plate");
 
         m_current_selector = m_selector[SELECTOR_CENTER];
 
