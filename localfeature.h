@@ -16,7 +16,7 @@
 
 using namespace std;
 
-class CLocalModel {
+class CLocalFeature {
 protected:
 		string					m_output_folder;
 
@@ -58,9 +58,9 @@ protected:
 		gsl_matrix*				m_residual_residual;
 
 public:
-		CLocalModel(FCWS__VehicleModel__Type vm_type, FCWS__Local__Type local_type);
+		CLocalFeature(FCWS__VehicleModel__Type vm_type, FCWS__Local__Type local_type);
 
-		~CLocalModel();
+		~CLocalFeature();
 
 		int SetParam(FCWS__Local__Type local_type, FCWS__Para__Type para_type, gsl_matrix *from);
 

@@ -4,14 +4,14 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#include "localmodel.h"
+#include "localfeature.h"
 #include "utility.h"
 
 #define MAX_ITERATIONS	1000
 #define TOLERANCE		0.0001
 #define ALPHA			1
 
-CLocalModel::CLocalModel(FCWS__VehicleModel__Type vm_type, FCWS__Local__Type local_type)
+CLocalFeature::CLocalFeature(FCWS__VehicleModel__Type vm_type, FCWS__Local__Type local_type)
 {
 //	m_output_folder = NULL;
 	m_output_folder.clear();
@@ -55,7 +55,7 @@ CLocalModel::CLocalModel(FCWS__VehicleModel__Type vm_type, FCWS__Local__Type loc
 	m_residual_eval				= NULL;
 }
 
-CLocalModel::~CLocalModel()
+CLocalFeature::~CLocalFeature()
 {
 //	printf("[%s]\n", __func__);
 
@@ -128,7 +128,7 @@ CLocalModel::~CLocalModel()
 
 }
 
-int CLocalModel::SetParam(FCWS__Local__Type local_type, FCWS__Para__Type para_type, gsl_matrix *from)
+int CLocalFeature::SetParam(FCWS__Local__Type local_type, FCWS__Para__Type para_type, gsl_matrix *from)
 {
 	assert(from != NULL);
 
@@ -149,7 +149,7 @@ int CLocalModel::SetParam(FCWS__Local__Type local_type, FCWS__Para__Type para_ty
 	return 0;
 }
 
-int CLocalModel::LoadParam(FCWS__Local__Type local_type, FCWS__Para__Type para_type, int rows, int cols, double *from)
+int CLocalFeature::LoadParam(FCWS__Local__Type local_type, FCWS__Para__Type para_type, int rows, int cols, double *from)
 {
 	assert(from != NULL);
 
@@ -170,7 +170,7 @@ int CLocalModel::LoadParam(FCWS__Local__Type local_type, FCWS__Para__Type para_t
 	return 0;
 }
 
-int CLocalModel::SetParam(FCWS__Para__Type para_type, gsl_matrix *from)
+int CLocalFeature::SetParam(FCWS__Para__Type para_type, gsl_matrix *from)
 {
 	assert(from != NULL);
 
@@ -189,7 +189,7 @@ int CLocalModel::SetParam(FCWS__Para__Type para_type, gsl_matrix *from)
 	return 0;
 }
 
-int CLocalModel::LoadParam(FCWS__Para__Type para_type, int rows, int cols, double *from)
+int CLocalFeature::LoadParam(FCWS__Para__Type para_type, int rows, int cols, double *from)
 {
 	assert(from != NULL);
 
@@ -208,7 +208,7 @@ int CLocalModel::LoadParam(FCWS__Para__Type para_type, int rows, int cols, doubl
 	return 0;
 }
 
-bool CLocalModel::SaveParam(FCWS__Para__Type para_type, FCWS__Para *param)
+bool CLocalFeature::SaveParam(FCWS__Para__Type para_type, FCWS__Para *param)
 {
 	if (m_para[para_type])
 		return m_para[para_type]->SaveParam(param);
@@ -216,7 +216,7 @@ bool CLocalModel::SaveParam(FCWS__Para__Type para_type, FCWS__Para *param)
 	return false;
 }
 
-void CLocalModel::SetPCAAndICAComponents(int pca_first_k_components, int pca_compoments_offset, int ica_first_k_components, int ica_compoments_offset)
+void CLocalFeature::SetPCAAndICAComponents(int pca_first_k_components, int pca_compoments_offset, int ica_first_k_components, int ica_compoments_offset)
 {
 	m_pca_first_k_components	= pca_first_k_components;
 	m_pca_compoments_offset 	= pca_compoments_offset;
@@ -224,12 +224,12 @@ void CLocalModel::SetPCAAndICAComponents(int pca_first_k_components, int pca_com
 	m_ica_compoments_offset 	= ica_compoments_offset;
 }
 
-void CLocalModel::SetOutputPath(string output_folder)
+void CLocalFeature::SetOutputPath(string output_folder)
 {
 	m_output_folder = output_folder;
 }
 
-int CLocalModel::PickUpFiles(vector<string> & feedin, int rows, int cols)
+int CLocalFeature::PickUpFiles(vector<string> & feedin, int rows, int cols)
 {
 	char temp[MAX_FN_L];
 	char *pch = NULL;
@@ -297,12 +297,12 @@ int CLocalModel::PickUpFiles(vector<string> & feedin, int rows, int cols)
 //	return NULL;
 //}
 
-FCWS__Local__Type CLocalModel::GetLocalType()
+FCWS__Local__Type CLocalFeature::GetLocalType()
 {
 	return m_local_type;
 }
 
-void CLocalModel::DeleteParaObj(FCWS__Para__Type para_type)
+void CLocalFeature::DeleteParaObj(FCWS__Para__Type para_type)
 {
 	if (m_para[para_type])
 	{
@@ -311,7 +311,7 @@ void CLocalModel::DeleteParaObj(FCWS__Para__Type para_type)
 	}
 }
 
-int CLocalModel::DoTraining()
+int CLocalFeature::DoTraining()
 {
 	int ret = 0, rows, cols;
 
@@ -334,9 +334,10 @@ int CLocalModel::DoTraining()
 				search_local_model_pattern[m_local_type],
 				search_vehicle_model_pattern[m_vm_type]);
 
+		WriteBackMatrixToImages(m_reconstruction, "recontruct");
 		SetParam(FCWS__PARA__TYPE__PCA, &m_FirstKEigVector.matrix);
 
-		if (ret == GSL_SUCCESS)
+		if (0 && ret == GSL_SUCCESS)
 		{
 			// PCA of residual images.
 			ret = PCA(m_residual,
@@ -352,6 +353,7 @@ int CLocalModel::DoTraining()
 				  &m_residual_residual
 				);
 
+			WriteBackMatrixToImages(m_residual_reconstruction, "residual_recontruct");
 			SetParam(FCWS__PARA__TYPE__PCA2, &m_residual_FirstKEigVector.matrix);
 
 			if (ret == GSL_SUCCESS)
@@ -424,7 +426,7 @@ int CLocalModel::DoTraining()
 
 
 
-int	CLocalModel::GenImageMat()
+int	CLocalFeature::GenImageMat()
 {
 	int i, j, y_size, file_count = 0;
 	unsigned char *temp = NULL, pixel_data;
@@ -475,7 +477,7 @@ int	CLocalModel::GenImageMat()
 	return 0;
 }
 
-gsl_vector*	CLocalModel::CalMean(gsl_matrix *m)
+gsl_vector*	CLocalFeature::CalMean(gsl_matrix *m)
 {
 	assert(m != NULL);
 
@@ -507,7 +509,7 @@ gsl_vector*	CLocalModel::CalMean(gsl_matrix *m)
 	return mean;
 }
 
-gsl_matrix* CLocalModel::CalVariance(gsl_matrix *m, gsl_vector* mean)
+gsl_matrix* CLocalFeature::CalVariance(gsl_matrix *m, gsl_vector* mean)
 {
 	assert(m != NULL);
 	assert(mean != NULL);
@@ -518,8 +520,8 @@ gsl_matrix* CLocalModel::CalVariance(gsl_matrix *m, gsl_vector* mean)
 
 	// start_time = get_time();
 
-	rows = m_image_matrix->size1;
-	cols = m_image_matrix->size2;
+	rows = m->size1;
+	cols = m->size2;
 
 //	printf("%s: rows:%d, cols: %d\n", __func__, rows, cols);
 	gsl_matrix *mean_subtracted_m, *covariance_matrix;
@@ -550,7 +552,7 @@ gsl_matrix* CLocalModel::CalVariance(gsl_matrix *m, gsl_vector* mean)
 }
 
 
-int CLocalModel::CalEigenSpace(gsl_matrix* covar, gsl_vector** eval, gsl_matrix** evec)
+int CLocalFeature::CalEigenSpace(gsl_matrix* covar, gsl_vector** eval, gsl_matrix** evec)
 {
 	assert(covar != NULL);
 
@@ -559,9 +561,9 @@ int CLocalModel::CalEigenSpace(gsl_matrix* covar, gsl_vector** eval, gsl_matrix*
 	gsl_matrix *pEVctor;
     gsl_eigen_symmv_workspace* workspace;
 
-	unsigned long long start_time, end_time;
+//	unsigned long long start_time, end_time;
 
-	start_time = GetTime();
+//	start_time = GetTime();
 
 	rows = covar->size1;
 	cols = covar->size2;
@@ -590,14 +592,14 @@ int CLocalModel::CalEigenSpace(gsl_matrix* covar, gsl_vector** eval, gsl_matrix*
     	gsl_matrix_free(pEVctor);
     }
 
-	end_time = GetTime();
+//	end_time = GetTime();
 //	printf("%s of %s of %s: %llums\n", __func__, m_local_name, m_vm_name, end_time - start_time);
 
 	return ret;
 }
 
 
-gsl_matrix_view CLocalModel::GetFirstKComponents(gsl_matrix *evec, int firstk)
+gsl_matrix_view CLocalFeature::GetFirstKComponents(gsl_matrix *evec, int firstk)
 {
 	return gsl_matrix_submatrix(evec, 0, 0, evec->size1, firstk);
 }
@@ -605,7 +607,7 @@ gsl_matrix_view CLocalModel::GetFirstKComponents(gsl_matrix *evec, int firstk)
 /*
 * R = P-Transpose * X, where R is KxM, P is NxK, X is NxM
 */
-gsl_matrix* CLocalModel::GenerateProjectionMatrix(gsl_matrix *p, gsl_matrix *x)
+gsl_matrix* CLocalFeature::GenerateProjectionMatrix(gsl_matrix *p, gsl_matrix *x)
 {
 	assert(p != NULL);
 	assert(x != NULL);
@@ -625,7 +627,7 @@ gsl_matrix* CLocalModel::GenerateProjectionMatrix(gsl_matrix *p, gsl_matrix *x)
 }
 
 // X` = P X R, where X` is NxM, P is NxK, R is KxM
-gsl_matrix* CLocalModel::GenerateReconstructImageMatrixFromPCA(gsl_matrix *p, gsl_matrix *r, gsl_vector *mean)
+gsl_matrix* CLocalFeature::GenerateReconstructImageMatrixFromPCA(gsl_matrix *p, gsl_matrix *r, gsl_vector *mean)
 {
 	assert(p != NULL);
 	assert(r != NULL);
@@ -690,7 +692,7 @@ gsl_matrix* CLocalModel::GenerateReconstructImageMatrixFromPCA(gsl_matrix *p, gs
 	return x;
 }
 
-gsl_matrix* CLocalModel::GenerateResidualImageMatrix(gsl_matrix *orignal_image_matrix, gsl_matrix *reconstruct_image_matrix)
+gsl_matrix* CLocalFeature::GenerateResidualImageMatrix(gsl_matrix *orignal_image_matrix, gsl_matrix *reconstruct_image_matrix)
 {
 	assert(orignal_image_matrix != NULL);
 	assert(reconstruct_image_matrix != NULL);
@@ -727,7 +729,7 @@ gsl_matrix* CLocalModel::GenerateResidualImageMatrix(gsl_matrix *orignal_image_m
 	return output_im;
 }
 
-int CLocalModel::PCA
+int CLocalFeature::PCA
 (
 	gsl_matrix *im,
 	gsl_vector **mean,
@@ -770,7 +772,7 @@ int CLocalModel::PCA
 /**
  * Centers mat M. (Subtracts the mean from every column)
  */
-void CLocalModel::MatrixCenter(gsl_matrix *m, gsl_vector **mean)
+void CLocalFeature::MatrixCenter(gsl_matrix *m, gsl_vector **mean)
 {
 	assert(m != NULL);
 
@@ -809,7 +811,7 @@ void CLocalModel::MatrixCenter(gsl_matrix *m, gsl_vector **mean)
 	// printf("%s of %s of %s: %llums\n", __func__, m_local_name, m_vm_name, end_time - start_time);
 }
 
-void CLocalModel::MatrixDeCenter(gsl_matrix *m, gsl_vector *mean)
+void CLocalFeature::MatrixDeCenter(gsl_matrix *m, gsl_vector *mean)
 {
 	assert(m != NULL);
 	assert(mean != NULL);
@@ -821,7 +823,7 @@ void CLocalModel::MatrixDeCenter(gsl_matrix *m, gsl_vector *mean)
 			gsl_matrix_set(m, i, j, gsl_matrix_get(m, i, j) + gsl_vector_get(mean, j));
 }
 
-gsl_matrix* CLocalModel::MatrixInvert(gsl_matrix *m)
+gsl_matrix* CLocalFeature::MatrixInvert(gsl_matrix *m)
 {
 	assert(m != NULL);
 
@@ -855,7 +857,7 @@ gsl_matrix* CLocalModel::MatrixInvert(gsl_matrix *m)
 	return inv;
 }
 
-gsl_matrix* CLocalModel::ICA_compute(gsl_matrix *X)
+gsl_matrix* CLocalFeature::ICA_compute(gsl_matrix *X)
 {
 	assert(X != NULL);
 
@@ -1060,7 +1062,7 @@ gsl_matrix* CLocalModel::ICA_compute(gsl_matrix *X)
  * Ref: 	https://en.wikipedia.org/wiki/FastICA
  *
  */
-int CLocalModel::FastICA
+int CLocalFeature::FastICA
 (
 	gsl_matrix *X,
 	int compc,
@@ -1233,7 +1235,7 @@ end:
 	return ret;
 }
 
-void CLocalModel::WriteBackMatrixToImages(gsl_matrix *x, string postfix)
+void CLocalFeature::WriteBackMatrixToImages(gsl_matrix *x, string postfix)
 {
 	assert(x != NULL);
 	assert(postfix.size() != 0);

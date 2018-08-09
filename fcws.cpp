@@ -110,14 +110,14 @@ int FCWS::LoadModel(string model_name)
 
 								if (para_type != -1 && rows && cols)
 								{
-									m_vm[vm_type]->LoadParam(vm_type, local_type, para_type, rows, cols, models->vm[i]->local[j]->para[k]->data);
-
-									printf("%s of %s of %s (%d:%d) is loaded\n",
+									printf("Loading %s of %s of %s.		\t(%d:%d)\n",
 											search_param_pattern[para_type],
 											search_local_model_pattern[local_type],
 											search_vehicle_model_pattern[vm_type],
 											rows,
 											cols);
+
+									m_vm[vm_type]->LoadParam(vm_type, local_type, para_type, rows, cols, models->vm[i]->local[j]->para[k]->data);
 								}
 							}
 						}

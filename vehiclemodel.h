@@ -6,7 +6,7 @@
 #include <pthread.h>
 
 #include "models2.pb-c.h"
-#include "localmodel.h"
+#include "localfeature.h"
 
 using namespace std;
 
@@ -14,8 +14,8 @@ class CVehicleModel {
 protected:
 		vector<string>			 m_filelist;
 		FCWS__VehicleModel__Type m_vm_type;
-		int						 m_local_model_count;
-		CLocalModel*			 m_local_model[FCWS__LOCAL__TYPE__TOTAL];
+		int						 m_local_feature_count;
+		CLocalFeature*			 m_local_feature[FCWS__LOCAL__TYPE__TOTAL];
 
 		pthread_mutex_t	  		 m_Mutex;
 		pthread_cond_t	  		 m_Cond;

@@ -8,14 +8,14 @@
 CVehicleModel::CVehicleModel(FCWS__VehicleModel__Type vm_type)
 {
 	m_vm_type = vm_type;
-	m_local_model_count = 0;
+	m_local_feature_count = 0;
 	m_finishtrain = 0;
 
 	m_filelist.clear();
 
 	for (int i=FCWS__LOCAL__TYPE__LEFT ; i<FCWS__LOCAL__TYPE__TOTAL ; i++)
 	{
-		m_local_model[i] = new CLocalModel(m_vm_type, (FCWS__Local__Type)i);
+		m_local_feature[i] = new CLocalFeature(m_vm_type, (FCWS__Local__Type)i);
 	}
 }
 
@@ -24,7 +24,7 @@ CVehicleModel::~CVehicleModel()
 //	printf("[%s]\n", __func__);
 
 	m_vm_type = FCWS__VEHICLE__MODEL__TYPE__UnKonwn;
-	m_local_model_count = 0;
+	m_local_feature_count = 0;
 
 	for (int i=0 ; i<(int)m_filelist.size() ; i++)
 	{
@@ -35,10 +35,10 @@ CVehicleModel::~CVehicleModel()
 
 	for (int i=FCWS__LOCAL__TYPE__LEFT ; i<FCWS__LOCAL__TYPE__TOTAL ; i++)
 	{
-		if (m_local_model[i])
+		if (m_local_feature[i])
 		{
-			delete m_local_model[i];
-			m_local_model[i] = NULL;
+			delete m_local_feature[i];
+			m_local_feature[i] = NULL;
 		}
 	}
 }
@@ -55,8 +55,8 @@ int CVehicleModel::StartTrainingThreads()
 	// Start Training Threads.
 	for (int i=0 ; i<FCWS__LOCAL__TYPE__TOTAL ; i++)
 	{
-		if (m_local_model[i])
-			pthread_create(&m_thread[i], NULL, TrainingProcess, m_local_model[i]);
+		if (m_local_feature[i])
+			pthread_create(&m_thread[i], NULL, TrainingProcess, m_local_feature[i]);
 	}
 
 	// Join Training Threads.
@@ -81,17 +81,17 @@ int CVehicleModel::SetParam(FCWS__VehicleModel__Type vm_type, FCWS__Local__Type 
 
 	m_vm_type = vm_type;
 
-	if (m_local_model[local_type] == NULL)
+	if (m_local_feature[local_type] == NULL)
 	{
-		m_local_model[local_type] = new CLocalModel(m_vm_type, local_type);
-		m_local_model[local_type]->SetParam(local_type, para_type, from);
+		m_local_feature[local_type] = new CLocalFeature(m_vm_type, local_type);
+		m_local_feature[local_type]->SetParam(local_type, para_type, from);
 	}
 	else
 	{
-//		if (m_local_model[pos]->GetParaObj(para_type))
-//			m_local_model[pos]->DeleteParaObj(para_type);
+//		if (m_local_feature[pos]->GetParaObj(para_type))
+//			m_local_feature[pos]->DeleteParaObj(para_type);
 
-		m_local_model[local_type]->SetParam(para_type, from);
+		m_local_feature[local_type]->SetParam(para_type, from);
 
 	}
 
@@ -104,10 +104,10 @@ int CVehicleModel::LoadParam(FCWS__VehicleModel__Type vm_type, FCWS__Local__Type
 
 //	if (from == NULL)
 //	{
-//		if (m_local_model[local_type])
+//		if (m_local_feature[local_type])
 //		{
-//			delete m_local_model[local_type];
-//			m_local_model[local_type] = NULL;
+//			delete m_local_feature[local_type];
+//			m_local_feature[local_type] = NULL;
 //		}
 //
 //		return -1;
@@ -115,14 +115,14 @@ int CVehicleModel::LoadParam(FCWS__VehicleModel__Type vm_type, FCWS__Local__Type
 
 	m_vm_type = vm_type;
 
-	if (m_local_model[local_type] == NULL)
+	if (m_local_feature[local_type] == NULL)
 	{
-		m_local_model[local_type] = new CLocalModel(m_vm_type, local_type);
-		m_local_model[local_type]->LoadParam(local_type, para_type, rows, cols, from);
+		m_local_feature[local_type] = new CLocalFeature(m_vm_type, local_type);
+		m_local_feature[local_type]->LoadParam(local_type, para_type, rows, cols, from);
 	}
 	else
 	{
-		m_local_model[local_type]->LoadParam(para_type, rows, cols, from);
+		m_local_feature[local_type]->LoadParam(para_type, rows, cols, from);
 	}
 
 	return 0;
@@ -130,8 +130,8 @@ int CVehicleModel::LoadParam(FCWS__VehicleModel__Type vm_type, FCWS__Local__Type
 
 bool CVehicleModel::SaveParam(FCWS__Local__Type local_type, FCWS__Para__Type para_type, FCWS__Para *param)
 {
-	if (m_local_model[local_type])
-		return m_local_model[local_type]->SaveParam(para_type, param);
+	if (m_local_feature[local_type])
+		return m_local_feature[local_type]->SaveParam(para_type, param);
 
 	return false;
 }
@@ -140,9 +140,9 @@ void CVehicleModel::SetPCAAndICAComponents(int pca_first_k_components, int pca_c
 {
 	for (int i=FCWS__LOCAL__TYPE__LEFT ; i<FCWS__LOCAL__TYPE__TOTAL ; i++)
 	{
-		if (m_local_model[i])
+		if (m_local_feature[i])
 		{
-			m_local_model[i]->SetPCAAndICAComponents(pca_first_k_components, pca_compoments_offset, ica_first_k_components, ica_compoments_offset);
+			m_local_feature[i]->SetPCAAndICAComponents(pca_first_k_components, pca_compoments_offset, ica_first_k_components, ica_compoments_offset);
 		}
 	}
 }
@@ -151,9 +151,9 @@ void CVehicleModel::SetOutputPath(string output_folder)
 {
 	for (int i=FCWS__LOCAL__TYPE__LEFT ; i<FCWS__LOCAL__TYPE__TOTAL ; i++)
 	{
-		if (m_local_model[i])
+		if (m_local_feature[i])
 		{
-			m_local_model[i]->SetOutputPath(output_folder);
+			m_local_feature[i]->SetOutputPath(output_folder);
 		}
 	}
 }
@@ -191,9 +191,9 @@ int CVehicleModel::PickUpFiles(vector<string> & feedin, int rows, int cols)
 
 		for (int i=FCWS__LOCAL__TYPE__LEFT ; i<FCWS__LOCAL__TYPE__TOTAL ; i++)
 		{
-			if (m_local_model[i])
+			if (m_local_feature[i])
 			{
-				m_local_model[i]->PickUpFiles(m_filelist);
+				m_local_feature[i]->PickUpFiles(m_filelist);
 			}
 		}
 
@@ -211,7 +211,7 @@ int CVehicleModel::FinishTraining()
 void* CVehicleModel::TrainingProcess(void *arg)
 {
 	int ret = 0;
-	CLocalModel* localmodel = (CLocalModel*)arg;
+	CLocalFeature* localmodel = (CLocalFeature*)arg;
 
 	if (localmodel)
 	{

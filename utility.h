@@ -13,7 +13,7 @@
 
 #define MAX_FN_L    255
 
-static const char *search_vehicle_model_pattern[FCWS__VEHICLE__MODEL__TYPE__TOTAL] = {"Compact", "Middle", "Large", "SUV", "Bus", "Truck", "Motocycle", "Bike"};
+static const char *search_vehicle_model_pattern[FCWS__VEHICLE__MODEL__TYPE__TOTAL] = {"Compact", "Midsize", "Large", "SUV", "Bus", "Truck", "Motocycle", "Bike"};
 static const char *search_local_model_pattern[FCWS__LOCAL__TYPE__TOTAL] = {"Left", "Right", "Center"};
 static const char *search_param_pattern[FCWS__PARA__TYPE__TOTAL] = {"PCA", "PCA2", "ICA"};
 
