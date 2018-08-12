@@ -15,6 +15,9 @@ PROTOBUF_C__BEGIN_DECLS
 #endif
 
 
+typedef struct _FCWS__Para2 FCWS__Para2;
+typedef struct _FCWS__Para2__Pca FCWS__Para2__Pca;
+typedef struct _FCWS__Para2__Ica FCWS__Para2__Ica;
 typedef struct _FCWS__Para FCWS__Para;
 typedef struct _FCWS__Local FCWS__Local;
 typedef struct _FCWS__VehicleModel FCWS__VehicleModel;
@@ -61,6 +64,47 @@ typedef enum _FCWS__VehicleModel__Type {
 
 /* --- messages --- */
 
+struct  _FCWS__Para2__Pca
+{
+  ProtobufCMessage base;
+  int32_t mean_size;
+  size_t n_mean_data;
+  double *mean_data;
+  int32_t eval_size;
+  size_t n_eval_data;
+  double *eval_data;
+  int32_t evec_size1;
+  int32_t evec_size2;
+  size_t n_evec_data;
+  double *evec_data;
+};
+#define FCWS__PARA2__PCA__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&fcws__para2__pca__descriptor) \
+    , 0, 0,NULL, 0, 0,NULL, 0, 0, 0,NULL }
+
+
+struct  _FCWS__Para2__Ica
+{
+  ProtobufCMessage base;
+  int32_t test;
+};
+#define FCWS__PARA2__ICA__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&fcws__para2__ica__descriptor) \
+    , 0 }
+
+
+struct  _FCWS__Para2
+{
+  ProtobufCMessage base;
+  FCWS__Para2__Pca *pca;
+  FCWS__Para2__Pca *pca2;
+  FCWS__Para2__Ica *ica;
+};
+#define FCWS__PARA2__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&fcws__para2__descriptor) \
+    , NULL, NULL, NULL }
+
+
 struct  _FCWS__Para
 {
   ProtobufCMessage base;
@@ -81,10 +125,11 @@ struct  _FCWS__Local
   FCWS__Local__Type local;
   size_t n_para;
   FCWS__Para **para;
+  FCWS__Para2 *para2;
 };
 #define FCWS__LOCAL__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&fcws__local__descriptor) \
-    , FCWS__LOCAL__TYPE__UnKonwn, 0,NULL }
+    , FCWS__LOCAL__TYPE__UnKonwn, 0,NULL, NULL }
 
 
 /*
@@ -116,6 +161,31 @@ struct  _FCWS__Models
     , 0,NULL }
 
 
+/* FCWS__Para2__Pca methods */
+void   fcws__para2__pca__init
+                     (FCWS__Para2__Pca         *message);
+/* FCWS__Para2__Ica methods */
+void   fcws__para2__ica__init
+                     (FCWS__Para2__Ica         *message);
+/* FCWS__Para2 methods */
+void   fcws__para2__init
+                     (FCWS__Para2         *message);
+size_t fcws__para2__get_packed_size
+                     (const FCWS__Para2   *message);
+size_t fcws__para2__pack
+                     (const FCWS__Para2   *message,
+                      uint8_t             *out);
+size_t fcws__para2__pack_to_buffer
+                     (const FCWS__Para2   *message,
+                      ProtobufCBuffer     *buffer);
+FCWS__Para2 *
+       fcws__para2__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   fcws__para2__free_unpacked
+                     (FCWS__Para2 *message,
+                      ProtobufCAllocator *allocator);
 /* FCWS__Para methods */
 void   fcws__para__init
                      (FCWS__Para         *message);
@@ -194,6 +264,15 @@ void   fcws__models__free_unpacked
                       ProtobufCAllocator *allocator);
 /* --- per-message closures --- */
 
+typedef void (*FCWS__Para2__Pca_Closure)
+                 (const FCWS__Para2__Pca *message,
+                  void *closure_data);
+typedef void (*FCWS__Para2__Ica_Closure)
+                 (const FCWS__Para2__Ica *message,
+                  void *closure_data);
+typedef void (*FCWS__Para2_Closure)
+                 (const FCWS__Para2 *message,
+                  void *closure_data);
 typedef void (*FCWS__Para_Closure)
                  (const FCWS__Para *message,
                   void *closure_data);
@@ -212,6 +291,9 @@ typedef void (*FCWS__Models_Closure)
 
 /* --- descriptors --- */
 
+extern const ProtobufCMessageDescriptor fcws__para2__descriptor;
+extern const ProtobufCMessageDescriptor fcws__para2__pca__descriptor;
+extern const ProtobufCMessageDescriptor fcws__para2__ica__descriptor;
 extern const ProtobufCMessageDescriptor fcws__para__descriptor;
 extern const ProtobufCEnumDescriptor    fcws__para__type__descriptor;
 extern const ProtobufCMessageDescriptor fcws__local__descriptor;

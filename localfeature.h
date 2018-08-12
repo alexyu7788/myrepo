@@ -35,6 +35,9 @@ protected:
 		int						m_para_count;
 		CParam*					m_para[FCWS__PARA__TYPE__TOTAL];
 
+        bool                    m_has_param;
+        CParam2*                m_para2;
+
 		int						image_w;
 		int						image_h;
 		gsl_matrix*				m_image_matrix;
@@ -62,15 +65,23 @@ public:
 
 		~CLocalFeature();
 
+        bool HasParam();
+
 		int SetParam(FCWS__Local__Type local_type, FCWS__Para__Type para_type, gsl_matrix *from);
 
 		int LoadParam(FCWS__Local__Type local_type, FCWS__Para__Type para_type, int rows, int cols, double *from);
 
+		bool LoadParam(FCWS__Local__Type local_type, FCWS__Para2* param);
+        
 		int SetParam(FCWS__Para__Type para_type, gsl_matrix *from);
-
+    
 		int LoadParam(FCWS__Para__Type para_type, int rows, int cols, double *from);
 
+		bool LoadParam(FCWS__Para2* param);
+
 		bool SaveParam(FCWS__Para__Type para_type, FCWS__Para *param);
+
+		bool SaveParam(FCWS__Para2 *param);
 
 		void SetPCAAndICAComponents(int pca_first_k_components, int pca_compoments_offset, int ica_first_k_components, int ica_compoments_offset);
 
@@ -88,7 +99,13 @@ public:
 
 		int DoTraining();
 
+        int DoDetection();
+
 protected:
+        bool SetPCAParam(gsl_vector *mean, gsl_vector *eval, gsl_matrix *evec);
+
+        bool SetPCA2Param(gsl_vector *mean, gsl_vector *eval, gsl_matrix *evec);
+
 		int	GenImageMat();
 
 		gsl_vector*	CalMean(gsl_matrix *m);

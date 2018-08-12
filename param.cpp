@@ -1,4 +1,388 @@
+#include <string.h>
 #include "param.h"
+
+CParam2::CParam2()
+{
+    m_pca = m_pca2 = NULL;
+}
+
+CParam2::~CParam2()
+{
+    if (m_pca)
+    {
+        if (m_pca->mean_data)
+        {
+            gsl_vector_free(m_pca->mean_data);
+            m_pca->mean_data = NULL;
+        }
+
+        if (m_pca->eval_data)
+        {
+            gsl_vector_free(m_pca->eval_data);
+            m_pca->eval_data = NULL;
+        }
+
+        if (m_pca->evec_data)
+        {
+            gsl_matrix_free(m_pca->evec_data);
+            m_pca->evec_data = NULL;
+        }
+
+        free(m_pca);
+        m_pca = NULL;
+    }
+
+    if (m_pca2)
+    {
+        if (m_pca2->mean_data)
+        {
+            gsl_vector_free(m_pca2->mean_data);
+            m_pca2->mean_data = NULL;
+        }
+
+        if (m_pca2->eval_data)
+        {
+            gsl_vector_free(m_pca2->eval_data);
+            m_pca2->eval_data = NULL;
+        }
+
+        if (m_pca2->evec_data)
+        {
+            gsl_matrix_free(m_pca2->evec_data);
+            m_pca2->evec_data = NULL;
+        }
+
+        free(m_pca2);
+        m_pca2 = NULL;
+    }
+}
+
+bool CParam2::SetPCAParam(gsl_vector* mean, gsl_vector* eval, gsl_matrix* evec)
+{
+    if (m_pca)
+    {
+        free(m_pca);
+        m_pca = NULL;
+    }
+
+    m_pca = (PCA*)malloc(sizeof(PCA));
+    memset(m_pca, 0x0, sizeof(PCA));
+
+    return SetPCAParam(m_pca, mean, eval, evec);
+}
+
+bool CParam2::SetPCA2Param(gsl_vector* mean, gsl_vector* eval, gsl_matrix* evec)
+{
+    if (m_pca2)
+    {
+        free(m_pca2);
+        m_pca2 = NULL;
+    }
+
+    m_pca2 = (PCA*)malloc(sizeof(PCA));
+    memset(m_pca2, 0x0, sizeof(PCA));
+
+    return SetPCAParam(m_pca2, mean, eval, evec);
+}
+
+
+bool CParam2::SaveParam(FCWS__Para2* param)
+{
+    if (!param)
+        return false;
+
+    if (param->pca)
+    {
+        free(param->pca);
+        param->pca = NULL;
+    }
+
+    if (param->pca2)
+    {
+        free(param->pca2);
+        param->pca2 = NULL;
+    }
+
+    if (param->ica)
+    {
+        free(param->ica);
+        param->ica = NULL;
+    }
+
+    // Even if there is no any data for this param, it MUST allocate memory & initialize
+    // for this param & all members.
+    // It can not free memory on this param & all members.
+    if ((param->pca = (FCWS__Para2__Pca*)malloc(sizeof(FCWS__Para2__Pca))) == NULL)
+        return false;
+
+    fcws__para2__pca__init(param->pca);
+
+    if ((param->pca2 = (FCWS__Para2__Pca*)malloc(sizeof(FCWS__Para2__Pca))) == NULL)
+       return false;
+
+    fcws__para2__pca__init(param->pca2);
+
+    if ((param->ica = (FCWS__Para2__Ica*)malloc(sizeof(FCWS__Para2__Ica))) == NULL)
+        return false;
+
+    fcws__para2__ica__init(param->ica);
+
+    InitAndSetPCAMember(param->pca, m_pca);
+    
+    InitAndSetPCAMember(param->pca2, m_pca2);
+
+    InitAndSetICAMember(param->ica, m_pca);
+
+    return true;
+}
+
+
+bool CParam2::LoadParam(FCWS__Para2* param)
+{
+    if (!param || !param->pca || !param->pca2)
+        return false;
+
+    if (!param->pca->mean_size || !param->pca->eval_size ||
+        !param->pca->evec_size1 || !param->pca->evec_size2)
+        return false;
+
+    if (!param->pca2->mean_size || !param->pca2->eval_size ||
+        !param->pca2->evec_size1 || !param->pca2->evec_size2)
+        return false;
+
+    int i, j;
+    int size1, size2;
+    
+    // PCA
+    if ((m_pca = (PCA*)malloc(sizeof(PCA))) == NULL)
+        return false;
+
+    // Mean
+    size1 = param->pca->mean_size;
+
+    if ((m_pca->mean_data = gsl_vector_alloc(size1)) == NULL)
+        return false;
+    
+    m_pca->mean_size = size1;
+    for (i=0 ; i<size1 ; i++)
+        gsl_vector_set(m_pca->mean_data, i, param->pca->mean_data[i]);
+    
+    //Eval 
+    size1 = param->pca->eval_size;
+
+    if ((m_pca->eval_data = gsl_vector_alloc(size1)) == NULL)
+        return false;
+    
+    m_pca->eval_size = size1;
+    for (i=0 ; i<size1 ; i++)
+        gsl_vector_set(m_pca->eval_data, i, param->pca->eval_data[i]);
+
+    //Evec
+    size1 = param->pca->evec_size1;
+    size2 = param->pca->evec_size2;
+
+    if ((m_pca->evec_data = gsl_matrix_alloc(size1, size2)) == NULL)
+        return false;
+
+    m_pca->evec_size1 = size1;
+    m_pca->evec_size2 = size2;
+    for (i=0 ; i<size1 ; i++)
+        for (j=0 ; j<size2 ; j++)
+            gsl_matrix_set(m_pca->evec_data, i, j, param->pca->evec_data[i * size2 + j]);
+
+    // PCA2
+    if ((m_pca2 = (PCA*)malloc(sizeof(PCA))) == NULL)
+        return false;
+
+    // Mean
+    size1 = param->pca2->mean_size;
+
+    if ((m_pca2->mean_data = gsl_vector_alloc(size1)) == NULL)
+        return false;
+    
+    m_pca2->mean_size = size1;
+    for (i=0 ; i<size1 ; i++)
+        gsl_vector_set(m_pca2->mean_data, i, param->pca2->mean_data[i]);
+    
+    //Eval 
+    size1 = param->pca2->eval_size;
+
+    if ((m_pca2->eval_data = gsl_vector_alloc(size1)) == NULL)
+        return false;
+    
+    m_pca2->eval_size = size1;
+    for (i=0 ; i<size1 ; i++)
+        gsl_vector_set(m_pca2->eval_data, i, param->pca2->eval_data[i]);
+
+    //Evec
+    size1 = param->pca2->evec_size1;
+    size2 = param->pca2->evec_size2;
+
+    if ((m_pca2->evec_data = gsl_matrix_alloc(size1, size2)) == NULL)
+        return false;
+
+    m_pca2->evec_size1 = size1;
+    m_pca2->evec_size2 = size2;
+    for (i=0 ; i<size1 ; i++)
+        for (j=0 ; j<size2 ; j++)
+            gsl_matrix_set(m_pca2->evec_data, i, j, param->pca2->evec_data[i * size2 + j]);
+
+    return true;
+}
+
+//-----------------------------------------------------------------------------------
+bool CParam2::SetPCAParam(PCA *pca, gsl_vector* mean, gsl_vector* eval, gsl_matrix* evec)
+{
+    if (!pca || !mean || !eval || !evec)
+        return false;
+
+    //Mean
+    if (pca->mean_data)
+    {
+        gsl_vector_free(pca->mean_data);
+        pca->mean_data = NULL;
+    }
+
+    if ((pca->mean_data = gsl_vector_alloc(mean->size)) == NULL)
+    {
+        goto fail;
+    }
+
+    pca->mean_size = mean->size;
+    gsl_vector_memcpy(pca->mean_data, mean);
+
+    //Eval
+    if (pca->eval_data)
+    {
+        gsl_vector_free(pca->eval_data);
+        pca->eval_data = NULL;
+    }
+
+    if ((pca->eval_data = gsl_vector_alloc(eval->size)) == NULL)
+    {
+        goto fail;
+    }
+
+    pca->eval_size = eval->size;
+    gsl_vector_memcpy(pca->eval_data, eval);
+
+    //Evec
+    if (pca->evec_data)
+    {
+        gsl_matrix_free(pca->evec_data);
+        pca->evec_data = NULL;
+    }
+
+    if ((pca->evec_data = gsl_matrix_alloc(evec->size1, evec->size2)) == NULL)
+    {
+        goto fail;
+    }
+
+    pca->evec_size1 = evec->size1;
+    pca->evec_size2 = evec->size2;
+    gsl_matrix_memcpy(pca->evec_data, evec);
+
+    return true;
+
+fail:
+
+    if (pca->mean_data)
+    {
+        gsl_vector_free(pca->mean_data);
+        pca->mean_data = NULL;
+    }
+
+    if (pca->eval_data)
+    {
+        gsl_vector_free(pca->eval_data);
+        pca->eval_data = NULL;
+    }
+
+    if (pca->evec_data)
+    {
+        gsl_matrix_free(pca->evec_data);
+        pca->evec_data = NULL;
+    }
+
+    return false;
+}
+
+bool CParam2::InitAndSetPCAMember(FCWS__Para2__Pca *pca, PCA *mpca)
+{
+    if(!pca || !mpca || !mpca->mean_data || !mpca->eval_data || !mpca->evec_data)
+        return false;
+
+    int i, j;
+    int size1, size2;
+
+    //Mean
+    size1 = pca->mean_size = pca->n_mean_data = mpca->mean_size;
+
+    if ((pca->mean_data = (double*)malloc(sizeof(double) * size1)) == NULL)
+        goto fail;
+
+    for (i=0 ; i<size1 ; i++)
+        pca->mean_data[i] = gsl_vector_get(mpca->mean_data, i);
+
+    //Eval
+    size1 = pca->eval_size = pca->n_eval_data = mpca->eval_size;
+
+    if ((pca->eval_data = (double*)malloc(sizeof(double) * size1)) == NULL)
+        goto fail;
+
+    for (i=0 ; i<size1 ; i++)
+        pca->eval_data[i] = gsl_vector_get(mpca->eval_data, i);
+
+    //Evec
+    size1 = pca->evec_size1 = mpca->evec_size1;
+    size2 = pca->evec_size2 = mpca->evec_size2;
+    pca->n_evec_data = size1 * size2;
+
+    if ((pca->evec_data = (double*)malloc(sizeof(double) * size1 * size2)) == NULL)
+        goto fail;
+
+    for (i=0 ; i<size1 ; i++)
+        for (j=0 ; j<size2 ; j++)
+            pca->evec_data[i * size2 + j] = gsl_matrix_get(mpca->evec_data, i, j);
+
+    return true;
+
+fail:
+    
+    if (pca->mean_data)
+    {
+        free(pca->mean_data);
+        pca->mean_data = NULL;
+    }
+
+    if (pca->eval_data)
+    {
+        free(pca->eval_data);
+        pca->eval_data = NULL;
+    }
+
+    if (pca->evec_data)
+    {
+        free(pca->evec_data);
+        pca->evec_data = NULL;
+    }
+
+    return false;
+}
+
+bool CParam2::InitAndSetICAMember(FCWS__Para2__Ica *ica, PCA *mpca)
+{
+    if (!ica || !mpca)
+        return false;
+
+
+    return true;
+
+fail:
+    
+
+    return false;
+}
 
 // Para ------------------------------------------------------------------------------
 CParam::CParam(FCWS__Para__Type para_type)
@@ -68,6 +452,7 @@ int CParam::SetParam(FCWS__Para__Type type, gsl_matrix *from)
 
 	return 0;
 }
+
 
 bool CParam::SaveParam(FCWS__Para *param)
 {
@@ -141,3 +526,11 @@ double CParam::GetData(int row, int col)
 //{
 //	return this;
 //}
+
+
+
+
+
+
+
+//---------------------------------------------------------------------

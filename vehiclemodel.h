@@ -29,12 +29,18 @@ public:
 		~CVehicleModel();
 
 		int	StartTrainingThreads();
+        
+		int	StartDetectionThreads();
 
 		int SetParam(FCWS__VehicleModel__Type vm_type, FCWS__Local__Type local_type, FCWS__Para__Type para_type, gsl_matrix *from);
 
 		int LoadParam(FCWS__VehicleModel__Type vm_type, FCWS__Local__Type local_type, FCWS__Para__Type para_type, int rows, int cols, double *from);
+        
+		bool LoadParam(FCWS__VehicleModel__Type vm_type, FCWS__Local__Type local_type, FCWS__Para2* param);
 
 		bool SaveParam(FCWS__Local__Type local_type, FCWS__Para__Type para_type, FCWS__Para *param);
+
+        bool SaveParam(FCWS__Local__Type local_type, FCWS__Para2* para);
 
 		void SetPCAAndICAComponents(int pca_first_k_components, int pca_compoments_offset, int ica_first_k_components, int ica_compoments_offset);
 
@@ -46,6 +52,8 @@ public:
 
 protected:
 		static void* TrainingProcess(void* arg);
+
+        static void* DetectionProcess(void *arg);
 
 		static void* MonitorThread(void* arg);
 

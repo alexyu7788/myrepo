@@ -13,7 +13,6 @@
 
 CLocalFeature::CLocalFeature(FCWS__VehicleModel__Type vm_type, FCWS__Local__Type local_type)
 {
-//	m_output_folder = NULL;
 	m_output_folder.clear();
 
 	m_vm_name = strdup(search_vehicle_model_pattern[vm_type]);
@@ -29,14 +28,17 @@ CLocalFeature::CLocalFeature(FCWS__VehicleModel__Type vm_type, FCWS__Local__Type
 		m_para[i] = new CParam((FCWS__Para__Type)i);
 	}
 
+    m_has_param                 = false;
+    m_para2                     = new CParam2();
+
 	m_pca_first_k_components 	=
 	m_pca_compoments_offset 	=
 	m_ica_first_k_components 	=
 	m_ica_compoments_offset 	= 0;
 
-	image_w = 0;
-	image_h = 0;
-	m_image_matrix = NULL;
+	image_w                     = 0;
+	image_h                     = 0;
+	m_image_matrix              = NULL;
 
 	m_covar 					=
 	m_evec 						=
@@ -76,6 +78,12 @@ CLocalFeature::~CLocalFeature()
 			m_para[i] = NULL;
 		}
 	}
+
+    if (m_para2)
+    {
+        delete m_para2;
+        m_para2 = NULL;
+    }
 
 	if (m_image_matrix)
 		gsl_matrix_free(m_image_matrix);
@@ -128,6 +136,11 @@ CLocalFeature::~CLocalFeature()
 
 }
 
+bool CLocalFeature::HasParam()
+{
+    return m_has_param;
+}
+
 int CLocalFeature::SetParam(FCWS__Local__Type local_type, FCWS__Para__Type para_type, gsl_matrix *from)
 {
 	assert(from != NULL);
@@ -170,6 +183,25 @@ int CLocalFeature::LoadParam(FCWS__Local__Type local_type, FCWS__Para__Type para
 	return 0;
 }
 
+bool CLocalFeature::LoadParam(FCWS__Local__Type local_type, FCWS__Para2* param)
+{
+    if (!param)
+        return false;
+
+	m_local_type = local_type;
+
+    if (m_para2)
+    {
+        delete m_para2;
+        m_para2 = NULL;
+    }
+
+    m_para2 = new CParam2();
+    m_has_param = m_para2->LoadParam(param);
+    
+    return m_has_param;
+}
+
 int CLocalFeature::SetParam(FCWS__Para__Type para_type, gsl_matrix *from)
 {
 	assert(from != NULL);
@@ -208,12 +240,37 @@ int CLocalFeature::LoadParam(FCWS__Para__Type para_type, int rows, int cols, dou
 	return 0;
 }
 
+bool CLocalFeature::LoadParam(FCWS__Para2* param)
+{
+
+    if (!param)
+        return false;
+
+    if (m_para2)
+    {
+        delete m_para2;
+        m_para2 = NULL;
+    }
+
+    m_para2 = new CParam2();
+
+    return m_para2->LoadParam(param);
+}
+
 bool CLocalFeature::SaveParam(FCWS__Para__Type para_type, FCWS__Para *param)
 {
 	if (m_para[para_type])
 		return m_para[para_type]->SaveParam(param);
 
 	return false;
+}
+
+bool CLocalFeature::SaveParam(FCWS__Para2 *param)
+{
+    if (m_para2)
+        return m_para2->SaveParam(param);
+
+    return false;
 }
 
 void CLocalFeature::SetPCAAndICAComponents(int pca_first_k_components, int pca_compoments_offset, int ica_first_k_components, int ica_compoments_offset)
@@ -334,11 +391,13 @@ int CLocalFeature::DoTraining()
 				search_local_model_pattern[m_local_type],
 				search_vehicle_model_pattern[m_vm_type]);
 
-		WriteBackMatrixToImages(m_reconstruction, "recontruct");
-		SetParam(FCWS__PARA__TYPE__PCA, &m_FirstKEigVector.matrix);
+		//WriteBackMatrixToImages(m_reconstruction, "recontruct");
+//		SetParam(FCWS__PARA__TYPE__PCA, &m_FirstKEigVector.matrix);
 
-		if (0 && ret == GSL_SUCCESS)
+		if (ret == GSL_SUCCESS)
 		{
+            SetPCAParam(m_mean, m_eval, &m_FirstKEigVector.matrix);
+
 			// PCA of residual images.
 			ret = PCA(m_residual,
 				  &m_residual_mean,
@@ -353,33 +412,34 @@ int CLocalFeature::DoTraining()
 				  &m_residual_residual
 				);
 
-			WriteBackMatrixToImages(m_residual_reconstruction, "residual_recontruct");
-			SetParam(FCWS__PARA__TYPE__PCA2, &m_residual_FirstKEigVector.matrix);
+			//WriteBackMatrixToImages(m_residual_reconstruction, "residual_recontruct");
+			//SetParam(FCWS__PARA__TYPE__PCA2, &m_residual_FirstKEigVector.matrix);
 
 			if (ret == GSL_SUCCESS)
 			{
+                SetPCA2Param(m_residual_mean, m_residual_eval, &m_residual_FirstKEigVector.matrix);
 				printf("2nd-order PCA of %s of %s is done.\n",
 						search_local_model_pattern[m_local_type],
 						search_vehicle_model_pattern[m_vm_type]);
 
-				int compc = 2;
-				gsl_matrix *K, *W, *A, *S;
-
-				rows = m_residual_FirstKEigVector.matrix.size1;
-				cols = m_residual_FirstKEigVector.matrix.size2;
-
-				K = gsl_matrix_alloc(cols, compc);
-				W = gsl_matrix_alloc(compc, compc);
-				A = gsl_matrix_alloc(compc, compc);
-				S = gsl_matrix_alloc(rows, cols);
-
-				ret = FastICA(&m_residual_FirstKEigVector.matrix, compc, K, W, A, S);
-
-				printf("FastICA of %s of %s is done.\n",
-						search_local_model_pattern[m_local_type],
-						search_vehicle_model_pattern[m_vm_type]);
-
-				SetParam(FCWS__PARA__TYPE__ICA, S);
+//				int compc = 2;
+				gsl_matrix *K = NULL, *W = NULL, *A = NULL, *S = NULL;
+//
+//				rows = m_residual_FirstKEigVector.matrix.size1;
+//				cols = m_residual_FirstKEigVector.matrix.size2;
+//
+//				K = gsl_matrix_alloc(cols, compc);
+//				W = gsl_matrix_alloc(compc, compc);
+//				A = gsl_matrix_alloc(compc, compc);
+//				S = gsl_matrix_alloc(rows, cols);
+//
+//				ret = FastICA(&m_residual_FirstKEigVector.matrix, compc, K, W, A, S);
+//
+//				printf("FastICA of %s of %s is done.\n",
+//						search_local_model_pattern[m_local_type],
+//						search_vehicle_model_pattern[m_vm_type]);
+//
+//				SetParam(FCWS__PARA__TYPE__ICA, S);
 
 //				WriteBackMatrixToImages(m_reconstruction, "recontruct");
 //				WriteBackMatrixToImages(m_residual_reconstruction, "residual_recontruct");
@@ -422,9 +482,31 @@ int CLocalFeature::DoTraining()
 	return ret;
 }
 
+int CLocalFeature::DoDetection()
+{
+
+}
 
 
 
+
+
+//-------------------------------------------------------------------
+bool CLocalFeature::SetPCAParam(gsl_vector *mean, gsl_vector *eval, gsl_matrix *evec)
+{
+    if (!m_para2 || !mean || !eval || !evec)
+        return false;
+
+    return m_para2->SetPCAParam(mean, eval, evec);
+}
+
+bool CLocalFeature::SetPCA2Param(gsl_vector *mean, gsl_vector *eval, gsl_matrix *evec)
+{
+    if (!m_para2 || !mean || !eval || !evec)
+        return false;
+    
+    return m_para2->SetPCA2Param(mean, eval, evec);
+}
 
 int	CLocalFeature::GenImageMat()
 {

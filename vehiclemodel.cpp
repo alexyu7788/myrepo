@@ -75,6 +75,46 @@ int CVehicleModel::StartTrainingThreads()
 	return 0;
 }
 
+int CVehicleModel::StartDetectionThreads()
+{
+	// pthread_cond_init(&m_Cond, NULL);
+	// pthread_mutex_init(&m_Mutex, NULL);
+
+	m_finishtrain = 0;
+
+	pthread_create(&m_monitor_thread, NULL, MonitorThread, this);
+
+	// Start Training Threads.
+	for (int i=0 ; i<FCWS__LOCAL__TYPE__TOTAL ; i++)
+	{
+        printf("Has Param %d\n", m_local_feature[i]->HasParam());
+		if (m_local_feature[i] && m_local_feature[i]->HasParam())
+        {
+            printf("%s %d\n", __func__, __LINE__);
+			pthread_create(&m_thread[i], NULL, TrainingProcess, m_local_feature[i]);
+        }
+	}
+
+	// Join Training Threads.
+	for (int i=0 ; i<FCWS__LOCAL__TYPE__TOTAL ; i++)
+	{
+		if (m_thread[i])
+        {
+
+            printf("%s %d\n", __func__, __LINE__);
+			pthread_join(m_thread[i], NULL);
+        }
+	}
+
+	m_finishtrain = 1;
+
+	pthread_join(m_monitor_thread, NULL);
+
+	// printf("[VehicleModel::Training Down %d] done\n", m_vm_type);
+
+	return 0;
+}
+
 int CVehicleModel::SetParam(FCWS__VehicleModel__Type vm_type, FCWS__Local__Type local_type, FCWS__Para__Type para_type, gsl_matrix *from)
 {
 	assert(from != NULL);
@@ -128,6 +168,24 @@ int CVehicleModel::LoadParam(FCWS__VehicleModel__Type vm_type, FCWS__Local__Type
 	return 0;
 }
 
+bool CVehicleModel::LoadParam(FCWS__VehicleModel__Type vm_type, FCWS__Local__Type local_type, FCWS__Para2* param)
+{
+    if (!param)
+        return false;
+
+    m_vm_type = vm_type;
+
+	if (m_local_feature[local_type] == NULL)
+	{
+		m_local_feature[local_type] = new CLocalFeature(m_vm_type, local_type);
+		return m_local_feature[local_type]->LoadParam(local_type, param);
+	}
+	else
+	{
+		return m_local_feature[local_type]->LoadParam(param);
+	}
+}
+
 bool CVehicleModel::SaveParam(FCWS__Local__Type local_type, FCWS__Para__Type para_type, FCWS__Para *param)
 {
 	if (m_local_feature[local_type])
@@ -135,6 +193,29 @@ bool CVehicleModel::SaveParam(FCWS__Local__Type local_type, FCWS__Para__Type par
 
 	return false;
 }
+
+
+bool CVehicleModel::SaveParam(FCWS__Local__Type local_type, FCWS__Para2* para)
+{
+    if (m_local_feature[local_type])
+        return m_local_feature[local_type]->SaveParam(para);
+
+    return true;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 void CVehicleModel::SetPCAAndICAComponents(int pca_first_k_components, int pca_compoments_offset, int ica_first_k_components, int ica_compoments_offset)
 {
@@ -216,6 +297,19 @@ void* CVehicleModel::TrainingProcess(void *arg)
 	if (localmodel)
 	{
 		ret = localmodel->DoTraining();
+	}
+
+	return NULL;
+}
+
+void* CVehicleModel::DetectionProcess(void *arg)
+{
+	int ret = 0;
+	CLocalFeature* localmodel = (CLocalFeature*)arg;
+
+	if (localmodel)
+	{
+		ret = localmodel->DoDetection();
 	}
 
 	return NULL;

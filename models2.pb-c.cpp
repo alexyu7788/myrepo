@@ -7,6 +7,63 @@
 #endif
 
 #include "models2.pb-c.h"
+void   fcws__para2__pca__init
+                     (FCWS__Para2__Pca         *message)
+{
+  static const FCWS__Para2__Pca init_value = FCWS__PARA2__PCA__INIT;
+  *message = init_value;
+}
+void   fcws__para2__ica__init
+                     (FCWS__Para2__Ica         *message)
+{
+  static const FCWS__Para2__Ica init_value = FCWS__PARA2__ICA__INIT;
+  *message = init_value;
+}
+void   fcws__para2__init
+                     (FCWS__Para2         *message)
+{
+  static const FCWS__Para2 init_value = FCWS__PARA2__INIT;
+  *message = init_value;
+}
+size_t fcws__para2__get_packed_size
+                     (const FCWS__Para2 *message)
+{
+  assert(message->base.descriptor == &fcws__para2__descriptor);
+  return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
+}
+size_t fcws__para2__pack
+                     (const FCWS__Para2 *message,
+                      uint8_t       *out)
+{
+  assert(message->base.descriptor == &fcws__para2__descriptor);
+  return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
+}
+size_t fcws__para2__pack_to_buffer
+                     (const FCWS__Para2 *message,
+                      ProtobufCBuffer *buffer)
+{
+  assert(message->base.descriptor == &fcws__para2__descriptor);
+  return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
+}
+FCWS__Para2 *
+       fcws__para2__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data)
+{
+  return (FCWS__Para2 *)
+     protobuf_c_message_unpack (&fcws__para2__descriptor,
+                                allocator, len, data);
+}
+void   fcws__para2__free_unpacked
+                     (FCWS__Para2 *message,
+                      ProtobufCAllocator *allocator)
+{
+  if(!message)
+    return;
+  assert(message->base.descriptor == &fcws__para2__descriptor);
+  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
+}
 void   fcws__para__init
                      (FCWS__Para         *message)
 {
@@ -187,6 +244,224 @@ void   fcws__models__free_unpacked
   assert(message->base.descriptor == &fcws__models__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
+static const ProtobufCFieldDescriptor fcws__para2__pca__field_descriptors[7] =
+{
+  {
+    "mean_size",
+    1,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_INT32,
+    0,   /* quantifier_offset */
+    offsetof(FCWS__Para2__Pca, mean_size),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "mean_data",
+    2,
+    PROTOBUF_C_LABEL_REPEATED,
+    PROTOBUF_C_TYPE_DOUBLE,
+    offsetof(FCWS__Para2__Pca, n_mean_data),
+    offsetof(FCWS__Para2__Pca, mean_data),
+    NULL,
+    NULL,
+    0 | PROTOBUF_C_FIELD_FLAG_PACKED,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "eval_size",
+    3,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_INT32,
+    0,   /* quantifier_offset */
+    offsetof(FCWS__Para2__Pca, eval_size),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "eval_data",
+    4,
+    PROTOBUF_C_LABEL_REPEATED,
+    PROTOBUF_C_TYPE_DOUBLE,
+    offsetof(FCWS__Para2__Pca, n_eval_data),
+    offsetof(FCWS__Para2__Pca, eval_data),
+    NULL,
+    NULL,
+    0 | PROTOBUF_C_FIELD_FLAG_PACKED,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "evec_size1",
+    5,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_INT32,
+    0,   /* quantifier_offset */
+    offsetof(FCWS__Para2__Pca, evec_size1),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "evec_size2",
+    6,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_INT32,
+    0,   /* quantifier_offset */
+    offsetof(FCWS__Para2__Pca, evec_size2),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "evec_data",
+    7,
+    PROTOBUF_C_LABEL_REPEATED,
+    PROTOBUF_C_TYPE_DOUBLE,
+    offsetof(FCWS__Para2__Pca, n_evec_data),
+    offsetof(FCWS__Para2__Pca, evec_data),
+    NULL,
+    NULL,
+    0 | PROTOBUF_C_FIELD_FLAG_PACKED,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+};
+static const unsigned fcws__para2__pca__field_indices_by_name[] = {
+  3,   /* field[3] = eval_data */
+  2,   /* field[2] = eval_size */
+  6,   /* field[6] = evec_data */
+  4,   /* field[4] = evec_size1 */
+  5,   /* field[5] = evec_size2 */
+  1,   /* field[1] = mean_data */
+  0,   /* field[0] = mean_size */
+};
+static const ProtobufCIntRange fcws__para2__pca__number_ranges[1 + 1] =
+{
+  { 1, 0 },
+  { 0, 7 }
+};
+const ProtobufCMessageDescriptor fcws__para2__pca__descriptor =
+{
+  PROTOBUF_C__MESSAGE_DESCRIPTOR_MAGIC,
+  "FCWS.Para2.Pca",
+  "Pca",
+  "FCWS__Para2__Pca",
+  "FCWS",
+  sizeof(FCWS__Para2__Pca),
+  7,
+  fcws__para2__pca__field_descriptors,
+  fcws__para2__pca__field_indices_by_name,
+  1,  fcws__para2__pca__number_ranges,
+  (ProtobufCMessageInit) fcws__para2__pca__init,
+  NULL,NULL,NULL    /* reserved[123] */
+};
+static const ProtobufCFieldDescriptor fcws__para2__ica__field_descriptors[1] =
+{
+  {
+    "test",
+    1,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_INT32,
+    0,   /* quantifier_offset */
+    offsetof(FCWS__Para2__Ica, test),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+};
+static const unsigned fcws__para2__ica__field_indices_by_name[] = {
+  0,   /* field[0] = test */
+};
+static const ProtobufCIntRange fcws__para2__ica__number_ranges[1 + 1] =
+{
+  { 1, 0 },
+  { 0, 1 }
+};
+const ProtobufCMessageDescriptor fcws__para2__ica__descriptor =
+{
+  PROTOBUF_C__MESSAGE_DESCRIPTOR_MAGIC,
+  "FCWS.Para2.Ica",
+  "Ica",
+  "FCWS__Para2__Ica",
+  "FCWS",
+  sizeof(FCWS__Para2__Ica),
+  1,
+  fcws__para2__ica__field_descriptors,
+  fcws__para2__ica__field_indices_by_name,
+  1,  fcws__para2__ica__number_ranges,
+  (ProtobufCMessageInit) fcws__para2__ica__init,
+  NULL,NULL,NULL    /* reserved[123] */
+};
+static const ProtobufCFieldDescriptor fcws__para2__field_descriptors[3] =
+{
+  {
+    "pca",
+    1,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_MESSAGE,
+    0,   /* quantifier_offset */
+    offsetof(FCWS__Para2, pca),
+    &fcws__para2__pca__descriptor,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "pca2",
+    2,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_MESSAGE,
+    0,   /* quantifier_offset */
+    offsetof(FCWS__Para2, pca2),
+    &fcws__para2__pca__descriptor,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "ica",
+    3,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_MESSAGE,
+    0,   /* quantifier_offset */
+    offsetof(FCWS__Para2, ica),
+    &fcws__para2__ica__descriptor,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+};
+static const unsigned fcws__para2__field_indices_by_name[] = {
+  2,   /* field[2] = ica */
+  0,   /* field[0] = pca */
+  1,   /* field[1] = pca2 */
+};
+static const ProtobufCIntRange fcws__para2__number_ranges[1 + 1] =
+{
+  { 1, 0 },
+  { 0, 3 }
+};
+const ProtobufCMessageDescriptor fcws__para2__descriptor =
+{
+  PROTOBUF_C__MESSAGE_DESCRIPTOR_MAGIC,
+  "FCWS.Para2",
+  "Para2",
+  "FCWS__Para2",
+  "FCWS",
+  sizeof(FCWS__Para2),
+  3,
+  fcws__para2__field_descriptors,
+  fcws__para2__field_indices_by_name,
+  1,  fcws__para2__number_ranges,
+  (ProtobufCMessageInit) fcws__para2__init,
+  NULL,NULL,NULL    /* reserved[123] */
+};
 static const ProtobufCEnumValue fcws__para__type__enum_values_by_number[5] =
 {
   { "UnKonwn", "FCWS__PARA__TYPE__UnKonwn", -1 },
@@ -334,7 +609,7 @@ const ProtobufCEnumDescriptor fcws__local__type__descriptor =
   NULL,NULL,NULL,NULL   /* reserved[1234] */
 };
 static const FCWS__Local__Type fcws__local__local__default_value = FCWS__LOCAL__TYPE__UnKonwn;
-static const ProtobufCFieldDescriptor fcws__local__field_descriptors[2] =
+static const ProtobufCFieldDescriptor fcws__local__field_descriptors[3] =
 {
   {
     "local",
@@ -360,15 +635,28 @@ static const ProtobufCFieldDescriptor fcws__local__field_descriptors[2] =
     0,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
+  {
+    "para2",
+    3,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_MESSAGE,
+    0,   /* quantifier_offset */
+    offsetof(FCWS__Local, para2),
+    &fcws__para2__descriptor,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
 };
 static const unsigned fcws__local__field_indices_by_name[] = {
   0,   /* field[0] = local */
   1,   /* field[1] = para */
+  2,   /* field[2] = para2 */
 };
 static const ProtobufCIntRange fcws__local__number_ranges[1 + 1] =
 {
   { 1, 0 },
-  { 0, 2 }
+  { 0, 3 }
 };
 const ProtobufCMessageDescriptor fcws__local__descriptor =
 {
@@ -378,7 +666,7 @@ const ProtobufCMessageDescriptor fcws__local__descriptor =
   "FCWS__Local",
   "FCWS",
   sizeof(FCWS__Local),
-  2,
+  3,
   fcws__local__field_descriptors,
   fcws__local__field_indices_by_name,
   1,  fcws__local__number_ranges,

@@ -69,7 +69,7 @@ int FCWS::LoadModel(string model_name)
 	fseek(fd, 0, SEEK_END);
 	len = ftell(fd);
 	rewind(fd);
-//	printf("len %d\n", len);
+	//printf("len %d\n", len);
 
 	if ((buf = (uint8_t*)malloc(sizeof(uint8_t)*len)) == NULL)
 	{
@@ -121,6 +121,18 @@ int FCWS::LoadModel(string model_name)
 								}
 							}
 						}
+
+                        printf("Loading %s of %s.\n",
+                                search_local_model_pattern[local_type],
+                                search_vehicle_model_pattern[vm_type]);
+                        m_vm[vm_type]->LoadParam(vm_type, local_type, models->vm[i]->local[j]->para2);
+
+                        //printf("%d, %d, (%d,%d)\n",
+                        //    models->vm[i]->local[j]->para2->pca2->mean_size,
+                        //    models->vm[i]->local[j]->para2->pca2->eval_size,
+                        //    models->vm[i]->local[j]->para2->pca2->evec_size1,
+                        //    models->vm[i]->local[j]->para2->pca2->evec_size2);
+
 					}
 				}
 
@@ -156,7 +168,7 @@ int FCWS::SaveModel(string model_name)
 
 	int rtn = 0;
 	int i, j, k, rows, cols;
-	size_t len;
+	size_t len, wlen;
 	uint8_t *buf = NULL;
 	FILE *fd = NULL;
 	FCWS__Models models = FCWS__MODELS__INIT;
@@ -207,6 +219,24 @@ int FCWS::SaveModel(string model_name)
 							}
 						}
 					}
+
+					models.vm[i]->local[j]->para2 = (FCWS__Para2*)malloc(sizeof(FCWS__Para2));
+
+					if (models.vm[i]->local[j]->para2)
+					{
+						fcws__para2__init(models.vm[i]->local[j]->para2);
+
+						m_vm[i]->SaveParam((FCWS__Local__Type)j, models.vm[i]->local[j]->para2);
+//                        printf("Saving %s of %s.\n",
+//                                search_local_model_pattern[j],
+//                                search_vehicle_model_pattern[i]);
+//
+//                        printf("pca2=> %d,%d,(%d,%d)\n",
+//                                models.vm[i]->local[j]->para2->pca2->mean_size,
+//                                models.vm[i]->local[j]->para2->pca2->eval_size,
+//                                models.vm[i]->local[j]->para2->pca2->evec_size1,
+//                                models.vm[i]->local[j]->para2->pca2->evec_size2);
+					}
 				}
 			}
 		}
@@ -224,7 +254,10 @@ int FCWS::SaveModel(string model_name)
 	}
 
 	fseek(fd, 0, SEEK_SET);
-	fwrite(buf, 1, len, fd);
+	wlen = fwrite(buf, 1, len, fd);
+
+	if (wlen == len)
+		printf("[%s] Save %s successfully.\n", __func__, model_name.c_str());
 
 fail:
 
@@ -266,7 +299,6 @@ fail:
 		free(models.vm);
 	}
 
-	return rtn;
 	return rtn;
 }
 
@@ -385,16 +417,22 @@ int FCWS::DoTraining
 
 int FCWS::DoDectection(uint8_t *image, uint32_t width, uint32_t height)
 {
-	if (image == NULL || width == 0 || height == 0)
-		return -1;
+//	if (image == NULL || width == 0 || height == 0)
+//		return -1;
 
+	// Start training threads.
+	for (int i=0 ; i<FCWS__VEHICLE__MODEL__TYPE__TOTAL ; i++)
+	{
+		if (m_vm[i])
+			pthread_create(&m_threads[i], NULL, StartDetectionThreads, m_vm[i]);
+	}
 
-
-
-
-
-
-
+	// Join training threads.
+	for (int i=0 ; i<FCWS__VEHICLE__MODEL__TYPE__TOTAL ; i++)
+	{
+		if (m_threads[i])
+			pthread_join(m_threads[i], NULL);
+	}
 
 	return 0;
 }
@@ -404,6 +442,15 @@ void* FCWS::StartTrainingThreads(void *arg)
 	CVehicleModel* vm = (CVehicleModel*)arg;
 
 	vm->StartTrainingThreads();
+
+	return NULL;
+}
+
+void* FCWS::StartDetectionThreads(void *arg)
+{
+	CVehicleModel* vm = (CVehicleModel*)arg;
+
+	vm->StartDetectionThreads();
 
 	return NULL;
 }

@@ -55,6 +55,8 @@ protected:
 
 		static void* StartTrainingThreads(void *arg);
 
+		static void* StartDetectionThreads(void *arg);
+
 		void CreateOutputFolder(string out);
 };
 #endif

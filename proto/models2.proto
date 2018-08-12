@@ -2,6 +2,25 @@ syntax = "proto2";
 
 package FCWS;
 
+message Para2 {
+    message Pca {
+        required int32 mean_size = 1;
+        repeated double mean_data = 2 [packed =true];
+        required int32 eval_size = 3;
+        repeated double eval_data = 4 [packed = true];
+        required int32 evec_size1 = 5;
+        required int32 evec_size2 = 6;
+        repeated double evec_data = 7 [packed = true];
+    }
+
+    message Ica {
+        required int32 test = 1;
+    }
+
+    required Pca pca = 1;
+    required Pca pca2 = 2;
+    required Ica ica = 3;
+}
 
 message Para {
     enum Type {
@@ -29,6 +48,7 @@ message Local {
 
     required Type local = 1 [default = UnKonwn];
     repeated Para para = 2;
+    required Para2 para2 = 3;
 }
 
 /* vehicle model */

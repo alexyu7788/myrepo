@@ -45,13 +45,6 @@ void printf_usage()
 int main(int argc, char *argv[])
 {
     int i,j;
-//    FILE *list = NULL;
-//    char src[MAX_FN_L] = {0};
-//    int list_cnt = 0;
-//    uint8_t **img = NULL;
-//    uint8_t *img_mean = NULL;
-//    int16_t **covar = NULL;
-
     int ch;
     int file_cnt = 0;
     int w = 0,h = 0, first_k_coms = 0;
@@ -75,11 +68,9 @@ int main(int argc, char *argv[])
     	switch (ch)
     	{
     	case 's':
-//    		src_folder = optarg;
     		infolder = optarg;
     		break;
     	case 'o':
-//    		dst_folder = optarg;
     		outfolder = optarg;
     		break;
     	case 'd':
@@ -131,7 +122,7 @@ int main(int argc, char *argv[])
 			fcws->DoTraining(first_k_coms, 0, 0, 0, outfolder);
 			fcws->SaveModel(model_name);
 		}
-		else if (dodetection && fcws->LoadModel(model_name))
+		else if (dodetection && fcws->LoadModel(model_name) == 0)
 		{
 			fcws->DoDectection(NULL, 0, 0);
 		}
