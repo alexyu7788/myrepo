@@ -504,6 +504,15 @@ bool CLocalFeature::IsIdle()
     return m_detectiondone;
 }
 
+double CLocalFeature::GetScore()
+{
+    double score = 0.0;
+
+    pthread_mutex_lock(&m_Mutex);
+    score = m_detectionscore;
+    pthread_mutex_unlock(&m_Mutex);
+}
+
 int CLocalFeature::DoDetection()
 {
     m_detectionready = true;

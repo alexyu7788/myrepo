@@ -58,12 +58,13 @@ int main(int argc, char *argv[])
     string infolder, outfolder;
     string model_name;
     bool dotraining = false, dodetection = false;
+    bool debugwindow = false;
 
     infolder.clear();
     outfolder.clear();
     model_name.clear();
 
-    while ((ch = getopt(argc, argv, "s:d:o:k:m:TD")) != -1)
+    while ((ch = getopt(argc, argv, "s:d:o:k:m:TDw")) != -1)
     {
     	switch (ch)
     	{
@@ -90,6 +91,9 @@ int main(int argc, char *argv[])
     		dotraining = false;
     		dodetection = true;
     		break;
+        case 'w':
+            debugwindow = true;
+            break;
     	default:
     		exit(-1);
     	}
@@ -125,7 +129,8 @@ int main(int argc, char *argv[])
 		}
 		else if (dodetection && fcws->LoadModel(model_name) == 0)
 		{
-            fcws->InitDebugWindow("FCWS Detection", w, h);
+            if (debugwindow)
+                fcws->InitDebugWindow("FCWS Detection", w, h);
             fcws->InitDetection();
 
             img_y = (uint8_t*)malloc(sizeof(uint8_t) * ((w * h *3) >> 1));

@@ -33,7 +33,7 @@ protected:
 
         // debug window
         CMainWindow*            m_debugwindow;
-        pthread_t                m_event_thread; 
+        pthread_t               m_event_thread; 
 
 public:
 		FCWS();

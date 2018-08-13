@@ -432,11 +432,21 @@ int FCWS::DoTraining
 
 int FCWS::InitDetection()
 {
+    memset(m_threads, 0x0, sizeof(pthread_t) * FCWS__VEHICLE__MODEL__TYPE__TOTAL);
+
 	// Start detection threads.
 	for (int i=0 ; i<FCWS__VEHICLE__MODEL__TYPE__TOTAL ; i++)
 	{
 		if (m_vm[i])
-			pthread_create(&m_threads[i], NULL, StartDetectionThreads, m_vm[i]);
+        {
+            if (m_vm[i]->HasParam())
+                pthread_create(&m_threads[i], NULL, StartDetectionThreads, m_vm[i]);
+            else
+            {
+                delete m_vm[i];
+                m_vm[i] = NULL;
+            }
+        }
 	}
 
 	// Join detection threads.
@@ -451,6 +461,7 @@ int FCWS::InitDetection()
 
 int FCWS::DoDectection(uint8_t *image, uint32_t width, uint32_t height)
 {
+#if 0
 	if (image == NULL || width == 0 || height == 0)
 		return -1;
 
@@ -467,7 +478,7 @@ int FCWS::DoDectection(uint8_t *image, uint32_t width, uint32_t height)
 		if (m_threads[i])
 			pthread_join(m_threads[i], NULL);
 	}
-
+#endif
 	return 0;
 }
 

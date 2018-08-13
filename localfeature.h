@@ -109,9 +109,12 @@ public:
 
 		int DoTraining();
 
+        // Detection 
         bool DetectionReady();
 
         bool IsIdle();
+
+        double GetScore();
 
         int DoDetection();
 

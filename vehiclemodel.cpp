@@ -83,14 +83,14 @@ int CVehicleModel::StartDetectionThreads()
 
 	m_finish = false;
 
-	//pthread_create(&m_monitor_thread, NULL, DetectionMonitorThread, this);
+	pthread_create(&m_monitor_thread, NULL, DetectionMonitorThread, this);
 
     memset(m_thread, 0x0, sizeof(pthread_t) * FCWS__LOCAL__TYPE__TOTAL);
 
 	// Start Detection Threads.
 	for (int i=0 ; i<FCWS__LOCAL__TYPE__TOTAL ; i++)
 	{
-		if (m_local_feature[i] && m_local_feature[i]->HasParam())
+		if (m_local_feature[i])
         {
 			pthread_create(&m_thread[i], NULL, DetectionProcess, m_local_feature[i]);
         }
@@ -105,7 +105,7 @@ int CVehicleModel::StartDetectionThreads()
 
 	m_finish = true;
 
-	//pthread_join(m_monitor_thread, NULL);
+	pthread_join(m_monitor_thread, NULL);
 
 	// printf("[VehicleModel] Detection  %d is done\n", m_vm_type);
 
@@ -181,6 +181,21 @@ bool CVehicleModel::LoadParam(FCWS__VehicleModel__Type vm_type, FCWS__Local__Typ
 	{
 		return m_local_feature[local_type]->LoadParam(param);
 	}
+}
+
+bool CVehicleModel::HasParam()
+{
+    bool res = true;
+
+    for (int i=0 ; i<FCWS__LOCAL__TYPE__TOTAL ; i++)
+    {
+        if (m_local_feature[i])
+            res &= m_local_feature[i]->HasParam();
+        else
+            res = false;
+    }
+
+    return res;
 }
 
 bool CVehicleModel::SaveParam(FCWS__Local__Type local_type, FCWS__Para__Type para_type, FCWS__Para *param)
@@ -359,20 +374,12 @@ void* CVehicleModel::DetectionMonitorThread(void* arg)
 
 	while(!vm->m_finish)
 	{
-#if 0
-        isidle = true;
-
-        // Wait all local feature is done.
-        for (int i=0 ; i<FCWS__LOCAL__TYPE__TOTAL ; i++)
-            isidle &= vm->m_local_feature[i]->IsIdle();
-        
-        if (isidle == false)
+        // Wait all local features are finished.
+        if (vm->IsIdle() == false)
         {
-            printf("vm %d is busy\n", vm->m_vm_type);
-            isidle = true;
+            usleep(10000);
             continue;
         }
-#endif
 
         // Trigger local detection.
         for (int i=0 ; i<FCWS__LOCAL__TYPE__TOTAL ; i++)
@@ -384,19 +391,42 @@ void* CVehicleModel::DetectionMonitorThread(void* arg)
         // Wait all local features are finished.
         while (!vm->m_finish)
         {
-            isidle = true;
+            //isidle = true;
 
-            for (int i=0 ; i<FCWS__LOCAL__TYPE__TOTAL ; i++)
-                isidle &= vm->m_local_feature[i]->IsIdle();
+            //for (int i=0 ; i<FCWS__LOCAL__TYPE__TOTAL ; i++)
+            //    isidle &= vm->m_local_feature[i]->IsIdle();
 
-            if (isidle)
+            if (vm->IsIdle())
                 break;
-            else
-                printf("vm %s is busy\n\n", search_vehicle_model_pattern[vm->m_vm_type]);
+            //else
+            //    printf("vm %s is busy\n\n", search_vehicle_model_pattern[vm->m_vm_type]);
 
-            usleep(100000);
+            usleep(10000);
+        }
+
+        printf("vm %s score: \n", search_vehicle_model_pattern[vm->m_vm_type]);
+        for (int i=0 ; i<FCWS__LOCAL__TYPE__TOTAL ; i++)
+        {
+            if (vm->m_thread[i])
+                printf("score %lf\n", vm->m_local_feature[i]->GetScore());
         }
 	}
 
 	return NULL;
+}
+
+bool CVehicleModel::IsIdle()
+{
+    bool res = true;
+
+    for (int i=0 ; i<FCWS__LOCAL__TYPE__TOTAL ; i++)
+    {
+        if (m_local_feature[i])
+            res &= m_local_feature[i]->IsIdle();
+        else
+            res = false;
+
+    }
+
+    return res;
 }

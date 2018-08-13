@@ -40,6 +40,8 @@ public:
         
 		bool LoadParam(FCWS__VehicleModel__Type vm_type, FCWS__Local__Type local_type, FCWS__Para2* param);
 
+        bool HasParam();
+
 		bool SaveParam(FCWS__Local__Type local_type, FCWS__Para__Type para_type, FCWS__Para *param);
 
         bool SaveParam(FCWS__Local__Type local_type, FCWS__Para2* para);
@@ -63,5 +65,6 @@ protected:
 
         static void* DetectionMonitorThread(void* arg);
 
+        bool IsIdle();
 };
 #endif
