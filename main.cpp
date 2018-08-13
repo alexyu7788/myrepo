@@ -113,6 +113,7 @@ int main(int argc, char *argv[])
     }
 
 #if 1
+    uint8_t *img_y = NULL;
 	FCWS *fcws = new FCWS();
 
 	if (fcws)
@@ -126,7 +127,11 @@ int main(int argc, char *argv[])
 		{
             fcws->InitDebugWindow("FCWS Detection", w, h);
             fcws->InitDetection();
-            //fcws->DoDectection(NULL, w, h);
+
+            img_y = (uint8_t*)malloc(sizeof(uint8_t) * ((w * h *3) >> 1));
+            memset(img_y, 128, ((w * h *3) >> 1));
+
+            fcws->DoDectection(img_y, w, h);
 		}
 
 		delete fcws;

@@ -451,8 +451,8 @@ int FCWS::InitDetection()
 
 int FCWS::DoDectection(uint8_t *image, uint32_t width, uint32_t height)
 {
-//	if (image == NULL || width == 0 || height == 0)
-//		return -1;
+	if (image == NULL || width == 0 || height == 0)
+		return -1;
 
 	// Start detection threads.
 	for (int i=0 ; i<FCWS__VEHICLE__MODEL__TYPE__TOTAL ; i++)
