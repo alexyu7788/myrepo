@@ -16,18 +16,24 @@
 
 #include "models2.pb-c.h"
 #include "vehiclemodel.h"
+#include "window.h"
 
 using namespace std;
 
 //Group of VehicleModel
 class FCWS {
 protected:
+        bool                    m_terminate;
 
 		vector<string>			m_filelist;
 		int m_vm_count;
 		CVehicleModel*			m_vm[FCWS__VEHICLE__MODEL__TYPE__TOTAL];
 		pthread_t 				m_threads[FCWS__VEHICLE__MODEL__TYPE__TOTAL];
 		FCWS__Models*			m_models;
+
+        // debug window
+        CMainWindow*            m_debugwindow;
+        pthread_t                m_event_thread; 
 
 public:
 		FCWS();
@@ -48,7 +54,12 @@ public:
 					   int ica_compoments_offset,
 					   string output_folder);
 
+        int InitDetection();
+
 		int DoDectection(uint8_t *image, uint32_t width, uint32_t height);
+
+        // debug window
+        bool InitDebugWindow(string title, int w, int h);
 
 protected:
 		int Init();
@@ -58,5 +69,9 @@ protected:
 		static void* StartDetectionThreads(void *arg);
 
 		void CreateOutputFolder(string out);
+
+        // debug window
+        static void* DWProcessEvent(void* arg);
+
 };
 #endif

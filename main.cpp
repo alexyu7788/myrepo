@@ -124,7 +124,9 @@ int main(int argc, char *argv[])
 		}
 		else if (dodetection && fcws->LoadModel(model_name) == 0)
 		{
-			fcws->DoDectection(NULL, 0, 0);
+            fcws->InitDebugWindow("FCWS Detection", w, h);
+            fcws->InitDetection();
+            //fcws->DoDectection(NULL, w, h);
 		}
 
 		delete fcws;

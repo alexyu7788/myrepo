@@ -6,6 +6,7 @@
 #include <sys/time.h>
 #include <unistd.h>
 #include <dirent.h>
+#include <SDL.h>
 
 #include "fcws.h"
 #include "utility.h"
@@ -13,6 +14,7 @@
 //FCWS ------------------------------------------------------------------------------
 FCWS::FCWS()
 {
+    m_terminate = false;
 	m_vm_count = 0;
 
 	for (int i=FCWS__VEHICLE__MODEL__TYPE__Compact ; i<FCWS__VEHICLE__MODEL__TYPE__TOTAL ; i++)
@@ -40,6 +42,16 @@ FCWS::~FCWS()
 	}
 
 	m_filelist.clear();
+
+    if (m_debugwindow)
+    {
+        m_debugwindow->Terminate();
+
+        delete m_debugwindow;
+        m_debugwindow = NULL;
+    }
+    
+    m_terminate = true;
 }
 
 int FCWS::LoadModel(string model_name)
@@ -122,20 +134,23 @@ int FCWS::LoadModel(string model_name)
 							}
 						}
 
-                        printf("Loading %s of %s.\n",
-                                search_local_model_pattern[local_type],
-                                search_vehicle_model_pattern[vm_type]);
+                        //printf("Loading %s of %s.\n",
+                        //        search_local_model_pattern[local_type],
+                        //        search_vehicle_model_pattern[vm_type]);
                         m_vm[vm_type]->LoadParam(vm_type, local_type, models->vm[i]->local[j]->para2);
 
+                        //printf("%d, %d, (%d,%d)\n",
+                        //    models->vm[i]->local[j]->para2->pca->mean_size,
+                        //    models->vm[i]->local[j]->para2->pca->eval_size,
+                        //    models->vm[i]->local[j]->para2->pca->evec_size1,
+                        //    models->vm[i]->local[j]->para2->pca->evec_size2);
                         //printf("%d, %d, (%d,%d)\n",
                         //    models->vm[i]->local[j]->para2->pca2->mean_size,
                         //    models->vm[i]->local[j]->para2->pca2->eval_size,
                         //    models->vm[i]->local[j]->para2->pca2->evec_size1,
                         //    models->vm[i]->local[j]->para2->pca2->evec_size2);
-
 					}
 				}
-
 			}
 			else
 			{
@@ -415,19 +430,38 @@ int FCWS::DoTraining
 	return 0;
 }
 
-int FCWS::DoDectection(uint8_t *image, uint32_t width, uint32_t height)
+int FCWS::InitDetection()
 {
-//	if (image == NULL || width == 0 || height == 0)
-//		return -1;
-
-	// Start training threads.
+	// Start detection threads.
 	for (int i=0 ; i<FCWS__VEHICLE__MODEL__TYPE__TOTAL ; i++)
 	{
 		if (m_vm[i])
 			pthread_create(&m_threads[i], NULL, StartDetectionThreads, m_vm[i]);
 	}
 
-	// Join training threads.
+	// Join detection threads.
+	for (int i=0 ; i<FCWS__VEHICLE__MODEL__TYPE__TOTAL ; i++)
+	{
+		if (m_threads[i])
+			pthread_join(m_threads[i], NULL);
+	}
+
+    return 0;
+}
+
+int FCWS::DoDectection(uint8_t *image, uint32_t width, uint32_t height)
+{
+//	if (image == NULL || width == 0 || height == 0)
+//		return -1;
+
+	// Start detection threads.
+	for (int i=0 ; i<FCWS__VEHICLE__MODEL__TYPE__TOTAL ; i++)
+	{
+		if (m_vm[i])
+			pthread_create(&m_threads[i], NULL, StartDetectionThreads, m_vm[i]);
+	}
+
+	// Join detection threads.
 	for (int i=0 ; i<FCWS__VEHICLE__MODEL__TYPE__TOTAL ; i++)
 	{
 		if (m_threads[i])
@@ -435,6 +469,21 @@ int FCWS::DoDectection(uint8_t *image, uint32_t width, uint32_t height)
 	}
 
 	return 0;
+}
+
+bool FCWS::InitDebugWindow(string title, int w, int h)
+{
+    m_debugwindow = new CMainWindow(title, w, h);
+
+    if (!m_debugwindow)
+        return false;
+
+    if (m_debugwindow->Init() == false)
+        return false;
+
+    pthread_create(&m_event_thread, NULL, DWProcessEvent, this);
+
+    return true;
 }
 
 void* FCWS::StartTrainingThreads(void *arg)
@@ -469,7 +518,36 @@ void FCWS::CreateOutputFolder(string out)
 		mkdir(out.c_str(), S_IRWXU | S_IRWXG | S_IRWXO);
 }
 
+void* FCWS::DWProcessEvent(void* arg)
+{
+    FCWS* pThis = (FCWS*)arg;
 
+    pthread_detach(pthread_self());
+
+    while (!pThis->m_terminate)
+    {
+        if (pThis->m_debugwindow)
+        {
+            pThis->m_debugwindow->ProcessEvent();
+
+            if (pThis->m_debugwindow->IsQuit())
+            {
+                pThis->m_terminate = true;
+                pThis->m_debugwindow->Terminate();
+
+                for (int i=0 ; i<FCWS__VEHICLE__MODEL__TYPE__TOTAL ; i++)
+                {
+                    if (pThis->m_vm[i])
+                        pThis->m_vm[i]->Stop();
+                }
+            }
+        }
+
+        usleep(100000);
+    }
+
+    return NULL;
+}
 
 
 int FCWS::Init()

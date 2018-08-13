@@ -12,6 +12,9 @@ using namespace std;
 
 class CVehicleModel {
 protected:
+        bool                     m_terminate;
+		bool					 m_finish;
+
 		vector<string>			 m_filelist;
 		FCWS__VehicleModel__Type m_vm_type;
 		int						 m_local_feature_count;
@@ -21,7 +24,6 @@ protected:
 		pthread_cond_t	  		 m_Cond;
 		pthread_t				 m_thread[FCWS__LOCAL__TYPE__TOTAL];
 		pthread_t 				 m_monitor_thread;
-		int						 m_finishtrain;
 
 public:
 		CVehicleModel(FCWS__VehicleModel__Type vm_type);
@@ -48,14 +50,18 @@ public:
 
 		int PickUpFiles(vector<string> & feedin, int rows = 0, int cols = 0);
 
-		int FinishTraining();
+		bool FinishTraining();
+
+        void Stop();
 
 protected:
 		static void* TrainingProcess(void* arg);
 
         static void* DetectionProcess(void *arg);
 
-		static void* MonitorThread(void* arg);
+		static void* TrainingMonitorThread(void* arg);
+
+        static void* DetectionMonitorThread(void* arg);
 
 };
 #endif

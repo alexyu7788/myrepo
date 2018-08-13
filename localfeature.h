@@ -18,6 +18,8 @@ using namespace std;
 
 class CLocalFeature {
 protected:
+        bool                    m_terminate;
+
 		string					m_output_folder;
 
 		char*					m_vm_name;
@@ -46,6 +48,7 @@ protected:
 		gsl_matrix*				m_covar;
 		gsl_vector*				m_eval;
 		gsl_matrix*				m_evec;
+        gsl_vector_view         m_FirstKEval;
 		gsl_matrix_view 		m_FirstKEigVector;
 		gsl_matrix*				m_projection;
 		gsl_matrix*				m_reconstruction;
@@ -55,11 +58,18 @@ protected:
 		gsl_matrix*				m_residual_covar;
 		gsl_vector*				m_residual_eval;
 		gsl_matrix*				m_residual_evec;
+        gsl_vector_view         m_residual_FirstKEval;
 		gsl_matrix_view 		m_residual_FirstKEigVector;
 		gsl_matrix*				m_residual_projection;
 		gsl_matrix*				m_residual_reconstruction;
 		gsl_matrix*				m_residual_residual;
 
+        pthread_cond_t          m_Cond;
+        pthread_mutex_t         m_Mutex;
+
+        bool                    m_detectionready;
+        bool                    m_detectiondone;
+        double                  m_detectionscore;
 public:
 		CLocalFeature(FCWS__VehicleModel__Type vm_type, FCWS__Local__Type local_type);
 
@@ -99,7 +109,15 @@ public:
 
 		int DoTraining();
 
+        bool DetectionReady();
+
+        bool IsIdle();
+
         int DoDetection();
+
+        int TriggerDetection();
+
+        void Stop();
 
 protected:
         bool SetPCAParam(gsl_vector *mean, gsl_vector *eval, gsl_matrix *evec);
@@ -113,6 +131,8 @@ protected:
 		gsl_matrix* CalVariance(gsl_matrix *m, gsl_vector* mean);
 
 		int CalEigenSpace(gsl_matrix* covar, gsl_vector** eval, gsl_matrix** evec);
+
+        gsl_vector_view GetFirstKComponents(gsl_vector *eval, int firstk);
 
 		gsl_matrix_view GetFirstKComponents(gsl_matrix *evec, int firstk);
 
@@ -129,6 +149,7 @@ protected:
 				gsl_matrix **evec,
 				int first_k_comp,
 				int comp_offset,
+                gsl_vector_view *principle_eval,
 				gsl_matrix_view *principle_evec,
 				gsl_matrix **projection,
 				gsl_matrix **reconstruction_images,

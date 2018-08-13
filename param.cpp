@@ -1,4 +1,5 @@
 #include <string.h>
+#include <unistd.h>
 #include "param.h"
 
 CParam2::CParam2()
@@ -228,6 +229,51 @@ bool CParam2::LoadParam(FCWS__Para2* param)
             gsl_matrix_set(m_pca2->evec_data, i, j, param->pca2->evec_data[i * size2 + j]);
 
     return true;
+}
+
+#define PI 3.14159
+
+double CParam2::CalProbability()
+{
+    if (!m_pca || !m_pca->mean_size || !m_pca->eval_size || !m_pca->evec_size1 || !m_pca->evec_size2)
+        return 0;
+
+    if (!m_pca2 || !m_pca2->mean_size || !m_pca2->eval_size || !m_pca2->evec_size1 || !m_pca2->evec_size2)
+        return 0;
+
+    int i;
+    double numerator = 1, denominator = 1;
+    double res = 0, temp = 1;
+
+    // ---------------------PCA--------------------------------------------
+    // Denominator
+    for (i=0 ; i<m_pca->eval_size ; i++)
+        temp *= pow(gsl_vector_get(m_pca->eval_data, i), 0.5);
+
+    //printf("temp %lf, %lf\n", temp, pow( 2*PI , m_pca->eval_size * 0.5 ));
+    denominator = temp * pow( 2*PI , m_pca->eval_size * 0.5);
+    //printf("denominator %lf\n", denominator); 
+
+    // Numerator
+    temp = 0;
+    for (i=0 ; i<m_pca->eval_size ; i++)
+        temp += gsl_vector_get(m_pca->eval_data, i);
+
+    temp *= -0.5;
+    //printf("temp %lf\n", temp);
+    numerator = exp(20);
+    //printf("numerator %lf\n", numerator); 
+
+
+
+
+
+
+
+    res = numerator / denominator;
+    printf("res %lf\n", res);
+
+    return res;
 }
 
 //-----------------------------------------------------------------------------------

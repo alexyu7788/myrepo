@@ -13,6 +13,8 @@
 
 CLocalFeature::CLocalFeature(FCWS__VehicleModel__Type vm_type, FCWS__Local__Type local_type)
 {
+    m_terminate = false;
+
 	m_output_folder.clear();
 
 	m_vm_name = strdup(search_vehicle_model_pattern[vm_type]);
@@ -55,6 +57,13 @@ CLocalFeature::CLocalFeature(FCWS__VehicleModel__Type vm_type, FCWS__Local__Type
 	m_eval						=
 	m_residual_mean				=
 	m_residual_eval				= NULL;
+
+    pthread_cond_init(&m_Cond, NULL);
+    pthread_mutex_init(&m_Mutex, NULL);
+
+    m_detectionready            = false;
+    m_detectionscore            = 0.0;
+    m_detectiondone             = true;
 }
 
 CLocalFeature::~CLocalFeature()
@@ -253,8 +262,9 @@ bool CLocalFeature::LoadParam(FCWS__Para2* param)
     }
 
     m_para2 = new CParam2();
+    m_has_param = m_para2->LoadParam(param);
 
-    return m_para2->LoadParam(param);
+    return m_has_param;
 }
 
 bool CLocalFeature::SaveParam(FCWS__Para__Type para_type, FCWS__Para *param)
@@ -382,6 +392,7 @@ int CLocalFeature::DoTraining()
 				  &m_evec,
 				  m_pca_first_k_components,
 				  m_pca_compoments_offset,
+                  &m_FirstKEval,
 				  &m_FirstKEigVector,
 				  &m_projection,
 				  &m_reconstruction,
@@ -396,7 +407,7 @@ int CLocalFeature::DoTraining()
 
 		if (ret == GSL_SUCCESS)
 		{
-            SetPCAParam(m_mean, m_eval, &m_FirstKEigVector.matrix);
+            SetPCAParam(m_mean, &m_FirstKEval.vector, &m_FirstKEigVector.matrix);
 
 			// PCA of residual images.
 			ret = PCA(m_residual,
@@ -406,6 +417,7 @@ int CLocalFeature::DoTraining()
 				  &m_residual_evec,
 				  m_pca_first_k_components,
 				  m_pca_compoments_offset,
+                  &m_residual_FirstKEval,
 				  &m_residual_FirstKEigVector,
 				  &m_residual_projection,
 				  &m_residual_reconstruction,
@@ -417,7 +429,7 @@ int CLocalFeature::DoTraining()
 
 			if (ret == GSL_SUCCESS)
 			{
-                SetPCA2Param(m_residual_mean, m_residual_eval, &m_residual_FirstKEigVector.matrix);
+                SetPCA2Param(m_residual_mean, &m_residual_FirstKEval.vector, &m_residual_FirstKEigVector.matrix);
 				printf("2nd-order PCA of %s of %s is done.\n",
 						search_local_model_pattern[m_local_type],
 						search_vehicle_model_pattern[m_vm_type]);
@@ -482,14 +494,67 @@ int CLocalFeature::DoTraining()
 	return ret;
 }
 
-int CLocalFeature::DoDetection()
+bool CLocalFeature::DetectionReady()
 {
-
+    return m_detectionready;
 }
 
+bool CLocalFeature::IsIdle()
+{
+    return m_detectiondone;
+}
 
+int CLocalFeature::DoDetection()
+{
+    m_detectionready = true;
 
+    while (!m_terminate)
+    {
+        pthread_mutex_lock(&m_Mutex);
+        pthread_cond_wait(&m_Cond, &m_Mutex);
 
+        if (m_terminate) {
+            pthread_mutex_unlock(&m_Mutex);
+            break;
+        }
+
+        printf("[%s][%d] lf %s of %s\n", __func__, __LINE__, 
+                search_local_model_pattern[m_local_type],
+                search_vehicle_model_pattern[m_vm_type]);
+        m_detectionscore = m_para2->CalProbability();
+
+        m_detectiondone = true;
+        pthread_mutex_unlock(&m_Mutex);
+
+    }
+
+    m_detectiondone = true;
+    m_detectionready = false;
+
+    return 0;
+}
+
+int CLocalFeature::TriggerDetection()
+{
+    pthread_mutex_lock(&m_Mutex);
+
+    m_detectiondone = false;
+    m_detectionscore = .0;
+
+    pthread_cond_signal(&m_Cond);
+    pthread_mutex_unlock(&m_Mutex);
+
+    return 0;
+}
+
+void CLocalFeature::Stop()
+{
+    pthread_mutex_lock(&m_Mutex);
+    pthread_cond_signal(&m_Cond);
+    pthread_mutex_unlock(&m_Mutex);
+
+    m_terminate = true;
+}
 
 //-------------------------------------------------------------------
 bool CLocalFeature::SetPCAParam(gsl_vector *mean, gsl_vector *eval, gsl_matrix *evec)
@@ -680,6 +745,10 @@ int CLocalFeature::CalEigenSpace(gsl_matrix* covar, gsl_vector** eval, gsl_matri
 	return ret;
 }
 
+gsl_vector_view CLocalFeature::GetFirstKComponents(gsl_vector *eval, int firstk)
+{
+    return gsl_vector_subvector(eval, 0, firstk);
+}
 
 gsl_matrix_view CLocalFeature::GetFirstKComponents(gsl_matrix *evec, int firstk)
 {
@@ -820,6 +889,7 @@ int CLocalFeature::PCA
 	gsl_matrix **evec,
 	int first_k_comp,
 	int comp_offset,
+    gsl_vector_view *principle_eval,
 	gsl_matrix_view *principle_evec,
 	gsl_matrix **projection,
 	gsl_matrix **reconstruction_images,
@@ -836,6 +906,7 @@ int CLocalFeature::PCA
 
 	if (ret == GSL_SUCCESS)
 	{
+        *principle_eval         = GetFirstKComponents(*eval, first_k_comp);
 		*principle_evec 		= GetFirstKComponents(*evec, first_k_comp);
 		*projection 			= GenerateProjectionMatrix(&(principle_evec->matrix), im);
 		*reconstruction_images 	= GenerateReconstructImageMatrixFromPCA(&(principle_evec->matrix), *projection, *mean);

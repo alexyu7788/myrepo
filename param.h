@@ -41,6 +41,8 @@ public:
         
         bool LoadParam(FCWS__Para2* param);
 
+        double CalProbability();
+
 protected:
         bool SetPCAParam(PCA *pca, gsl_vector* mean, gsl_vector* eval, gsl_matrix* evec);
 
