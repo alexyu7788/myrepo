@@ -61,9 +61,29 @@ CLocalFeature::CLocalFeature(FCWS__VehicleModel__Type vm_type, FCWS__Local__Type
     pthread_cond_init(&m_Cond, NULL);
     pthread_mutex_init(&m_Mutex, NULL);
 
+    // Detection
     m_detectionready            = false;
     m_detectionscore            = 0.0;
     m_detectiondone             = true;
+
+    m_imgy                      = NULL;
+    
+    // Shift window
+    m_shift_window_r = m_shift_window_c = 0;
+
+    switch (m_local_type)
+    {
+        default:
+        case FCWS__LOCAL__TYPE__LEFT:
+        case FCWS__LOCAL__TYPE__RIGHT:
+            m_shift_window_w = 30;
+            m_shift_window_h = 50;
+            break;
+        case FCWS__LOCAL__TYPE__CENTER: 
+            m_shift_window_w = 75;
+            m_shift_window_h = 20;
+            break;
+    }
 }
 
 CLocalFeature::~CLocalFeature()
@@ -139,7 +159,9 @@ CLocalFeature::~CLocalFeature()
 	if (m_residual_residual)
 		gsl_matrix_free(m_residual_residual);
 
-
+    // Detection
+    if (m_imgy)
+        gsl_matrix_free(m_imgy);
 
 
 
@@ -515,7 +537,11 @@ double CLocalFeature::GetScore()
 
 int CLocalFeature::DoDetection()
 {
+    int rows, cols;
+    gsl_vector* img_vector = NULL;
+
     m_detectionready = true;
+
 
     while (!m_terminate)
     {
@@ -527,9 +553,29 @@ int CLocalFeature::DoDetection()
             break;
         }
 
-        printf("[%s][%d] lf %s of %s\n", __func__, __LINE__, 
+        printf("[%s][%d] lf %s of %s (%d, %d)\n", __func__, __LINE__, 
                 search_local_model_pattern[m_local_type],
-                search_vehicle_model_pattern[m_vm_type]);
+                search_vehicle_model_pattern[m_vm_type],
+                m_shift_window_w,
+                m_shift_window_h);
+
+        if (m_imgy)
+        {
+            rows = m_imgy->size1;
+            cols = m_imgy->size2;
+
+            if(!img_vector || img_vector->size != (m_shift_window_w * m_shift_window_h))
+            {
+                if (img_vector)
+                    gsl_vector_free(img_vector);
+
+                if ((img_vector = gsl_vector_alloc(m_shift_window_w * m_shift_window_h)) == NULL)
+                    continue;
+            }
+
+            gsl_vector_set_zero(img_vector);
+        }
+
         m_detectionscore = m_para2->CalProbability();
 
         m_detectiondone = true;
@@ -564,6 +610,77 @@ void CLocalFeature::Stop()
 
     m_terminate = true;
 }
+
+void CLocalFeature::SetLocalImg(uint8_t *imgy, int o_w, int o_h, int r, int c, int w, int h, int pitch)
+{
+    int rr, cc;
+    int shift = (r * o_w) + c;
+
+    if (!imgy || !w || !h)
+        return;
+
+    // In the following matrix, size1 is 3 and size2 is 4.
+    // 00 01 02 03 XX XX XX XX
+    // 10 11 12 13 XX XX XX XX
+    // 20 21 22 23 XX XX XX XX
+    //
+    if(!m_imgy || m_imgy->size1 != h || m_imgy->size2 != w)
+    {
+        if (m_imgy)
+            gsl_matrix_free(m_imgy);
+
+        if ((m_imgy = gsl_matrix_alloc(h, w)) == NULL)
+            return;
+    }
+
+    gsl_matrix_set_zero(m_imgy);
+
+    for (rr = 0 ; rr < m_imgy->size1 ; rr++)
+        for (cc = 0 ; cc < m_imgy->size2 ; cc++)
+            gsl_matrix_set(m_imgy, rr, cc, imgy[ shift + rr * pitch + cc]);
+
+#if 0
+    static int count = 0;
+    char fout[512] = {"\0"};
+    FILE *fd;
+    uint8_t *temp;
+
+    temp = (uint8_t*)malloc(sizeof(uint8_t) * (((h*w)*3) >> 1));
+
+    if (temp)
+    {
+        memset(temp, 128, (((h*w)*3) >> 1));
+        snprintf(fout, 512, "%03d_%d_%d.yuv", ++count, w, h);
+        printf("fout %s\n", fout);
+
+        if ((fd = fopen(fout, "w")) != NULL)
+        {
+            for (rr = 0 ; rr < m_imgy->size1 ; rr++)
+                for (cc = 0 ; cc < m_imgy->size2 ; cc++)
+                    temp[rr * m_imgy->size2 + cc] = (uint8_t)gsl_matrix_get(m_imgy, rr, cc);
+
+            fwrite(temp, 1, (((h*w)*3) >> 1), fd);
+            fclose(fd);
+        }
+        free(temp);
+    }
+#endif
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 //-------------------------------------------------------------------
 bool CLocalFeature::SetPCAParam(gsl_vector *mean, gsl_vector *eval, gsl_matrix *evec)

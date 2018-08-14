@@ -20,25 +20,11 @@ m_renderer(NULL),
 m_surface(NULL), 
 m_texture(NULL), 
 m_event(NULL),
-m_yuv_buf(NULL)
+m_yuv_buf(NULL),
+m_Font(NULL),
+m_btn_n(false),
+m_btn_s(false)
 {
-}
-
-CMainWindow::CMainWindow(std::string titlename, int width, int height): 
-m_terminate(false),
-m_quit(false),
-m_titlename(titlename),
-m_width(width),
-m_height(height),
-m_nextfile(false),
-m_window(NULL), 
-m_renderer(NULL),
-m_surface(NULL), 
-m_texture(NULL), 
-m_event(NULL),
-m_yuv_buf(NULL)
-{
-
 }
 
 CMainWindow::~CMainWindow()
@@ -145,7 +131,7 @@ bool CMainWindow::Init()
 
     if (ret == true)
     {
-//        LoadYUVFolder();
+        LoadYUVFolder();
 //
 //        m_selector[SELECTOR_CENTER] = new CSelector(m_width, m_height);
 //        m_selector[SELECTOR_CENTER]->SetColor(0xFF, 0, 0);
@@ -194,6 +180,47 @@ void CMainWindow::Terminate()
     m_terminate = true;
 }
 
+bool CMainWindow::BtnPressed_n()
+{
+    bool res;
+
+    pthread_mutex_lock(&m_mutex);
+    res = m_btn_n;
+    m_btn_n = false;
+    pthread_mutex_unlock(&m_mutex);
+
+    return res;
+}
+
+bool CMainWindow::BtnPressed_s()
+{
+    bool res;
+
+    pthread_mutex_lock(&m_mutex);
+    res = m_btn_s;
+    m_btn_s = false;
+    pthread_mutex_unlock(&m_mutex);
+
+    return res;
+
+}
+
+void CMainWindow::GotoNextFile()
+{
+    pthread_mutex_lock(&m_mutex);
+    m_nextfile = true;
+    pthread_mutex_unlock(&m_mutex);
+}
+
+
+
+
+
+
+
+
+
+
 void CMainWindow::ProcessEvent()
 {
 //    while (!m_terminate)
@@ -234,7 +261,7 @@ bool CMainWindow::InitFont()
         }
         else
         {
-            m_Font = TTF_OpenFont("DroidSans.ttf", 16);
+            m_Font = TTF_OpenFont("/usr/share/fonts/truetype/droid/DroidSans.ttf", 16);
 
             if (m_Font == NULL)
             {
@@ -275,12 +302,15 @@ void CMainWindow::ProcessKeyEvent()
     switch(m_event->key.keysym.sym)
     {
         case SDLK_q:
+            //m_quit = true;
             //m_terminate = true;
             break;
          case SDLK_n:
             //m_nextfile = true;
+            m_btn_n = true;
             break;
         case SDLK_s:
+            m_btn_s = true;
             //SaveFeatureYUV();
             //m_nextfile = true;
             break;
@@ -331,7 +361,7 @@ bool CMainWindow::LoadYUVFolder()
 
     closedir(dir);
     dir = NULL;
-    m_nextfile = true;
+    //m_nextfile = true;
 
     CreateOutputFolder();
 

@@ -25,8 +25,12 @@ class FCWS {
 protected:
         bool                    m_terminate;
 
+        uint8_t*                m_imgy;
+        int                     m_width;
+        int                     m_height;
 		vector<string>			m_filelist;
 		int m_vm_count;
+
 		CVehicleModel*			m_vm[FCWS__VEHICLE__MODEL__TYPE__TOTAL];
 		pthread_t 				m_threads[FCWS__VEHICLE__MODEL__TYPE__TOTAL];
 		FCWS__Models*			m_models;
@@ -35,6 +39,12 @@ protected:
         CMainWindow*            m_debugwindow;
         pthread_t               m_event_thread; 
 
+        //control flow
+        pthread_t               m_cf_thread;
+        pthread_mutex_t         m_cf_mutex;
+        pthread_cond_t          m_cf_cond;
+        bool                    m_cf_next_step;
+        bool                    m_cf_next_file;
 public:
 		FCWS();
 
@@ -54,12 +64,14 @@ public:
 					   int ica_compoments_offset,
 					   string output_folder);
 
-        int InitDetection();
+        bool InitDetection(string folder, bool debugwindow);
 
-		int DoDectection(uint8_t *image, uint32_t width, uint32_t height);
+        int InitDetectionThreads();
+
+		bool DoDetection(uint8_t *image, uint32_t width, uint32_t height);
 
         // debug window
-        bool InitDebugWindow(string title, int w, int h);
+        bool InitDebugWindow(string title, string folder, int w, int h);
 
 protected:
 		int Init();
@@ -72,6 +84,9 @@ protected:
 
         // debug window
         static void* DWProcessEvent(void* arg);
+
+        // control flow
+        static void* ControlFlow(void* arg);
 
 };
 #endif

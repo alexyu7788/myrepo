@@ -18,6 +18,9 @@ CVehicleModel::CVehicleModel(FCWS__VehicleModel__Type vm_type)
 	{
 		m_local_feature[i] = new CLocalFeature(m_vm_type, (FCWS__Local__Type)i);
 	}
+    
+	pthread_cond_init(&m_Cond, NULL);
+	pthread_mutex_init(&m_Mutex, NULL);
 }
 
 CVehicleModel::~CVehicleModel()
@@ -42,12 +45,13 @@ CVehicleModel::~CVehicleModel()
 			m_local_feature[i] = NULL;
 		}
 	}
+
+    pthread_mutex_destroy(&m_Mutex);
+    pthread_cond_destroy(&m_Cond);
 }
 
 int CVehicleModel::StartTrainingThreads()
 {
-	// pthread_cond_init(&m_Cond, NULL);
-	// pthread_mutex_init(&m_Mutex, NULL);
 
 	m_finish = false;
 
@@ -78,12 +82,9 @@ int CVehicleModel::StartTrainingThreads()
 
 int CVehicleModel::StartDetectionThreads()
 {
-	// pthread_cond_init(&m_Cond, NULL);
-	// pthread_mutex_init(&m_Mutex, NULL);
-
 	m_finish = false;
 
-	pthread_create(&m_monitor_thread, NULL, DetectionMonitorThread, this);
+//	pthread_create(&m_monitor_thread, NULL, DetectionMonitorThread, this);
 
     memset(m_thread, 0x0, sizeof(pthread_t) * FCWS__LOCAL__TYPE__TOTAL);
 
@@ -105,7 +106,8 @@ int CVehicleModel::StartDetectionThreads()
 
 	m_finish = true;
 
-	pthread_join(m_monitor_thread, NULL);
+    if (m_monitor_thread)
+        pthread_join(m_monitor_thread, NULL);
 
 	// printf("[VehicleModel] Detection  %d is done\n", m_vm_type);
 
@@ -314,6 +316,68 @@ void CVehicleModel::Stop()
     m_terminate = m_finish = true;
 }
 
+void CVehicleModel::SetDetectionSource(uint8_t *img, int o_width, int o_height, int start_r, int start_c, int width, int height)
+{
+    int r, c, w, h;
+
+    // Wait all local features are finished.
+    if (!IsIdle())
+    {
+        usleep(10000);
+        printf("vm %s is busy. Skip it\n\n", search_vehicle_model_pattern[m_vm_type]);
+        return;
+    }
+
+    // Trigger local detection.
+    for (int i=FCWS__LOCAL__TYPE__LEFT ; i<FCWS__LOCAL__TYPE__TOTAL ; i++)
+    {
+        if (m_local_feature[i] && m_thread[i])
+        {
+            switch (i)
+            {
+                case FCWS__LOCAL__TYPE__LEFT:
+                    r = start_r + (height * 0.3);         
+                    c = start_c;
+                    w = (width >> 1);
+                    h = (height * 0.7);
+                    break;
+                case FCWS__LOCAL__TYPE__RIGHT:
+                    r = start_r + (height *0.3);         
+                    c = start_c + (width >> 1);
+                    w = (width >> 1);
+                    h = (height * 0.7);
+                    break;
+                case FCWS__LOCAL__TYPE__CENTER:
+                    r = start_r;
+                    c = start_c;
+                    w = width - 1;
+                    h = (height * 0.3);
+                    break;
+                default:
+                    r = c = w = h = 0;
+                    break;
+            }
+
+            printf("%s: %d, %d, %d, %d\n",
+                    search_local_model_pattern[i],
+                    r, c, w, h);
+            m_local_feature[i]->SetLocalImg(img, o_width, o_height, r, c, w, h, width);
+            m_local_feature[i]->TriggerDetection();
+        }
+    }
+
+    // Wait all local features are finished.
+    while (!m_finish)
+    {
+        if (IsIdle())
+            break;
+        else
+            printf("vm %s is busy\n\n", search_vehicle_model_pattern[m_vm_type]);
+
+        usleep(10000);
+    }
+}
+
 //--------------------------------------------------------------------------------------------------------
 void* CVehicleModel::TrainingProcess(void *arg)
 {
@@ -391,11 +455,6 @@ void* CVehicleModel::DetectionMonitorThread(void* arg)
         // Wait all local features are finished.
         while (!vm->m_finish)
         {
-            //isidle = true;
-
-            //for (int i=0 ; i<FCWS__LOCAL__TYPE__TOTAL ; i++)
-            //    isidle &= vm->m_local_feature[i]->IsIdle();
-
             if (vm->IsIdle())
                 break;
             //else
@@ -425,7 +484,6 @@ bool CVehicleModel::IsIdle()
             res &= m_local_feature[i]->IsIdle();
         else
             res = false;
-
     }
 
     return res;

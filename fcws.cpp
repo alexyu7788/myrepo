@@ -15,6 +15,11 @@
 FCWS::FCWS()
 {
     m_terminate = false;
+
+    m_imgy = NULL;
+    m_width = 0;
+    m_height = 0;
+    m_filelist.clear();
 	m_vm_count = 0;
 
 	for (int i=FCWS__VEHICLE__MODEL__TYPE__Compact ; i<FCWS__VEHICLE__MODEL__TYPE__TOTAL ; i++)
@@ -24,6 +29,14 @@ FCWS::FCWS()
 	}
 
 	m_models	= NULL;
+
+    //debug window
+    m_debugwindow = NULL;
+
+    // control flow
+    memset(&m_cf_thread, 0, sizeof(pthread_t));
+    pthread_mutex_init(&m_cf_mutex, NULL);
+    pthread_cond_init(&m_cf_cond, NULL);
 }
 
 FCWS::~FCWS()
@@ -51,6 +64,12 @@ FCWS::~FCWS()
         m_debugwindow = NULL;
     }
     
+    if (m_imgy)
+    {
+        free(m_imgy);
+        m_imgy = NULL;
+    }
+
     m_terminate = true;
 }
 
@@ -430,11 +449,63 @@ int FCWS::DoTraining
 	return 0;
 }
 
-int FCWS::InitDetection()
+bool FCWS::InitDetection(string folder, bool debugwindow)
 {
-    memset(m_threads, 0x0, sizeof(pthread_t) * FCWS__VEHICLE__MODEL__TYPE__TOTAL);
+    DIR *dir = NULL;
+    struct dirent *entry = NULL;
+    char fpath[256];
+
+    m_filelist.clear();
+
+    sscanf(folder.c_str(), "yuv_%d_%d", &m_width, &m_height);
+
+    if (!m_width || !m_height)
+        return false;
+
+    m_imgy = (uint8_t*)malloc(sizeof(uint8_t) * m_width * m_height);
+
+    if (!m_imgy)
+        return false;
+
+    if ((dir = opendir(folder.c_str())) == NULL)
+        return false;
+
+    while ((entry = readdir(dir)) != NULL)
+    {
+        if (entry->d_type & DT_REG)
+        {
+            snprintf(fpath, sizeof(fpath), "%s/%s", folder.c_str(), entry->d_name);
+            m_filelist.push_back(fpath);
+        }
+    }
+
+    sort(m_filelist.begin(), m_filelist.end());
+
+    //for (std::vector<std::string>::iterator it = m_filelist.begin() ; it != m_filelist.end() ; it++)
+    //{
+    //    printf("%s\n", it->c_str());
+    //}
+
+    closedir(dir);
+    dir = NULL;
+
+    if (debugwindow)
+        InitDebugWindow("FCWS Detection", folder, m_width, m_height);
+    
+    InitDetectionThreads();
+
+
+    return true;
+}
+
+int FCWS::InitDetectionThreads()
+{
+    // Start control flow
+    pthread_create(&m_cf_thread, NULL, ControlFlow, this);
 
 	// Start detection threads.
+    memset(m_threads, 0x0, sizeof(pthread_t) * FCWS__VEHICLE__MODEL__TYPE__TOTAL);
+
 	for (int i=0 ; i<FCWS__VEHICLE__MODEL__TYPE__TOTAL ; i++)
 	{
 		if (m_vm[i])
@@ -456,35 +527,35 @@ int FCWS::InitDetection()
 			pthread_join(m_threads[i], NULL);
 	}
 
+    if (m_cf_thread)
+        pthread_join(m_cf_thread, NULL);
+
     return 0;
 }
 
-int FCWS::DoDectection(uint8_t *image, uint32_t width, uint32_t height)
+bool FCWS::DoDetection(uint8_t *image, uint32_t width, uint32_t height)
 {
-#if 0
 	if (image == NULL || width == 0 || height == 0)
 		return -1;
 
-	// Start detection threads.
-	for (int i=0 ; i<FCWS__VEHICLE__MODEL__TYPE__TOTAL ; i++)
-	{
-		if (m_vm[i])
-			pthread_create(&m_threads[i], NULL, StartDetectionThreads, m_vm[i]);
-	}
+    // TODO
+    // Hypothesis Generator is not ready.
 
-	// Join detection threads.
+
+
+    // Dispatch HG with geometric infomation to each vehicle model.
 	for (int i=0 ; i<FCWS__VEHICLE__MODEL__TYPE__TOTAL ; i++)
-	{
-		if (m_threads[i])
-			pthread_join(m_threads[i], NULL);
-	}
-#endif
-	return 0;
+    {
+        if (m_vm[i])
+            m_vm[i]->SetDetectionSource(image, width, height, 0, 0, width, height);
+    }
+
+	return true;
 }
 
-bool FCWS::InitDebugWindow(string title, int w, int h)
+bool FCWS::InitDebugWindow(string title, string folder, int w, int h)
 {
-    m_debugwindow = new CMainWindow(title, w, h);
+    m_debugwindow = new CMainWindow(title, folder, w, h);
 
     if (!m_debugwindow)
         return false;
@@ -551,6 +622,33 @@ void* FCWS::DWProcessEvent(void* arg)
                     if (pThis->m_vm[i])
                         pThis->m_vm[i]->Stop();
                 }
+
+                // wakeup control flow
+                pthread_mutex_lock(&pThis->m_cf_mutex);
+                pthread_cond_signal(&pThis->m_cf_cond);
+                pthread_mutex_unlock(&pThis->m_cf_mutex);
+            }
+            else if (pThis->m_debugwindow->BtnPressed_n())
+            {
+                pThis->m_debugwindow->GotoNextFile();
+
+                // wakeup control flow
+                pthread_mutex_lock(&pThis->m_cf_mutex);
+                pthread_cond_signal(&pThis->m_cf_cond);
+
+                pThis->m_cf_next_file = true;
+
+                pthread_mutex_unlock(&pThis->m_cf_mutex);
+            }
+            else if (pThis->m_debugwindow->BtnPressed_s())
+            {
+                // wakeup control flow
+                pthread_mutex_lock(&pThis->m_cf_mutex);
+                pthread_cond_signal(&pThis->m_cf_cond);
+
+                pThis->m_cf_next_step = true;
+
+                pthread_mutex_unlock(&pThis->m_cf_mutex);
             }
         }
 
@@ -560,12 +658,80 @@ void* FCWS::DWProcessEvent(void* arg)
     return NULL;
 }
 
-
-int FCWS::Init()
+void* FCWS::ControlFlow(void* arg)
 {
-	return 0;
-}
+    FCWS* pThis = (FCWS*)arg;
+    int w,h;
+    string fn;
+    FILE *fd = NULL;
+    vector<string>::iterator it;
 
+    w = pThis->m_width;
+    h = pThis->m_height;
+
+    while (!pThis->m_terminate)
+    {
+        pthread_mutex_lock(&pThis->m_cf_mutex);
+        pthread_cond_wait(&pThis->m_cf_cond, &pThis->m_cf_mutex);
+
+        if (pThis->m_terminate)
+        {
+            pthread_mutex_unlock(&pThis->m_cf_mutex);
+            break;
+        }
+
+        if (pThis->m_cf_next_file)
+        {
+            pThis->m_cf_next_file = false;
+
+            if (pThis->m_filelist.size() != 0 && pThis->m_imgy)
+            {
+                fn = pThis->m_filelist[0];
+                it = pThis->m_filelist.begin();
+                fn = *it;
+                pThis->m_filelist.erase(it);
+
+                printf("fn %s\n", fn.c_str());
+
+                if ((fd = fopen(fn.c_str(), "r")) != NULL)
+                {
+                    memset(pThis->m_imgy , 0x0, w * h);
+                    fread(pThis->m_imgy, 1, w * h, fd);
+
+                    pThis->DoDetection(pThis->m_imgy, w, h);
+
+                    fclose(fd);
+                    fd = NULL;
+                }
+            }
+        }
+        else if (pThis->m_cf_next_step)
+        {
+            pThis->m_cf_next_step = false;
+
+
+
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        pthread_mutex_unlock(&pThis->m_cf_mutex);
+    }
+
+    return NULL;
+}
 
 
 

@@ -52,12 +52,13 @@ class CMainWindow {
 
         TTF_Font*       m_Font;
 
+        bool            m_btn_n;
+        bool            m_btn_s;
+
     public:
         CMainWindow();
 
         CMainWindow(std::string titlename, std::string yuv_folder, int width, int height);
-        
-        CMainWindow(std::string titlename, int width, int height);
 
         ~CMainWindow();
 
@@ -69,6 +70,14 @@ class CMainWindow {
 
         void Terminate();
 
+        bool BtnPressed_n();
+
+        bool BtnPressed_s();
+
+
+        void GotoNextFile();
+
+        void GotoNextStep();
     protected:
         bool InitFont();
 

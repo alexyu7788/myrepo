@@ -56,6 +56,9 @@ public:
 
         void Stop();
 
+        void SetDetectionSource(uint8_t *img, int o_width, int o_height, int start_r, int start_c, int width, int height);
+
+
 protected:
 		static void* TrainingProcess(void* arg);
 

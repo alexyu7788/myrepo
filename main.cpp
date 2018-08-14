@@ -129,14 +129,14 @@ int main(int argc, char *argv[])
 		}
 		else if (dodetection && fcws->LoadModel(model_name) == 0)
 		{
-            if (debugwindow)
-                fcws->InitDebugWindow("FCWS Detection", w, h);
-            fcws->InitDetection();
+            fcws->InitDetection(infolder, debugwindow);
 
+#if 0
             img_y = (uint8_t*)malloc(sizeof(uint8_t) * ((w * h *3) >> 1));
             memset(img_y, 128, ((w * h *3) >> 1));
 
-            fcws->DoDectection(img_y, w, h);
+            fcws->DoDetection(img_y, w, h);
+#endif
 		}
 
 		delete fcws;
