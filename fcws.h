@@ -3,6 +3,7 @@
 
 #include <pthread.h>
 #include <vector>
+#include <list>
 #include <string>
 #include <algorithm>
 #include <math.h>
@@ -17,6 +18,7 @@
 #include "models2.pb-c.h"
 #include "vehiclemodel.h"
 #include "window.h"
+#include "vc.h"
 
 using namespace std;
 
@@ -38,6 +40,9 @@ protected:
         // debug window
         CMainWindow*            m_debugwindow;
         pthread_t               m_event_thread; 
+
+        // VH
+        list<CVehicleCandidate*>     m_vc;
 
         //control flow
         pthread_t               m_cf_thread;

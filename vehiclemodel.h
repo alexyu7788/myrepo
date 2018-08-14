@@ -3,10 +3,13 @@
 
 #include <string>
 #include <vector>
+#include <list>
+#include <algorithm>
 #include <pthread.h>
 
 #include "models2.pb-c.h"
 #include "localfeature.h"
+#include "vc.h"
 
 using namespace std;
 
@@ -56,7 +59,7 @@ public:
 
         void Stop();
 
-        void SetDetectionSource(uint8_t *img, int o_width, int o_height, int start_r, int start_c, int width, int height);
+        void SetDetectionSource(uint8_t *img, int o_width, int o_height, list<CVehicleCandidate*> &vc);
 
 
 protected:

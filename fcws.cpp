@@ -540,14 +540,20 @@ bool FCWS::DoDetection(uint8_t *image, uint32_t width, uint32_t height)
 
     // TODO
     // Hypothesis Generator is not ready.
+    CVehicleCandidate *vc =  NULL;
+    list<CVehicleCandidate*>::iterator it;
 
+    m_vc.clear();
 
+    vc = new CVehicleCandidate();
+    vc->SetGeometricInfo(0, 0, width, height);
+    m_vc.push_back(vc);
 
     // Dispatch HG with geometric infomation to each vehicle model.
 	for (int i=0 ; i<FCWS__VEHICLE__MODEL__TYPE__TOTAL ; i++)
     {
         if (m_vm[i])
-            m_vm[i]->SetDetectionSource(image, width, height, 0, 0, width, height);
+            m_vm[i]->SetDetectionSource(image, width, height, m_vc);
     }
 
 	return true;

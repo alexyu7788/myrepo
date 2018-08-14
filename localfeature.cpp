@@ -553,12 +553,12 @@ int CLocalFeature::DoDetection()
             break;
         }
 
-        printf("[%s][%d] lf %s of %s (%d, %d)\n", __func__, __LINE__, 
-                search_local_model_pattern[m_local_type],
-                search_vehicle_model_pattern[m_vm_type],
-                m_shift_window_w,
-                m_shift_window_h);
-
+//        printf("[%s][%d] lf %s of %s (%d, %d)\n", __func__, __LINE__, 
+//                search_local_model_pattern[m_local_type],
+//                search_vehicle_model_pattern[m_vm_type],
+//                m_shift_window_w,
+//                m_shift_window_h);
+//
         if (m_imgy)
         {
             rows = m_imgy->size1;

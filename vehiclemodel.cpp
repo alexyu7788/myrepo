@@ -316,65 +316,77 @@ void CVehicleModel::Stop()
     m_terminate = m_finish = true;
 }
 
-void CVehicleModel::SetDetectionSource(uint8_t *img, int o_width, int o_height, int start_r, int start_c, int width, int height)
+void CVehicleModel::SetDetectionSource(uint8_t *img, int o_width, int o_height, list<CVehicleCandidate*> &vc)
 {
     int r, c, w, h;
+    int start_r, start_c, width, height;
+    list<CVehicleCandidate*> mvc = vc;
+    list<CVehicleCandidate*>::iterator it;
 
-    // Wait all local features are finished.
-    if (!IsIdle())
+    for (it = mvc.begin(); it != mvc.end() ; it++)
     {
-        usleep(10000);
-        printf("vm %s is busy. Skip it\n\n", search_vehicle_model_pattern[m_vm_type]);
-        return;
-    }
-
-    // Trigger local detection.
-    for (int i=FCWS__LOCAL__TYPE__LEFT ; i<FCWS__LOCAL__TYPE__TOTAL ; i++)
-    {
-        if (m_local_feature[i] && m_thread[i])
+        // Wait all local features are finished.
+        if (!IsIdle())
         {
-            switch (i)
-            {
-                case FCWS__LOCAL__TYPE__LEFT:
-                    r = start_r + (height * 0.3);         
-                    c = start_c;
-                    w = (width >> 1);
-                    h = (height * 0.7);
-                    break;
-                case FCWS__LOCAL__TYPE__RIGHT:
-                    r = start_r + (height *0.3);         
-                    c = start_c + (width >> 1);
-                    w = (width >> 1);
-                    h = (height * 0.7);
-                    break;
-                case FCWS__LOCAL__TYPE__CENTER:
-                    r = start_r;
-                    c = start_c;
-                    w = width - 1;
-                    h = (height * 0.3);
-                    break;
-                default:
-                    r = c = w = h = 0;
-                    break;
-            }
-
-            printf("%s: %d, %d, %d, %d\n",
-                    search_local_model_pattern[i],
-                    r, c, w, h);
-            m_local_feature[i]->SetLocalImg(img, o_width, o_height, r, c, w, h, width);
-            m_local_feature[i]->TriggerDetection();
+            usleep(10000);
+            printf("vm %s is busy. Skip it\n\n", search_vehicle_model_pattern[m_vm_type]);
+            return;
         }
-    }
 
-    // Wait all local features are finished.
-    while (!m_finish)
-    {
-        if (IsIdle())
-            break;
-        else
-            printf("vm %s is busy\n\n", search_vehicle_model_pattern[m_vm_type]);
+        (*it)->GetGeometricInfo(start_r, start_c, width, height);
+        printf("[%s][%d]: %d, %d, %d, %d\n",
+                __func__,
+                __LINE__,
+                start_r, start_c, width, height);
 
-        usleep(10000);
+        // Trigger local detection.
+        for (int i=FCWS__LOCAL__TYPE__LEFT ; i<FCWS__LOCAL__TYPE__TOTAL ; i++)
+        {
+            if (m_local_feature[i] && m_thread[i])
+            {
+                switch (i)
+                {
+                    case FCWS__LOCAL__TYPE__LEFT:
+                        r = start_r + (height * 0.3);         
+                        c = start_c;
+                        w = (width >> 1);
+                        h = (height * 0.7);
+                        break;
+                    case FCWS__LOCAL__TYPE__RIGHT:
+                        r = start_r + (height *0.3);         
+                        c = start_c + (width >> 1);
+                        w = (width >> 1);
+                        h = (height * 0.7);
+                        break;
+                    case FCWS__LOCAL__TYPE__CENTER:
+                        r = start_r;
+                        c = start_c;
+                        w = width - 1;
+                        h = (height * 0.3);
+                        break;
+                    default:
+                        r = c = w = h = 0;
+                        break;
+                }
+
+                printf("%s: %d, %d, %d, %d\n",
+                        search_local_model_pattern[i],
+                        r, c, w, h);
+                m_local_feature[i]->SetLocalImg(img, o_width, o_height, r, c, w, h, width);
+                m_local_feature[i]->TriggerDetection();
+            }
+        }
+
+        // Wait all local features are finished.
+        while (!m_finish)
+        {
+            if (IsIdle())
+                break;
+            else
+                printf("vm %s is busy\n\n", search_vehicle_model_pattern[m_vm_type]);
+
+            usleep(10000);
+        }
     }
 }
 

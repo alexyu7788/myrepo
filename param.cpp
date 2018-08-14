@@ -252,7 +252,7 @@ double CParam2::CalProbability()
 
     //printf("temp %lf, %lf\n", temp, pow( 2*PI , m_pca->eval_size * 0.5 ));
     denominator = temp * pow( 2*PI , m_pca->eval_size * 0.5);
-    printf("denominator %lf\n", denominator); 
+    //printf("denominator %lf\n", denominator); 
 
     // Numerator
     temp = 0;
