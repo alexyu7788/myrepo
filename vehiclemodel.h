@@ -9,7 +9,7 @@
 
 #include "models2.pb-c.h"
 #include "localfeature.h"
-#include "vc.h"
+#include "candidate.h"
 
 using namespace std;
 
@@ -59,7 +59,7 @@ public:
 
         void Stop();
 
-        void SetDetectionSource(uint8_t *img, int o_width, int o_height, list<CVehicleCandidate*> &vc);
+        void SetDetectionSource(uint8_t *img, int o_width, int o_height, list<CCandidate*> &vc);
 
 
 protected:

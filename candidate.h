@@ -1,9 +1,9 @@
-#ifndef _VC_H_
-#define _VC_H_
+#ifndef _CANDIDATE_H_
+#define _CANDIDATE_H_
 
 #include "models2.pb-c.h"
 
-class CVehicleCandidate
+class CCandidate
 {
 public:
 
@@ -18,9 +18,9 @@ protected:
 
 public:
 
-    CVehicleCandidate();
+    CCandidate();
 
-    ~CVehicleCandidate();
+    ~CCandidate();
 
     void GetGeometricInfo(int &r, int &c, int &w, int &h);
 

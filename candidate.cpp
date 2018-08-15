@@ -3,9 +3,9 @@
 #include <unistd.h>
 #include <string.h>
 
-#include "vc.h"
+#include "candidate.h"
 
-CVehicleCandidate::CVehicleCandidate()
+CCandidate::CCandidate()
 {
     m_r = m_c = m_w = m_h = 0;
 
@@ -14,12 +14,12 @@ CVehicleCandidate::CVehicleCandidate()
 
 }
 
-CVehicleCandidate::~CVehicleCandidate()
+CCandidate::~CCandidate()
 {
 
 }
 
-void CVehicleCandidate::GetGeometricInfo(int &r, int &c, int &w, int &h)
+void CCandidate::GetGeometricInfo(int &r, int &c, int &w, int &h)
 {
     r = m_r;
     c = m_c;
@@ -27,7 +27,7 @@ void CVehicleCandidate::GetGeometricInfo(int &r, int &c, int &w, int &h)
     h = m_h;
 }
 
-void CVehicleCandidate::SetGeometricInfo(int r, int c, int w, int h)
+void CCandidate::SetGeometricInfo(int r, int c, int w, int h)
 {
     m_r = r;
     m_c = c;

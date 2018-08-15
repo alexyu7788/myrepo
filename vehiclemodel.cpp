@@ -316,12 +316,12 @@ void CVehicleModel::Stop()
     m_terminate = m_finish = true;
 }
 
-void CVehicleModel::SetDetectionSource(uint8_t *img, int o_width, int o_height, list<CVehicleCandidate*> &vc)
+void CVehicleModel::SetDetectionSource(uint8_t *img, int o_width, int o_height, list<CCandidate*> &vc)
 {
     int r, c, w, h;
     int start_r, start_c, width, height;
-    list<CVehicleCandidate*> mvc = vc;
-    list<CVehicleCandidate*>::iterator it;
+    list<CCandidate*> mvc = vc;
+    list<CCandidate*>::iterator it;
 
     for (it = mvc.begin(); it != mvc.end() ; it++)
     {

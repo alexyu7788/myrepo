@@ -18,7 +18,7 @@
 #include "models2.pb-c.h"
 #include "vehiclemodel.h"
 #include "window.h"
-#include "vc.h"
+#include "candidate.h"
 
 using namespace std;
 
@@ -42,7 +42,7 @@ protected:
         pthread_t               m_event_thread; 
 
         // VH
-        list<CVehicleCandidate*>     m_vc;
+        list<CCandidate*>       m_vc;
 
         //control flow
         pthread_t               m_cf_thread;
