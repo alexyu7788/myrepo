@@ -349,14 +349,14 @@ void CVehicleModel::SetDetectionSource(uint8_t *img, int o_width, int o_height, 
                     case FCWS__LOCAL__TYPE__LEFT:
                         r = start_r + (height * 0.3);         
                         c = start_c;
-                        w = (width >> 1);
-                        h = (height * 0.7);
+                        w = (width * 0.3);
+                        h = (height * 0.5);
                         break;
                     case FCWS__LOCAL__TYPE__RIGHT:
                         r = start_r + (height *0.3);         
-                        c = start_c + (width >> 1);
-                        w = (width >> 1);
-                        h = (height * 0.7);
+                        c = start_c + (width *0.7);
+                        w = (width * 0.3);
+                        h = (height * 0.5);
                         break;
                     case FCWS__LOCAL__TYPE__CENTER:
                         r = start_r;
@@ -373,15 +373,17 @@ void CVehicleModel::SetDetectionSource(uint8_t *img, int o_width, int o_height, 
                         search_local_model_pattern[i],
                         r, c, w, h);
 
+                m_local_feature[i]->SetLocalImg(img, o_width, o_height, r, c, w, h, width);
+
+                // Set local info.
                 m_local_info[(FCWS__Local__Type)i].SetPos(r, c);
                 m_local_info[(FCWS__Local__Type)i].SetWH(w, h);
                 (*it)->SetLocalInfo((FCWS__Local__Type)i, m_local_info[(FCWS__Local__Type)i]);
 
-                m_local_feature[i]->SetLocalImg(img, o_width, o_height, r, c, w, h, width);
-
-//                CShiftWindow temp_sw;
-//                m_local_feature[i]->GetSWInfo(temp_sw);
-//                (*it)->SetSWInfo((FCWS__Local__Type)i, temp_sw);
+                CShiftWindow temp_sw;
+                // Set shift window info.
+                m_local_feature[i]->GetSWInfo(temp_sw);
+                (*it)->SetSWInfo((FCWS__Local__Type)i, temp_sw);
 //
 //                (*it)->GetLocalInfo((FCWS__Local__Type)i, r, c, w, h);
 //                printf("2 %s: %d, %d, %d, %d\n",
@@ -416,8 +418,11 @@ void CVehicleModel::SetDetectionOneStep(bool onestep)
     m_one_step_mode = onestep;
 }
 
-void CVehicleModel::TriggerDetectionOneStep()
+void CVehicleModel::TriggerDetectionOneStep(Candidates &vcs)
 {
+    CandidatesIt it;
+    CShiftWindow temp_sw;
+
     // Trigger local detection.
     for (int i=FCWS__LOCAL__TYPE__LEFT ; i<FCWS__LOCAL__TYPE__TOTAL ; i++)
     {
@@ -437,6 +442,20 @@ void CVehicleModel::TriggerDetectionOneStep()
 
         usleep(10000);
     }
+
+    // set shift window info
+    for (it = vcs.begin() ; it != vcs.end() ; ++it)
+    {
+        for (int i=FCWS__LOCAL__TYPE__LEFT ; i<FCWS__LOCAL__TYPE__TOTAL ; i++)
+        {
+            if (m_local_feature[i] && m_thread[i])
+            {
+                m_local_feature[i]->GetSWInfo(temp_sw);
+                (*it)->SetSWInfo((FCWS__Local__Type)i, temp_sw);
+            }
+        }
+    }
+
 }
 
 

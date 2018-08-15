@@ -65,7 +65,7 @@ public:
 
         void SetDetectionOneStep(bool onestep = false);
         
-        void TriggerDetectionOneStep();
+        void TriggerDetectionOneStep(Candidates &vcs);
 
 protected:
 		static void* TrainingProcess(void* arg);

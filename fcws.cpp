@@ -524,15 +524,16 @@ bool FCWS::InitDetection(string folder, bool debugwindow, bool onestep)
     }
 
     // program will wait here until terminate.....
-    InitDetectionThreads();
+    InitDetectionThreads(debugwindow);
 
     return true;
 }
 
-int FCWS::InitDetectionThreads()
+int FCWS::InitDetectionThreads(bool debugwindow)
 {
     // Start control flow
-    pthread_create(&m_cf_thread, NULL, ControlFlow, this);
+    if (debugwindow)
+        pthread_create(&m_cf_thread, NULL, ControlFlow, this);
 
 	// Start detection threads.
     memset(m_threads, 0x0, sizeof(pthread_t) * FCWS__VEHICLE__MODEL__TYPE__TOTAL);
@@ -550,6 +551,7 @@ int FCWS::InitDetectionThreads()
             }
         }
 	}
+
 
 	// Join detection threads.
 	for (int i=0 ; i<FCWS__VEHICLE__MODEL__TYPE__TOTAL ; i++)
@@ -753,7 +755,7 @@ void* FCWS::ControlFlow(void* arg)
             {
                 if (pThis->m_vm[i] && pThis->m_vm[i]->HasParam())
                 {
-                    pThis->m_vm[i]->TriggerDetectionOneStep();
+                    pThis->m_vm[i]->TriggerDetectionOneStep(pThis->m_vcs);
                     pThis->m_debugwindow->UpdateDrawInfo(pThis->m_vcs);
                 }
             }

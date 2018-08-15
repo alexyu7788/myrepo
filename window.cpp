@@ -457,7 +457,8 @@ void CMainWindow::DrawSelector()
 
 void CMainWindow::DrawShiftWindow()
 {
-    int r, c, w, h;
+    int sw_r, sw_c, sw_w, sw_h;
+    int local_r, local_c, local_w, local_h;
     SDL_Rect rect;
     CandidatesIt it;
 
@@ -465,18 +466,27 @@ void CMainWindow::DrawShiftWindow()
     {
         for (int i=FCWS__LOCAL__TYPE__LEFT ; i<FCWS__LOCAL__TYPE__TOTAL ; i++)
         {        
-            (*it)->GetLocalInfo((FCWS__Local__Type)i, r, c, w, h);
+            (*it)->GetLocalInfo((FCWS__Local__Type)i, local_r, local_c, local_w, local_h);
 
 //            printf("%s: %d, %d, %d, %d\n",
 //                    search_local_model_pattern[i],
 //                    r, c, w, h);
 
-            rect.x = c;
-            rect.y = r;
-            rect.w = w;
-            rect.h = h;
+            rect.x = local_c;
+            rect.y = local_r;
+            rect.w = local_w;
+            rect.h = local_h;
 
 			SDL_SetRenderDrawColor(m_renderer, 0xFF, 0xFF, 0xFF, 0xFF);
+			SDL_RenderDrawRect(m_renderer, &rect);
+
+            (*it)->GetSWInfo((FCWS__Local__Type)i, sw_r, sw_c, sw_w, sw_h);
+            rect.x = local_c + sw_c;
+            rect.y = local_r + sw_r;
+            rect.w = sw_w;
+            rect.h = sw_h;
+
+			SDL_SetRenderDrawColor(m_renderer, 0xFF, 0x00, 0x00, 0xFF);
 			SDL_RenderDrawRect(m_renderer, &rect);
         }
     }

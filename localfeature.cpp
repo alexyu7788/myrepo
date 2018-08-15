@@ -524,6 +524,7 @@ int CLocalFeature::DoDetection()
     int rows, cols;
     int temp_r, temp_c;
     int sw_r, sw_c, sw_w, sw_h;
+    bool shift_success = true;
     gsl_vector* img_vector = NULL;
 
     m_detectionready = true;
@@ -573,52 +574,60 @@ int CLocalFeature::DoDetection()
         m_sw.GetPos(sw_r, sw_c);
         m_sw.GetWH(sw_w, sw_h);
 
-        if (1 || m_local_type == FCWS__LOCAL__TYPE__LEFT)
+        printf("[%s][%d] lf %s of %s: (%d,%d) (%d,%d) (%d, %d)\n", 
+                __func__, __LINE__, 
+                search_local_model_pattern[m_local_type],
+                search_vehicle_model_pattern[m_vm_type],
+                sw_r, sw_c,
+                sw_w, sw_h,
+                rows, cols);
+
+        if (m_one_step_mode)
         {
-            printf("[%s][%d] lf %s of %s: (%d,%d) (%d,%d) (%d, %d)\n", 
-                    __func__, __LINE__, 
-                    search_local_model_pattern[m_local_type],
-                    search_vehicle_model_pattern[m_vm_type],
-                    sw_r, sw_c,
-                    sw_w, sw_h,
-                    rows, cols);
+            temp_c = sw_c;
+            temp_r = sw_r;
 
-            if (m_one_step_mode)
+            if ((m_local_type == FCWS__LOCAL__TYPE__LEFT|| m_local_type == FCWS__LOCAL__TYPE__CENTER) && (temp_c + 1) < (cols - sw_w))
             {
-                bool success = false;
-
-                temp_c = sw_c;
-                temp_r = sw_r;
-
-                if ((temp_c + 1) < (cols - sw_w))
-                {
-                    temp_c++;
-                    success = true;
-                }
-                else
-                {
-                    temp_c = 0;
-                    if ((temp_r + 1) < (rows - sw_h))
-                    {
-                        temp_r++;
-                        success = true;
-                    }
-                }
-
-                if (success)
-                    m_sw.SetPos(temp_r, temp_c);
+                temp_c++;
+            }
+            else if (m_local_type == FCWS__LOCAL__TYPE__RIGHT && (temp_c -1) > 0)
+            {
+                temp_c--;
             }
             else
             {
-                for (temp_r = sw_r ; temp_r < (rows - sw_h) ; temp_r++)
+                if (m_local_type == FCWS__LOCAL__TYPE__LEFT|| m_local_type == FCWS__LOCAL__TYPE__CENTER)
+                    temp_c = 0;
+                else
+                    temp_c = m_imgy->size2 - 30;
+
+                if ((temp_r + 1) < (rows - sw_h))
                 {
-                    for (temp_c = sw_c ; temp_c < (cols - sw_w) ; temp_c++)
-                    {
-                        //printf("[%d][%d] (%d, %d)\n", temp_r, temp_c, rows - sw_h, cols - sw_w);
-                        m_para2->CalProbability();
-                    }
-                } 
+                    temp_r++;
+                }
+                else
+                    shift_success = false;
+
             }
+
+        }
+        else
+        {
+            for (temp_r = sw_r ; temp_r < (rows - sw_h) ; temp_r++)
+            {
+                for (temp_c = sw_c ; temp_c < (cols - sw_w) ; temp_c++)
+                {
+                    //printf("[%d][%d] (%d, %d)\n", temp_r, temp_c, rows - sw_h, cols - sw_w);
+                    m_para2->CalProbability();
+                }
+            } 
+        }
+
+        if (m_one_step_mode && shift_success)
+        {
+            m_sw.SetPos(temp_r, temp_c);
+            m_para2->CalProbability();
         }
 
         m_detectiondone = true;
@@ -683,17 +692,24 @@ void CLocalFeature::SetLocalImg(uint8_t *imgy, int o_w, int o_h, int r, int c, i
         for (cc = 0 ; cc < m_imgy->size2 ; cc++)
             gsl_matrix_set(m_imgy, rr, cc, imgy[ shift + rr * pitch + cc]);
 
+    // Initialization position of shift windows.
     switch (m_local_type)
     {
-        default:
         case FCWS__LOCAL__TYPE__LEFT:
-        case FCWS__LOCAL__TYPE__RIGHT:
             m_sw.SetInfo(0, 0, 30, 50);
+            break;
+        case FCWS__LOCAL__TYPE__RIGHT:
+            m_sw.SetInfo(0, m_imgy->size2 - 30, 30, 50);
+            break;
             break;
         case FCWS__LOCAL__TYPE__CENTER: 
             m_sw.SetInfo(0, 0, 75, 20);
             break;
+        default:
+            break;
     }
+
+    // Write local images to disk.
 #if 0
     static int count = 0;
     char fout[512] = {"\0"};

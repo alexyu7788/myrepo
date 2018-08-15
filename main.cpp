@@ -60,12 +60,13 @@ int main(int argc, char *argv[])
     bool dotraining = false, dodetection = false;
     bool debugwindow = false;
     bool one_step_mode = false;
-        
+    int period = 0;
+
     infolder.clear();
     outfolder.clear();
     model_name.clear();
 
-    while ((ch = getopt(argc, argv, "Ss:d:o:k:m:TDw")) != -1)
+    while ((ch = getopt(argc, argv, "Ss:d:o:k:m:TDwp:")) != -1)
     {
     	switch (ch)
     	{
@@ -97,6 +98,9 @@ int main(int argc, char *argv[])
     		break;
         case 'w':
             debugwindow = true;
+            break;
+        case 'p':
+            sscanf(optarg, "%d", &period);
             break;
     	default:
     		exit(-1);
