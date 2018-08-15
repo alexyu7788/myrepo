@@ -26,6 +26,7 @@ using namespace std;
 class FCWS {
 protected:
         bool                    m_terminate;
+        bool                    m_one_step_mode;
 
         uint8_t*                m_imgy;
         int                     m_width;
@@ -42,12 +43,13 @@ protected:
         pthread_t               m_event_thread; 
 
         // VH
-        list<CCandidate*>       m_vc;
+        Candidates              m_vcs;
 
         //control flow
         pthread_t               m_cf_thread;
         pthread_mutex_t         m_cf_mutex;
         pthread_cond_t          m_cf_cond;
+        bool                    m_cf_one_step_mode;
         bool                    m_cf_next_step;
         bool                    m_cf_next_file;
 public:
@@ -69,7 +71,7 @@ public:
 					   int ica_compoments_offset,
 					   string output_folder);
 
-        bool InitDetection(string folder, bool debugwindow);
+        bool InitDetection(string folder, bool debugwindow, bool onestep = false);
 
         int InitDetectionThreads();
 

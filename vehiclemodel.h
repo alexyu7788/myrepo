@@ -17,11 +17,13 @@ class CVehicleModel {
 protected:
         bool                     m_terminate;
 		bool					 m_finish;
+        bool                     m_one_step_mode;
 
 		vector<string>			 m_filelist;
 		FCWS__VehicleModel__Type m_vm_type;
 		int						 m_local_feature_count;
 		CLocalFeature*			 m_local_feature[FCWS__LOCAL__TYPE__TOTAL];
+        CLocalInfo               m_local_info[FCWS__LOCAL__TYPE__TOTAL];
 
 		pthread_mutex_t	  		 m_Mutex;
 		pthread_cond_t	  		 m_Cond;
@@ -59,8 +61,11 @@ public:
 
         void Stop();
 
-        void SetDetectionSource(uint8_t *img, int o_width, int o_height, list<CCandidate*> &vc);
+        void SetDetectionSource(uint8_t *img, int o_width, int o_height, Candidates &vcs);
 
+        void SetDetectionOneStep(bool onestep = false);
+        
+        void TriggerDetectionOneStep();
 
 protected:
 		static void* TrainingProcess(void* arg);

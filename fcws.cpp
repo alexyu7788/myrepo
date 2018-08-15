@@ -14,7 +14,7 @@
 //FCWS ------------------------------------------------------------------------------
 FCWS::FCWS()
 {
-    m_terminate = false;
+    m_terminate = m_one_step_mode = false;
 
     m_imgy = NULL;
     m_width = 0;
@@ -449,14 +449,15 @@ int FCWS::DoTraining
 	return 0;
 }
 
-bool FCWS::InitDetection(string folder, bool debugwindow)
+bool FCWS::InitDetection(string folder, bool debugwindow, bool onestep)
 {
     DIR *dir = NULL;
     struct dirent *entry = NULL;
     char fpath[256];
 
-    m_filelist.clear();
+    m_one_step_mode = onestep;
 
+    m_filelist.clear();
     sscanf(folder.c_str(), "yuv_%d_%d", &m_width, &m_height);
 
     if (!m_width || !m_height)
@@ -492,8 +493,38 @@ bool FCWS::InitDetection(string folder, bool debugwindow)
     if (debugwindow)
         InitDebugWindow("FCWS Detection", folder, m_width, m_height);
     
-    InitDetectionThreads();
+    if (onestep)
+    {
+        string fn;
+        FILE *fd = NULL;
+        vector<string>::iterator it;
 
+        if (m_filelist.size() != 0 && m_imgy)
+        {
+            fn = m_filelist[0];
+            it = m_filelist.begin();
+            fn = *it;
+            m_filelist.erase(it);
+
+            printf("Load %s\n", fn.c_str());
+
+            if ((fd = fopen(fn.c_str(), "r")) != NULL)
+            {
+                memset(m_imgy , 0x0, m_width * m_height);
+                fread(m_imgy, 1, m_width * m_height, fd);
+
+                fclose(fd);
+                fd = NULL;
+            }
+        }
+
+        m_debugwindow->GotoNextFile();
+
+        DoDetection(m_imgy, m_width, m_height);
+    }
+
+    // program will wait here until terminate.....
+    InitDetectionThreads();
 
     return true;
 }
@@ -541,19 +572,22 @@ bool FCWS::DoDetection(uint8_t *image, uint32_t width, uint32_t height)
     // TODO
     // Hypothesis Generator is not ready.
     CCandidate *vc =  NULL;
-    list<CCandidate*>::iterator it;
+    CandidatesIt it;
 
-    m_vc.clear();
+    m_vcs.clear();
 
     vc = new CCandidate();
-    vc->SetGeometricInfo(0, 0, width, height);
-    m_vc.push_back(vc);
+    vc->SetInfo(0, 0, width, height);
+    m_vcs.push_back(vc);
 
     // Dispatch HG with geometric infomation to each vehicle model.
 	for (int i=0 ; i<FCWS__VEHICLE__MODEL__TYPE__TOTAL ; i++)
     {
-        if (m_vm[i])
-            m_vm[i]->SetDetectionSource(image, width, height, m_vc);
+        if (m_vm[i] && m_vm[i]->HasParam())
+        {
+            m_vm[i]->SetDetectionOneStep(m_one_step_mode);
+            m_vm[i]->SetDetectionSource(image, width, height, m_vcs);
+        }
     }
 
 	return true;
@@ -697,7 +731,7 @@ void* FCWS::ControlFlow(void* arg)
                 fn = *it;
                 pThis->m_filelist.erase(it);
 
-                printf("fn %s\n", fn.c_str());
+                printf("Load %s\n", fn.c_str());
 
                 if ((fd = fopen(fn.c_str(), "r")) != NULL)
                 {
@@ -715,23 +749,15 @@ void* FCWS::ControlFlow(void* arg)
         {
             pThis->m_cf_next_step = false;
 
-
-
+            for (int i=0 ; i<FCWS__VEHICLE__MODEL__TYPE__TOTAL ; i++)
+            {
+                if (pThis->m_vm[i] && pThis->m_vm[i]->HasParam())
+                {
+                    pThis->m_vm[i]->TriggerDetectionOneStep();
+                    pThis->m_debugwindow->UpdateDrawInfo(pThis->m_vcs);
+                }
+            }
         }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
         pthread_mutex_unlock(&pThis->m_cf_mutex);
     }

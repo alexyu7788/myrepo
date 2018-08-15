@@ -7,7 +7,7 @@
 
 CVehicleModel::CVehicleModel(FCWS__VehicleModel__Type vm_type)
 {
-	m_terminate = m_finish = false;
+	m_terminate = m_finish = m_one_step_mode = false;
 
 	m_vm_type = vm_type;
 	m_local_feature_count = 0;
@@ -316,14 +316,14 @@ void CVehicleModel::Stop()
     m_terminate = m_finish = true;
 }
 
-void CVehicleModel::SetDetectionSource(uint8_t *img, int o_width, int o_height, list<CCandidate*> &vc)
+void CVehicleModel::SetDetectionSource(uint8_t *img, int o_width, int o_height, Candidates &vcs)
 {
     int r, c, w, h;
     int start_r, start_c, width, height;
-    list<CCandidate*> mvc = vc;
-    list<CCandidate*>::iterator it;
+    //Candidates mvc = vcs;
+    CandidatesIt it;
 
-    for (it = mvc.begin(); it != mvc.end() ; it++)
+    for (it = vcs.begin(); it != vcs.end() ; it++)
     {
         // Wait all local features are finished.
         if (!IsIdle())
@@ -333,7 +333,7 @@ void CVehicleModel::SetDetectionSource(uint8_t *img, int o_width, int o_height, 
             return;
         }
 
-        (*it)->GetGeometricInfo(start_r, start_c, width, height);
+        (*it)->GetInfo(start_r, start_c, width, height);
         printf("[%s][%d]: %d, %d, %d, %d\n",
                 __func__,
                 __LINE__,
@@ -369,11 +369,32 @@ void CVehicleModel::SetDetectionSource(uint8_t *img, int o_width, int o_height, 
                         break;
                 }
 
-                printf("%s: %d, %d, %d, %d\n",
+                printf("1 %s: %d, %d, %d, %d\n",
                         search_local_model_pattern[i],
                         r, c, w, h);
+
+                m_local_info[(FCWS__Local__Type)i].SetPos(r, c);
+                m_local_info[(FCWS__Local__Type)i].SetWH(w, h);
+                (*it)->SetLocalInfo((FCWS__Local__Type)i, m_local_info[(FCWS__Local__Type)i]);
+
                 m_local_feature[i]->SetLocalImg(img, o_width, o_height, r, c, w, h, width);
-                m_local_feature[i]->TriggerDetection();
+
+//                CShiftWindow temp_sw;
+//                m_local_feature[i]->GetSWInfo(temp_sw);
+//                (*it)->SetSWInfo((FCWS__Local__Type)i, temp_sw);
+//
+//                (*it)->GetLocalInfo((FCWS__Local__Type)i, r, c, w, h);
+//                printf("2 %s: %d, %d, %d, %d\n",
+//                        search_local_model_pattern[i],
+//                        r, c, w, h);
+//
+//                (*it)->GetSWInfo((FCWS__Local__Type)i, r, c, w, h);
+//                printf("3 %s: %d, %d, %d, %d\n",
+//                        search_local_model_pattern[i],
+//                        r, c, w, h);
+
+                if (!m_one_step_mode)
+                    m_local_feature[i]->TriggerDetection();
             }
         }
 
@@ -389,6 +410,38 @@ void CVehicleModel::SetDetectionSource(uint8_t *img, int o_width, int o_height, 
         }
     }
 }
+
+void CVehicleModel::SetDetectionOneStep(bool onestep)
+{
+    m_one_step_mode = onestep;
+}
+
+void CVehicleModel::TriggerDetectionOneStep()
+{
+    // Trigger local detection.
+    for (int i=FCWS__LOCAL__TYPE__LEFT ; i<FCWS__LOCAL__TYPE__TOTAL ; i++)
+    {
+        if (m_local_feature[i] && m_thread[i])
+        {
+            m_local_feature[i]->TriggerDetection(true);
+        }
+    }
+    
+    // Wait all local features are finished.
+    while (!m_finish)
+    {
+        if (IsIdle())
+            break;
+        else
+            printf("vm %s is busy\n\n", search_vehicle_model_pattern[m_vm_type]);
+
+        usleep(10000);
+    }
+}
+
+
+
+
 
 //--------------------------------------------------------------------------------------------------------
 void* CVehicleModel::TrainingProcess(void *arg)

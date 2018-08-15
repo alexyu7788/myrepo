@@ -1,6 +1,7 @@
 #include <sys/stat.h>
 #include <dirent.h>
 #include "window.h"
+#include "utility.h"
 
 CMainWindow::CMainWindow()
 {
@@ -25,6 +26,9 @@ m_Font(NULL),
 m_btn_n(false),
 m_btn_s(false)
 {
+    m_vcs.clear();
+
+    
 }
 
 CMainWindow::~CMainWindow()
@@ -57,6 +61,8 @@ CMainWindow::~CMainWindow()
 
     pthread_mutex_destroy(&m_mutex);
     pthread_cond_destroy(&m_cond);
+    
+    m_vcs.clear();
 
     m_terminate = true;
 }
@@ -212,6 +218,21 @@ void CMainWindow::GotoNextFile()
     pthread_mutex_unlock(&m_mutex);
 }
 
+void CMainWindow::UpdateDrawInfo(Candidates &vcs)
+{
+    int i;
+    int r, c, w, h;
+    CandidatesIt it;
+
+    pthread_mutex_lock(&m_mutex);
+
+    m_vcs.clear();
+
+    for (it = vcs.begin(); it != vcs.end(); ++it)
+        m_vcs.push_back(*it);
+
+    pthread_mutex_unlock(&m_mutex);
+}
 
 
 
@@ -278,6 +299,8 @@ void CMainWindow::Draw()
 {
     if (m_renderer && m_texture)
     {
+        pthread_mutex_lock(&m_mutex);
+
         // Clear renderer
         SDL_SetRenderDrawColor(m_renderer, 0xFF, 0xFF, 0xFF, 0xFF);
         SDL_RenderClear(m_renderer);
@@ -289,8 +312,12 @@ void CMainWindow::Draw()
         //Draw selector
 //        DrawSelector();
 
+        DrawShiftWindow();
+
         // Show
         SDL_RenderPresent(m_renderer);
+
+        pthread_mutex_unlock(&m_mutex);
     }
 }
 
@@ -389,7 +416,7 @@ bool CMainWindow::DrawYUVImage()
             {
                 m_cur_fpath.clear();
                 m_cur_fpath = filename;
-                printf("Load %s\n", m_cur_fpath.c_str());
+                //printf("Load %s\n", m_cur_fpath.c_str());
 
                 y_size  = m_width * m_height;
                 uv_size = ((m_width >> 1) * (m_height >> 1)) << 1;
@@ -426,6 +453,34 @@ void CMainWindow::DrawSelector()
 //        if (m_selector[i])
 //            m_selector[i]->Draw(m_renderer);
 //    }
+}
+
+void CMainWindow::DrawShiftWindow()
+{
+    int r, c, w, h;
+    SDL_Rect rect;
+    CandidatesIt it;
+
+    for (it = m_vcs.begin(); it != m_vcs.end(); ++it)
+    {
+        for (int i=FCWS__LOCAL__TYPE__LEFT ; i<FCWS__LOCAL__TYPE__TOTAL ; i++)
+        {        
+            (*it)->GetLocalInfo((FCWS__Local__Type)i, r, c, w, h);
+
+//            printf("%s: %d, %d, %d, %d\n",
+//                    search_local_model_pattern[i],
+//                    r, c, w, h);
+
+            rect.x = c;
+            rect.y = r;
+            rect.w = w;
+            rect.h = h;
+
+			SDL_SetRenderDrawColor(m_renderer, 0xFF, 0xFF, 0xFF, 0xFF);
+			SDL_RenderDrawRect(m_renderer, &rect);
+        }
+    }
+
 }
 
 void CMainWindow::CreateOutputFolder()

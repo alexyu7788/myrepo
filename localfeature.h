@@ -13,6 +13,7 @@
 
 #include "models2.pb-c.h"
 #include "param.h"
+#include "candidate.h"
 
 using namespace std;
 
@@ -68,15 +69,14 @@ protected:
         pthread_mutex_t         m_Mutex;
 
         // Detection
+        bool                    m_one_step_mode;
         bool                    m_detectionready;
         bool                    m_detectiondone;
         double                  m_detectionscore;
 
         gsl_matrix*             m_imgy;
-        int                     m_shift_window_r;
-        int                     m_shift_window_c;
-        int                     m_shift_window_w;
-        int                     m_shift_window_h;
+        CShiftWindow            m_sw;
+        CShiftWindow            m_best_sw;
 
 public:
 		CLocalFeature(FCWS__VehicleModel__Type vm_type, FCWS__Local__Type local_type);
@@ -126,11 +126,13 @@ public:
 
         int DoDetection();
 
-        int TriggerDetection();
+        int TriggerDetection(bool onestep = false);
 
         void Stop();
 
         void SetLocalImg(uint8_t *imgy, int o_w, int o_h, int r, int c, int w, int h, int pitch);
+
+        void GetSWInfo(CShiftWindow &sw);
 
 protected:
         bool SetPCAParam(gsl_vector *mean, gsl_vector *eval, gsl_matrix *evec);

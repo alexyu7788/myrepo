@@ -59,15 +59,19 @@ int main(int argc, char *argv[])
     string model_name;
     bool dotraining = false, dodetection = false;
     bool debugwindow = false;
-
+    bool one_step_mode = false;
+        
     infolder.clear();
     outfolder.clear();
     model_name.clear();
 
-    while ((ch = getopt(argc, argv, "s:d:o:k:m:TDw")) != -1)
+    while ((ch = getopt(argc, argv, "Ss:d:o:k:m:TDw")) != -1)
     {
     	switch (ch)
     	{
+        case 'S':
+            one_step_mode = true;
+            break;
     	case 's':
     		infolder = optarg;
     		break;
@@ -129,7 +133,7 @@ int main(int argc, char *argv[])
 		}
 		else if (dodetection && fcws->LoadModel(model_name) == 0)
 		{
-            fcws->InitDetection(infolder, debugwindow);
+            fcws->InitDetection(infolder, debugwindow, one_step_mode);
 
 #if 0
             img_y = (uint8_t*)malloc(sizeof(uint8_t) * ((w * h *3) >> 1));

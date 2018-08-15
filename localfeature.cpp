@@ -62,28 +62,12 @@ CLocalFeature::CLocalFeature(FCWS__VehicleModel__Type vm_type, FCWS__Local__Type
     pthread_mutex_init(&m_Mutex, NULL);
 
     // Detection
+    m_one_step_mode             = false;
     m_detectionready            = false;
     m_detectionscore            = 0.0;
     m_detectiondone             = true;
 
     m_imgy                      = NULL;
-    
-    // Shift window
-    m_shift_window_r = m_shift_window_c = 0;
-
-    switch (m_local_type)
-    {
-        default:
-        case FCWS__LOCAL__TYPE__LEFT:
-        case FCWS__LOCAL__TYPE__RIGHT:
-            m_shift_window_w = 30;
-            m_shift_window_h = 50;
-            break;
-        case FCWS__LOCAL__TYPE__CENTER: 
-            m_shift_window_w = 75;
-            m_shift_window_h = 20;
-            break;
-    }
 }
 
 CLocalFeature::~CLocalFeature()
@@ -538,10 +522,11 @@ double CLocalFeature::GetScore()
 int CLocalFeature::DoDetection()
 {
     int rows, cols;
+    int temp_r, temp_c;
+    int sw_r, sw_c, sw_w, sw_h;
     gsl_vector* img_vector = NULL;
 
     m_detectionready = true;
-
 
     while (!m_terminate)
     {
@@ -553,30 +538,88 @@ int CLocalFeature::DoDetection()
             break;
         }
 
-//        printf("[%s][%d] lf %s of %s (%d, %d)\n", __func__, __LINE__, 
-//                search_local_model_pattern[m_local_type],
-//                search_vehicle_model_pattern[m_vm_type],
-//                m_shift_window_w,
-//                m_shift_window_h);
-//
         if (m_imgy)
         {
             rows = m_imgy->size1;
             cols = m_imgy->size2;
 
-            if(!img_vector || img_vector->size != (m_shift_window_w * m_shift_window_h))
+            m_sw.GetWH(sw_w, sw_h);
+
+            if(!img_vector || img_vector->size != (sw_w * sw_h))
             {
                 if (img_vector)
                     gsl_vector_free(img_vector);
 
-                if ((img_vector = gsl_vector_alloc(m_shift_window_w * m_shift_window_h)) == NULL)
+                if ((img_vector = gsl_vector_alloc(sw_w * sw_h)) == NULL)
                     continue;
             }
 
             gsl_vector_set_zero(img_vector);
+
+            // TODO
+            // Convert matrix to vector
+
+
+
+
+
+
+
+
+
         }
 
-        m_detectionscore = m_para2->CalProbability();
+        // shift window
+        m_sw.GetPos(sw_r, sw_c);
+        m_sw.GetWH(sw_w, sw_h);
+
+        if (1 || m_local_type == FCWS__LOCAL__TYPE__LEFT)
+        {
+            printf("[%s][%d] lf %s of %s: (%d,%d) (%d,%d) (%d, %d)\n", 
+                    __func__, __LINE__, 
+                    search_local_model_pattern[m_local_type],
+                    search_vehicle_model_pattern[m_vm_type],
+                    sw_r, sw_c,
+                    sw_w, sw_h,
+                    rows, cols);
+
+            if (m_one_step_mode)
+            {
+                bool success = false;
+
+                temp_c = sw_c;
+                temp_r = sw_r;
+
+                if ((temp_c + 1) < (cols - sw_w))
+                {
+                    temp_c++;
+                    success = true;
+                }
+                else
+                {
+                    temp_c = 0;
+                    if ((temp_r + 1) < (rows - sw_h))
+                    {
+                        temp_r++;
+                        success = true;
+                    }
+                }
+
+                if (success)
+                    m_sw.SetPos(temp_r, temp_c);
+            }
+            else
+            {
+                for (temp_r = sw_r ; temp_r < (rows - sw_h) ; temp_r++)
+                {
+                    for (temp_c = sw_c ; temp_c < (cols - sw_w) ; temp_c++)
+                    {
+                        //printf("[%d][%d] (%d, %d)\n", temp_r, temp_c, rows - sw_h, cols - sw_w);
+                        m_para2->CalProbability();
+                    }
+                } 
+            }
+        }
 
         m_detectiondone = true;
         pthread_mutex_unlock(&m_Mutex);
@@ -589,10 +632,11 @@ int CLocalFeature::DoDetection()
     return 0;
 }
 
-int CLocalFeature::TriggerDetection()
+int CLocalFeature::TriggerDetection(bool onestep)
 {
     pthread_mutex_lock(&m_Mutex);
 
+    m_one_step_mode = onestep;
     m_detectiondone = false;
     m_detectionscore = .0;
 
@@ -639,6 +683,17 @@ void CLocalFeature::SetLocalImg(uint8_t *imgy, int o_w, int o_h, int r, int c, i
         for (cc = 0 ; cc < m_imgy->size2 ; cc++)
             gsl_matrix_set(m_imgy, rr, cc, imgy[ shift + rr * pitch + cc]);
 
+    switch (m_local_type)
+    {
+        default:
+        case FCWS__LOCAL__TYPE__LEFT:
+        case FCWS__LOCAL__TYPE__RIGHT:
+            m_sw.SetInfo(0, 0, 30, 50);
+            break;
+        case FCWS__LOCAL__TYPE__CENTER: 
+            m_sw.SetInfo(0, 0, 75, 20);
+            break;
+    }
 #if 0
     static int count = 0;
     char fout[512] = {"\0"};
@@ -667,7 +722,10 @@ void CLocalFeature::SetLocalImg(uint8_t *imgy, int o_w, int o_h, int r, int c, i
 #endif
 }
 
-
+void CLocalFeature::GetSWInfo(CShiftWindow &sw)
+{
+    sw = m_sw;
+}
 
 
 

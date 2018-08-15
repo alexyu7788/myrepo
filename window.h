@@ -10,6 +10,8 @@
 #include <SDL_ttf.h>
 #include <pthread.h>
 
+#include "candidate.h"
+
 //#include "selector.h"
 
 enum {
@@ -55,6 +57,8 @@ class CMainWindow {
         bool            m_btn_n;
         bool            m_btn_s;
 
+        Candidates      m_vcs;
+
     public:
         CMainWindow();
 
@@ -74,10 +78,12 @@ class CMainWindow {
 
         bool BtnPressed_s();
 
-
         void GotoNextFile();
 
         void GotoNextStep();
+
+        void UpdateDrawInfo(Candidates &vcs);
+
     protected:
         bool InitFont();
 
@@ -95,6 +101,8 @@ class CMainWindow {
         bool DrawYUVImage();
 
         void DrawSelector();
+        
+        void DrawShiftWindow();
 
         void CreateOutputFolder();
 
