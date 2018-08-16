@@ -28,6 +28,9 @@ protected:
         FCWS__Local__Type   m_local_type;
         PCA*                m_pca;
         PCA*                m_pca2;
+        
+        // I^ = I - mean
+        gsl_vector*         m_swimage_sub_mean;
 
 public:
         CParam2(FCWS__Local__Type local_type);

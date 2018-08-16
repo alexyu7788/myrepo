@@ -7,6 +7,8 @@ CParam2::CParam2(FCWS__Local__Type local_type)
 {
 	m_local_type = local_type;
     m_pca = m_pca2 = NULL;
+
+    m_swimage_sub_mean = NULL;
 }
 
 CParam2::~CParam2()
@@ -57,6 +59,13 @@ CParam2::~CParam2()
 
         free(m_pca2);
         m_pca2 = NULL;
+    }
+
+    if (m_swimage_sub_mean)
+    {
+        gsl_vector_free(m_swimage_sub_mean);
+        m_swimage_sub_mean = NULL;
+    
     }
 }
 
@@ -470,9 +479,8 @@ double CParam2::CalProbabilityOfPCA(const gsl_vector *img, PCA *pca)
     int i;
     double numerator = 1, denominator = 1;
     double res = 0, temp = 1;
-    double *y = NULL, y_sum = 0;
+    double y = 0, y_sum = 0;
     double eval;
-    gsl_vector *I;
     gsl_vector_view evec_col_view;
 
     //printf("\n\n[%s] %s\n", __func__, 
@@ -483,41 +491,39 @@ double CParam2::CalProbabilityOfPCA(const gsl_vector *img, PCA *pca)
     for (i=0 ; i<pca->eval_size ; i++)
         temp *= pow(gsl_vector_get(pca->eval_data, i), 0.5);
 
-    printf("temp %lf, %lf\n", temp, pow( 2*PI , pca->eval_size * 0.5 ));
+    //printf("temp %lf, %lf\n", temp, pow( 2*PI , pca->eval_size * 0.5 ));
     denominator = temp * pow( 2*PI , pca->eval_size * 0.5);
     //printf("denominator %lf\n", denominator); 
 
     // Numerator
+    if (!m_swimage_sub_mean || m_swimage_sub_mean->size != img->size)
+    {
+        if (m_swimage_sub_mean)
+            gsl_vector_free(m_swimage_sub_mean);
 
+        if ((m_swimage_sub_mean = gsl_vector_alloc(img->size)) == NULL)
+            return 0;
+    }
+
+    gsl_vector_set_zero(m_swimage_sub_mean);
+
+    gsl_vector_memcpy(m_swimage_sub_mean, img);
     // I^ = I - mean
-    if ((I = gsl_vector_alloc(img->size)) == NULL)
-    {
-        printf("[%s][%d] Error.");
-        return 0;
-    }
-
-    gsl_vector_memcpy(I, img);
-    gsl_vector_sub(I, pca->mean_data);
-
-    if ((y = (double*)malloc(sizeof(double) * pca->evec_size2)) == NULL)
-    {
-        printf("[%s][%d] Error.");
-        return 0;
-    }
+    gsl_vector_sub(m_swimage_sub_mean, pca->mean_data);
 
     for (i=0 ; i<pca->evec_size2 ; i++)
     {
         // Uk-T * I^
         evec_col_view = gsl_matrix_column(pca->evec_data, i);
-        gsl_blas_ddot(&evec_col_view.vector, I, &y[i]);
+        gsl_blas_ddot(&evec_col_view.vector, m_swimage_sub_mean, &y);
 
         eval = gsl_vector_get(pca->eval_data, i);
 
         if (eval != 0)
         {
-            printf("y[%d]=%lf, eval data[%d]=%lf\n", i, y[i], i, gsl_vector_get(pca->eval_data, i));
-            y_sum += (y[i] / eval);
-            printf("y sum = %lf\n", y_sum);
+            //printf("[%d] y=%lf, eval data[%d]=%lf\n", i, y, eval);
+            y_sum += (y / eval);
+            //printf("y sum = %lf\n", y_sum);
         }
     }
 
@@ -525,19 +531,7 @@ double CParam2::CalProbabilityOfPCA(const gsl_vector *img, PCA *pca)
     numerator = exp(0 - (y_sum * 0.5));
 
     res = numerator / denominator;
-    printf("res %lf, %lf/%lf\n", res, numerator , denominator);
-
-    if (I)
-    {
-        gsl_vector_free(I);
-        I = NULL;
-    }
-
-    if (y)
-    {
-        free(y);
-        y = NULL;
-    }
+    //printf("res %lf, %lf/%lf\n", res, numerator , denominator);
 
     return res;
 }
