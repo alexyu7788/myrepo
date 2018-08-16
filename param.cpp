@@ -1,9 +1,11 @@
 #include <string.h>
 #include <unistd.h>
+#include "utility.h"
 #include "param.h"
 
-CParam2::CParam2()
+CParam2::CParam2(FCWS__Local__Type local_type)
 {
+	m_local_type = local_type;
     m_pca = m_pca2 = NULL;
 }
 
@@ -62,6 +64,24 @@ bool CParam2::SetPCAParam(gsl_vector* mean, gsl_vector* eval, gsl_matrix* evec)
 {
     if (m_pca)
     {
+        if (m_pca->mean_data)
+        {
+            gsl_vector_free(m_pca->mean_data);
+            m_pca->mean_data = NULL;
+        }
+
+        if (m_pca->eval_data)
+        {
+            gsl_vector_free(m_pca->eval_data);
+            m_pca->eval_data = NULL;
+        }
+
+        if (m_pca->evec_data)
+        {
+            gsl_matrix_free(m_pca->evec_data);
+            m_pca->evec_data = NULL;
+        }
+
         free(m_pca);
         m_pca = NULL;
     }
@@ -76,6 +96,24 @@ bool CParam2::SetPCA2Param(gsl_vector* mean, gsl_vector* eval, gsl_matrix* evec)
 {
     if (m_pca2)
     {
+        if (m_pca2->mean_data)
+        {
+            gsl_vector_free(m_pca2->mean_data);
+            m_pca2->mean_data = NULL;
+        }
+
+        if (m_pca2->eval_data)
+        {
+            gsl_vector_free(m_pca2->eval_data);
+            m_pca2->eval_data = NULL;
+        }
+
+        if (m_pca2->evec_data)
+        {
+            gsl_matrix_free(m_pca2->evec_data);
+            m_pca2->evec_data = NULL;
+        }
+
         free(m_pca2);
         m_pca2 = NULL;
     }
@@ -233,45 +271,42 @@ bool CParam2::LoadParam(FCWS__Para2* param)
 
 #define PI 3.14159
 
-double CParam2::CalProbability()
+double CParam2::CalProbability(const gsl_vector *img)
 {
-    if (!m_pca || !m_pca->mean_size || !m_pca->eval_size || !m_pca->evec_size1 || !m_pca->evec_size2)
+    double res = 0;
+
+    if (!img || !m_pca || !m_pca2)
+    {
+        printf("[%s][%d] Error.\n", __func__, __LINE__);
         return 0;
+    }
 
-    if (!m_pca2 || !m_pca2->mean_size || !m_pca2->eval_size || !m_pca2->evec_size1 || !m_pca2->evec_size2)
+    if (!m_pca->mean_size || !m_pca->eval_size || !m_pca->evec_size1 || !m_pca->evec_size2)
+    {
+        printf("[%s][%d] Error.\n", __func__, __LINE__);
         return 0;
+    }
 
-    int i;
-    double numerator = 1, denominator = 1;
-    double res = 0, temp = 1;
+    if (!m_pca2->mean_size || !m_pca2->eval_size || !m_pca2->evec_size1 || !m_pca2->evec_size2)
+    {
+        printf("[%s][%d] Error.\n", __func__, __LINE__);
+        return 0;
+    }
 
-    // ---------------------PCA--------------------------------------------
-    // Denominator
-    for (i=0 ; i<m_pca->eval_size ; i++)
-        temp *= pow(gsl_vector_get(m_pca->eval_data, i), 0.5);
+    if (img->size != m_pca->mean_size || img->size != m_pca->evec_size1)
+    {
+        printf("[%s][%d] Error. (%d, %d, %d)\n", __func__, __LINE__, img->size, m_pca->mean_size, m_pca->evec_size1);
+        return 0;
+    }
 
-    //printf("temp %lf, %lf\n", temp, pow( 2*PI , m_pca->eval_size * 0.5 ));
-    denominator = temp * pow( 2*PI , m_pca->eval_size * 0.5);
-    //printf("denominator %lf\n", denominator); 
+    if (img->size != m_pca2->mean_size || img->size != m_pca2->evec_size1)
+    {
+        printf("[%s][%d] Error. (%d, %d, %d)\n", __func__, __LINE__, img->size, m_pca2->mean_size, m_pca2->evec_size1);
+        return 0;
+    }
 
-    // Numerator
-    temp = 0;
-    for (i=0 ; i<m_pca->eval_size ; i++)
-        temp += gsl_vector_get(m_pca->eval_data, i);
-
-    temp *= -0.5;
-    //printf("temp %lf\n", temp);
-    numerator = exp(20);
-    //printf("numerator %lf\n", numerator); 
-
-
-
-
-
-
-
-    res = numerator / denominator;
-    //printf("res %lf\n", res);
+    res = CalProbabilityOfPCA(img, m_pca);
+    //CalProbabilityOfPCA(img, m_pca2);
 
     return res;
 }
@@ -428,6 +463,83 @@ fail:
     
 
     return false;
+}
+
+double CParam2::CalProbabilityOfPCA(const gsl_vector *img, PCA *pca)
+{
+    int i;
+    double numerator = 1, denominator = 1;
+    double res = 0, temp = 1;
+    double *y = NULL, y_sum = 0;
+    double eval;
+    gsl_vector *I;
+    gsl_vector_view evec_col_view;
+
+    //printf("\n\n[%s] %s\n", __func__, 
+    //            search_local_model_pattern[m_local_type]);
+
+    // ---------------------PCA--------------------------------------------
+    // Denominator
+    for (i=0 ; i<pca->eval_size ; i++)
+        temp *= pow(gsl_vector_get(pca->eval_data, i), 0.5);
+
+    printf("temp %lf, %lf\n", temp, pow( 2*PI , pca->eval_size * 0.5 ));
+    denominator = temp * pow( 2*PI , pca->eval_size * 0.5);
+    //printf("denominator %lf\n", denominator); 
+
+    // Numerator
+
+    // I^ = I - mean
+    if ((I = gsl_vector_alloc(img->size)) == NULL)
+    {
+        printf("[%s][%d] Error.");
+        return 0;
+    }
+
+    gsl_vector_memcpy(I, img);
+    gsl_vector_sub(I, pca->mean_data);
+
+    if ((y = (double*)malloc(sizeof(double) * pca->evec_size2)) == NULL)
+    {
+        printf("[%s][%d] Error.");
+        return 0;
+    }
+
+    for (i=0 ; i<pca->evec_size2 ; i++)
+    {
+        // Uk-T * I^
+        evec_col_view = gsl_matrix_column(pca->evec_data, i);
+        gsl_blas_ddot(&evec_col_view.vector, I, &y[i]);
+
+        eval = gsl_vector_get(pca->eval_data, i);
+
+        if (eval != 0)
+        {
+            printf("y[%d]=%lf, eval data[%d]=%lf\n", i, y[i], i, gsl_vector_get(pca->eval_data, i));
+            y_sum += (y[i] / eval);
+            printf("y sum = %lf\n", y_sum);
+        }
+    }
+
+    // exp[-1/2*y_sum]
+    numerator = exp(0 - (y_sum * 0.5));
+
+    res = numerator / denominator;
+    printf("res %lf, %lf/%lf\n", res, numerator , denominator);
+
+    if (I)
+    {
+        gsl_vector_free(I);
+        I = NULL;
+    }
+
+    if (y)
+    {
+        free(y);
+        y = NULL;
+    }
+
+    return res;
 }
 
 // Para ------------------------------------------------------------------------------

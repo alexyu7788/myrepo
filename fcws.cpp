@@ -343,7 +343,7 @@ bool FCWS::LoadFiles(string infolder)
 	string temp;
 
 	printf("infolder %s\n", infolder.c_str());
-
+    
 	dir = opendir(infolder.c_str());
 
 	if (dir == NULL)

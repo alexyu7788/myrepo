@@ -408,7 +408,7 @@ void CVehicleModel::SetDetectionSource(uint8_t *img, int o_width, int o_height, 
             else
                 printf("vm %s is busy\n\n", search_vehicle_model_pattern[m_vm_type]);
 
-            usleep(10000);
+            usleep(100000);
         }
     }
 }

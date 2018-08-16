@@ -41,6 +41,10 @@ public:
     void GetInfo(int &r, int &c, int &w, int &h);  // used
 
     void SetInfo(int r, int c, int w, int h); //used
+
+    double GetScore();
+
+    void SetScore(double score);
 };
 
 class CLocalInfo {

@@ -31,7 +31,7 @@ CLocalFeature::CLocalFeature(FCWS__VehicleModel__Type vm_type, FCWS__Local__Type
 	}
 
     m_has_param                 = false;
-    m_para2                     = new CParam2();
+    m_para2                     = new CParam2(m_local_type);
 
 	m_pca_first_k_components 	=
 	m_pca_compoments_offset 	=
@@ -211,7 +211,7 @@ bool CLocalFeature::LoadParam(FCWS__Local__Type local_type, FCWS__Para2* param)
         m_para2 = NULL;
     }
 
-    m_para2 = new CParam2();
+    m_para2 = new CParam2(m_local_type);
     m_has_param = m_para2->LoadParam(param);
     
     return m_has_param;
@@ -267,7 +267,7 @@ bool CLocalFeature::LoadParam(FCWS__Para2* param)
         m_para2 = NULL;
     }
 
-    m_para2 = new CParam2();
+    m_para2 = new CParam2(m_local_type);
     m_has_param = m_para2->LoadParam(param);
 
     return m_has_param;
@@ -353,7 +353,6 @@ int CLocalFeature::PickUpFiles(vector<string> & feedin, int rows, int cols)
 
 		GenImageMat();
 	}
-
 
 	return 0;
 }
@@ -525,7 +524,11 @@ int CLocalFeature::DoDetection()
     int temp_r, temp_c;
     int sw_r, sw_c, sw_w, sw_h;
     bool shift_success = true;
+    double max_score = 0, score = 0;
     gsl_vector* img_vector = NULL;
+    gsl_matrix_view temp_submatrix;
+    gsl_vector_view temp_subrow;
+    gsl_vector_view temp_subview;
 
     m_detectionready = true;
 
@@ -544,6 +547,7 @@ int CLocalFeature::DoDetection()
             rows = m_imgy->size1;
             cols = m_imgy->size2;
 
+            m_sw.GetPos(sw_r, sw_c);
             m_sw.GetWH(sw_w, sw_h);
 
             if(!img_vector || img_vector->size != (sw_w * sw_h))
@@ -557,22 +561,85 @@ int CLocalFeature::DoDetection()
 
             gsl_vector_set_zero(img_vector);
 
-            // TODO
-            // Convert matrix to vector
+            // Convert submatrix to vector
+            //printf("Crop (%d,%d)->(%d,%d) at (%d,%d)\n",
+            //        rows, cols,
+            //        sw_h, sw_w,
+            //        sw_r, sw_c);
+            temp_submatrix = gsl_matrix_submatrix(m_imgy, sw_r, sw_c, sw_h, sw_w);
 
+            for (int r = sw_r, i=0 ; r < sw_h ; r++, i++)
+            {
+                temp_subrow = gsl_matrix_subrow(m_imgy, r, sw_c, sw_w);
+                temp_subview = gsl_vector_subvector(img_vector, i * sw_w, sw_w);
 
+                gsl_vector_memcpy(&temp_subview.vector, &temp_subrow.vector);
+            }
+            // Write img_vector to disk.
+#if 0
+            {
+                static int count = 0;
+                char fout[512] = {"\0"};
+                FILE *fd;
+                uint8_t *temp;
+                int size;
 
+                size = img_vector->size;
 
+                temp = (uint8_t*)malloc(sizeof(uint8_t) * ((size*3) >> 1));
 
+                if (temp)
+                {
+                    memset(temp, 128, ((size*3) >> 1));
+                    snprintf(fout, 512, "%03d_%d.yuv", ++count, size);
+                    printf("fout %s\n", fout);
 
+                    if ((fd = fopen(fout, "w")) != NULL)
+                    {
+                        for (int i=0 ; i<size ; i++)
+                            temp[i] = (uint8_t)gsl_vector_get(img_vector, i);
 
+                        fwrite(temp, 1, ((size*3) >> 1), fd);
+                        fclose(fd);
+                    }
+                    free(temp);
+                }
+            }
+#endif
+            // Write sub-images to disk.
+#if 0
+            {
+                static int count = 0;
+                char fout[512] = {"\0"};
+                FILE *fd;
+                uint8_t *temp;
+                int r, c, w, h;
 
+                h = temp_submatrix.matrix.size1;
+                w = temp_submatrix.matrix.size2;
 
+                temp = (uint8_t*)malloc(sizeof(uint8_t) * (((h*w)*3) >> 1));
+
+                if (temp)
+                {
+                    memset(temp, 128, (((h*w)*3) >> 1));
+                    snprintf(fout, 512, "%03d_%d_%d.yuv", ++count, w, h);
+                    printf("fout %s\n", fout);
+
+                    if ((fd = fopen(fout, "w")) != NULL)
+                    {
+                        for (r = 0 ; r < h ; r++)
+                            for (c = 0 ; c < w ; c++)
+                                temp[r * w + c] = (uint8_t)gsl_matrix_get(&temp_submatrix.matrix, r, c);
+
+                        fwrite(temp, 1, (((h*w)*3) >> 1), fd);
+                        fclose(fd);
+                    }
+                    free(temp);
+                }
+            }
+#endif
         }
-
-        // shift window
-        m_sw.GetPos(sw_r, sw_c);
-        m_sw.GetWH(sw_w, sw_h);
 
         printf("[%s][%d] lf %s of %s: (%d,%d) (%d,%d) (%d, %d)\n", 
                 __func__, __LINE__, 
@@ -584,9 +651,14 @@ int CLocalFeature::DoDetection()
 
         if (m_one_step_mode)
         {
+            // Get current position of shift window.
+            m_sw.GetPos(sw_r, sw_c);
+            m_sw.GetWH(sw_w, sw_h);
+
             temp_c = sw_c;
             temp_r = sw_r;
 
+            // Shift window
             if ((m_local_type == FCWS__LOCAL__TYPE__LEFT|| m_local_type == FCWS__LOCAL__TYPE__CENTER) && (temp_c + 1) < (cols - sw_w))
             {
                 temp_c++;
@@ -600,7 +672,7 @@ int CLocalFeature::DoDetection()
                 if (m_local_type == FCWS__LOCAL__TYPE__LEFT|| m_local_type == FCWS__LOCAL__TYPE__CENTER)
                     temp_c = 0;
                 else
-                    temp_c = m_imgy->size2 - 30;
+                    temp_c = m_imgy->size2 - sw_w;
 
                 if ((temp_r + 1) < (rows - sw_h))
                 {
@@ -611,24 +683,62 @@ int CLocalFeature::DoDetection()
 
             }
 
+            if (shift_success)
+            {
+                m_sw.SetPos(temp_r, temp_c);
+                score = m_para2->CalProbability((const gsl_vector*)img_vector);
+
+                if (score > max_score)
+                {
+                    max_score = score;
+                    m_best_sw.SetPos(temp_r, temp_c);
+                    m_best_sw.SetWH(sw_w, sw_c);
+                    m_best_sw.SetScore(max_score);
+                }
+            }
         }
         else
         {
-            for (temp_r = sw_r ; temp_r < (rows - sw_h) ; temp_r++)
+            // Shift window
+            if (m_local_type == FCWS__LOCAL__TYPE__LEFT|| m_local_type == FCWS__LOCAL__TYPE__CENTER)
             {
-                for (temp_c = sw_c ; temp_c < (cols - sw_w) ; temp_c++)
+                for (temp_r = sw_r ; temp_r < (rows - sw_h) ; temp_r++)
                 {
-                    //printf("[%d][%d] (%d, %d)\n", temp_r, temp_c, rows - sw_h, cols - sw_w);
-                    m_para2->CalProbability();
-                }
-            } 
+                    for (temp_c = sw_c ; temp_c < (cols - sw_w) ; temp_c++)
+                    {
+                        //printf("[%d][%d] (%d, %d)\n", temp_r, temp_c, rows - sw_h, cols - sw_w);
+                        score = m_para2->CalProbability((const gsl_vector*)img_vector);
+
+                        if (score > max_score)
+                        {
+                            max_score = score;
+                            m_best_sw.SetPos(temp_r, temp_c);
+                            m_best_sw.SetWH(sw_w, sw_c);
+                            m_best_sw.SetScore(max_score);
+                        }
+                    }
+                } 
+            } else {
+                for (temp_r = sw_r ; temp_r < (rows - sw_h) ; temp_r++)
+                {
+                    for (temp_c = (cols - sw_w) ; temp_c > 0 ; temp_c--)
+                    {
+                        //printf("[%d][%d] (%d, %d)\n", temp_r, temp_c, rows - sw_h, cols - sw_w);
+                        score = m_para2->CalProbability((const gsl_vector*)img_vector);
+
+                        if (score > max_score)
+                        {
+                            max_score = score;
+                            m_best_sw.SetPos(temp_r, temp_c);
+                            m_best_sw.SetWH(sw_w, sw_c);
+                            m_best_sw.SetScore(max_score);
+                        }
+                    }
+                } 
+            }
         }
 
-        if (m_one_step_mode && shift_success)
-        {
-            m_sw.SetPos(temp_r, temp_c);
-            m_para2->CalProbability();
-        }
+        printf("Max score %lf\n", max_score);
 
         m_detectiondone = true;
         pthread_mutex_unlock(&m_Mutex);
@@ -926,6 +1036,10 @@ int CLocalFeature::CalEigenSpace(gsl_matrix* covar, gsl_vector** eval, gsl_matri
 	ret = gsl_eigen_symmv(covar, pEValue, pEVctor, workspace);
     gsl_eigen_symmv_free(workspace);
 
+        for (int i=0 ; i<10 ; i++)
+        {
+            printf("eval[%d]=%lf\n", i, gsl_vector_get(pEValue, i));
+        }
     if (ret == GSL_SUCCESS)
     {
     	gsl_eigen_symmv_sort(pEValue, pEVctor, GSL_EIGEN_SORT_VAL_DESC);
@@ -1606,7 +1720,7 @@ void CLocalFeature::WriteBackMatrixToImages(gsl_matrix *x, string postfix)
 	rows = x->size1;
 	cols = x->size2;
 
-	printf("[%s] postfix %s(%d,%d)\n", __func__, postfix.c_str(), rows, cols);
+	printf("[%s] postfix %s(%d,%d) output %s\n", __func__, postfix.c_str(), rows, cols, m_output_folder.c_str());
 
 	xu = gsl_matrix_uchar_alloc(rows, cols);
 

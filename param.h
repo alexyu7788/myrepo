@@ -25,11 +25,12 @@ typedef struct _PCA
 
 class CParam2 {
 protected:
-        PCA*    m_pca;
-        PCA*    m_pca2;
+        FCWS__Local__Type   m_local_type;
+        PCA*                m_pca;
+        PCA*                m_pca2;
 
 public:
-        CParam2();
+        CParam2(FCWS__Local__Type local_type);
 
         ~CParam2();
     
@@ -41,7 +42,7 @@ public:
         
         bool LoadParam(FCWS__Para2* param);
 
-        double CalProbability();
+        double CalProbability(const gsl_vector *img);
 
 protected:
         bool SetPCAParam(PCA *pca, gsl_vector* mean, gsl_vector* eval, gsl_matrix* evec);
@@ -50,6 +51,7 @@ protected:
 
         bool InitAndSetICAMember(FCWS__Para2__Ica *ica, PCA *mpca);
 
+        double CalProbabilityOfPCA(const gsl_vector *img, PCA *pca);
 };
 
 class CParam {

@@ -68,6 +68,16 @@ void CShiftWindow::SetInfo(int r, int c, int w, int h)
     m_h = h;
 }
 
+double CShiftWindow::GetScore()
+{
+    return m_score;
+}
+
+void CShiftWindow::SetScore(double score)
+{
+    m_score = score;
+}
+
 // CLocalInfo
 CLocalInfo::CLocalInfo()
 {
