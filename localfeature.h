@@ -143,7 +143,7 @@ protected:
 
 		gsl_vector*	CalMean(gsl_matrix *m);
 
-		gsl_matrix* CalVariance(gsl_matrix *m, gsl_vector* mean);
+		gsl_matrix* CalCoVariance(gsl_matrix *m, gsl_vector* mean);
 
 		int CalEigenSpace(gsl_matrix* covar, gsl_vector** eval, gsl_matrix** evec);
 

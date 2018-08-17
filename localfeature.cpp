@@ -966,7 +966,7 @@ gsl_vector*	CLocalFeature::CalMean(gsl_matrix *m)
 	return mean;
 }
 
-gsl_matrix* CLocalFeature::CalVariance(gsl_matrix *m, gsl_vector* mean)
+gsl_matrix* CLocalFeature::CalCoVariance(gsl_matrix *m, gsl_vector* mean)
 {
 	assert(m != NULL);
 	assert(mean != NULL);
@@ -987,6 +987,7 @@ gsl_matrix* CLocalFeature::CalVariance(gsl_matrix *m, gsl_vector* mean)
 	mean_subtracted_m = gsl_matrix_alloc(rows, cols);
 	gsl_matrix_memcpy(mean_subtracted_m, m);
 
+    // X - X.mean
 	for (i=0 ; i<cols ; i++)
 	{
 		mean_subtracted_m_cloumn_view = gsl_matrix_column(mean_subtracted_m, i);
@@ -1013,9 +1014,9 @@ int CLocalFeature::CalEigenSpace(gsl_matrix* covar, gsl_vector** eval, gsl_matri
 {
 	assert(covar != NULL);
 
-	int i, rows, cols, ret = 0;
-	gsl_vector *pEValue;
-	gsl_matrix *pEVctor;
+	int i, rows, cols, ret = 0, non_zero_cnt = 0;;
+	gsl_vector *pEValue, *pNonZeroEval;
+	gsl_matrix *pEVctor, *pNonZeroEvec;
     gsl_eigen_symmv_workspace* workspace;
 
 //	unsigned long long start_time, end_time;
@@ -1036,13 +1037,18 @@ int CLocalFeature::CalEigenSpace(gsl_matrix* covar, gsl_vector** eval, gsl_matri
 	ret = gsl_eigen_symmv(covar, pEValue, pEVctor, workspace);
     gsl_eigen_symmv_free(workspace);
 
-        for (int i=0 ; i<10 ; i++)
-        {
-            printf("eval[%d]=%lf\n", i, gsl_vector_get(pEValue, i));
-        }
     if (ret == GSL_SUCCESS)
     {
     	gsl_eigen_symmv_sort(pEValue, pEVctor, GSL_EIGEN_SORT_VAL_DESC);
+
+        for (non_zero_cnt = 0 ; non_zero_cnt < pEValue->size; non_zero_cnt++)
+        {
+            if (gsl_vector_get(pEValue, non_zero_cnt) == 0)
+                break;
+        }
+
+        if (non_zero_cnt < pEValue->size)
+            printf("index of non-zreo eval: %d.\n", non_zero_cnt);
 
 		*eval = pEValue;
 		*evec = pEVctor;
@@ -1091,7 +1097,9 @@ gsl_matrix* CLocalFeature::GenerateProjectionMatrix(gsl_matrix *p, gsl_matrix *x
 	return r;
 }
 
-// X` = P X R, where X` is NxM, P is NxK, R is KxM
+// X` = P X R + X-mean, where X` is NxM, P is NxK, R is KxM
+// p: the first k components eigenvector
+// r: projection
 gsl_matrix* CLocalFeature::GenerateReconstructImageMatrixFromPCA(gsl_matrix *p, gsl_matrix *r, gsl_vector *mean)
 {
 	assert(p != NULL);
@@ -1212,14 +1220,125 @@ int CLocalFeature::PCA
 {
 	assert(im != NULL);
 
+#if 0 //for verify mean & covariance
+    if (m_local_type == FCWS__LOCAL__TYPE__LEFT)
+    {
+        double  testdata[] = {
+                                4.0, 4.2, 3.9, 4.3, 4.1,
+                                2.0, 2.1, 2.0, 2.1, 2.2,
+                                0.6, 0.59, 0.58, 0.62, 0.63,
+                                1.2, 1.45, 1.8, 2.0, 1.1,
+                                2.4, 2.2, 2.7, 2.1, 2.4,
+                                3.4, 3.5, 3.78, 3.21, 3.3
+                            };
+
+        gsl_matrix_view testmatrixview = gsl_matrix_view_array(testdata, 6, 5);
+
+        printf("Size of matrix is %dX%d\n", testmatrixview.matrix.size1, testmatrixview.matrix.size2);
+
+        for (uint32_t r=0 ; r<testmatrixview.matrix.size1 ; r++)
+        {
+            for (uint32_t c=0 ; c<testmatrixview.matrix.size2 ; c++)
+            {
+                printf("[%d][%d]=%+lf\t", r, c, gsl_matrix_get(&testmatrixview.matrix, r, c));
+            }
+            printf("\n");
+        }
+
+        gsl_vector *test_mean = NULL;
+
+        test_mean = CalMean(&testmatrixview.matrix);
+
+        printf("Mean:\n");
+        if (test_mean)
+        {
+            for (uint32_t i=0 ; i<test_mean->size ; i++)
+                printf("[%d] = %+lf\n", i, gsl_vector_get(test_mean, i));
+        }
+
+
+        gsl_matrix* test_covar = NULL;
+
+        test_covar = CalCoVariance(&testmatrixview.matrix, test_mean);
+
+        printf("variance\n");
+        if (test_covar)
+        {
+            for (uint32_t r=0 ; r<test_covar->size1 ; r++)
+            {
+                for (uint32_t c=0 ; c<test_covar->size2 ; c++)
+                {
+                    printf("[%d][%d]=%+lf\t", r, c, gsl_matrix_get(test_covar, r, c));
+                    //printf("%+lf\t", r, c, gsl_matrix_get(test_covar, r, c));
+                }
+                printf("\n");
+            }
+        }
+
+        int test_ret = 0;
+        gsl_vector* test_eval = NULL;
+        gsl_matrix* test_evec = NULL;
+
+        test_ret = CalEigenSpace(test_covar, &test_eval, &test_evec);
+
+        if (test_ret == GSL_SUCCESS)
+        {
+            printf("Eval:\n");
+            if (test_eval)
+            {
+                for (uint32_t i=0 ; i<test_eval->size ; i++)
+                    printf("[%d] = %+.32lf\n", i, gsl_vector_get(test_eval, i));
+            }
+
+            printf("Evec:\n");
+            if (test_evec)
+            {
+                for (uint32_t r=0 ; r<test_evec->size1 ; r++)
+                {
+                    for (uint32_t c=0 ; c<test_evec->size2 ; c++)
+                    {
+                        printf("[%d][%d]=%+lf\t", r, c, gsl_matrix_get(test_evec, r, c));
+                    }
+                    printf("\n");
+                }
+            }
+        }
+        else
+            printf("Can not calculate eigen.\n");
+
+        if (test_mean)
+            gsl_vector_free(test_mean);
+
+        if (test_covar)
+            gsl_matrix_free(test_covar);
+
+        if (test_eval)
+            gsl_vector_free(test_eval);
+
+        if (test_evec)
+            gsl_matrix_free(test_evec);
+
+    }
+#endif
+
 	int ret = 0;
 
 	*mean 	= CalMean(im);
-	*covar 	= CalVariance(im, *mean);
+	*covar 	= CalCoVariance(im, *mean);
 	ret 	= CalEigenSpace(*covar, eval, evec);
 
 	if (ret == GSL_SUCCESS)
 	{
+#if 0
+        if (m_local_type == FCWS__LOCAL__TYPE__LEFT)
+        {
+            if (*eval)
+            {
+                for (uint32_t i=0 ; i<100 ; i++)
+                    printf("eval[%d] = %+.32lf\n", i, gsl_vector_get((*eval), i));
+            }
+        }
+#endif
         *principle_eval         = GetFirstKComponents(*eval, first_k_comp);
 		*principle_evec 		= GetFirstKComponents(*evec, first_k_comp);
 		*projection 			= GenerateProjectionMatrix(&(principle_evec->matrix), im);
