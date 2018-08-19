@@ -468,9 +468,12 @@ void CMainWindow::DrawShiftWindow()
         {        
             (*it)->GetLocalInfo((FCWS__Local__Type)i, local_r, local_c, local_w, local_h);
 
-//            printf("%s: %d, %d, %d, %d\n",
-//                    search_local_model_pattern[i],
-//                    r, c, w, h);
+#if 0
+            printf("[%s][%d] %s: %d, %d, %d, %d\n",
+                    __func__, __LINE__,
+                    search_local_model_pattern[i],
+                    local_r, local_c, local_w, local_h);
+#endif
 
             rect.x = local_c;
             rect.y = local_r;

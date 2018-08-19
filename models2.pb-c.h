@@ -45,7 +45,8 @@ typedef enum _FCWS__Local__Type {
   FCWS__LOCAL__TYPE__LEFT = 0,
   FCWS__LOCAL__TYPE__RIGHT = 1,
   FCWS__LOCAL__TYPE__CENTER = 2,
-  FCWS__LOCAL__TYPE__TOTAL = 3
+  FCWS__LOCAL__TYPE__GARBAGE = 3,
+  FCWS__LOCAL__TYPE__TOTAL = 4
     PROTOBUF_C__FORCE_ENUM_TO_BE_INT_SIZE(FCWS__LOCAL__TYPE)
 } FCWS__Local__Type;
 typedef enum _FCWS__VehicleModel__Type {
@@ -126,10 +127,13 @@ struct  _FCWS__Local
   size_t n_para;
   FCWS__Para **para;
   FCWS__Para2 *para2;
+  int32_t sw_w;
+  int32_t sw_h;
+  protobuf_c_boolean need_thread;
 };
 #define FCWS__LOCAL__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&fcws__local__descriptor) \
-    , FCWS__LOCAL__TYPE__UnKonwn, 0,NULL, NULL }
+    , FCWS__LOCAL__TYPE__UnKonwn, 0,NULL, NULL, 0, 0, 0 }
 
 
 /*

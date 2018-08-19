@@ -41,8 +41,8 @@ protected:
         bool                    m_has_param;
         CParam2*                m_para2;
 
-		int						image_w;
-		int						image_h;
+		int						m_image_w;
+		int						m_image_h;
 		gsl_matrix*				m_image_matrix;
 
 		gsl_vector*				m_mean;
@@ -73,6 +73,7 @@ protected:
         bool                    m_detectionready;
         bool                    m_detectiondone;
         double                  m_detectionscore;
+        bool                    m_need_thread;
 
         gsl_matrix*             m_imgy;
         CShiftWindow            m_sw;
@@ -82,6 +83,14 @@ public:
 		CLocalFeature(FCWS__VehicleModel__Type vm_type, FCWS__Local__Type local_type);
 
 		~CLocalFeature();
+
+        void GetWH(int &w, int &h);
+
+        void SetSWWH(int w, int h);
+
+        void SetNeedThread(bool need_thread);
+
+        bool GetNeedThread();
 
         bool HasParam();
 
@@ -124,7 +133,7 @@ public:
 
         double GetScore();
 
-        int DoDetection();
+        int DoDetection(CLocalFeature *garbage_lf);
 
         int TriggerDetection(bool onestep = false);
 

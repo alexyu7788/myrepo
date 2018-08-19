@@ -43,12 +43,16 @@ message Local {
         LEFT = 0;
         RIGHT = 1;
         CENTER = 2;
-        TOTAL = 3;
+        GARBAGE = 3;
+        TOTAL = 4;
     }
 
     required Type local = 1 [default = UnKonwn];
     repeated Para para = 2;
     required Para2 para2 = 3;
+    required int32 sw_w = 4;
+    required int32 sw_h = 5;
+    required bool need_thread = 6;
 }
 
 /* vehicle model */

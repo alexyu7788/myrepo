@@ -38,8 +38,8 @@ CLocalFeature::CLocalFeature(FCWS__VehicleModel__Type vm_type, FCWS__Local__Type
 	m_ica_first_k_components 	=
 	m_ica_compoments_offset 	= 0;
 
-	image_w                     = 0;
-	image_h                     = 0;
+	m_image_w                     = 0;
+	m_image_h                     = 0;
 	m_image_matrix              = NULL;
 
 	m_covar 					=
@@ -66,6 +66,7 @@ CLocalFeature::CLocalFeature(FCWS__VehicleModel__Type vm_type, FCWS__Local__Type
     m_detectionready            = false;
     m_detectionscore            = 0.0;
     m_detectiondone             = true;
+    m_need_thread               = false;
 
     m_imgy                      = NULL;
 }
@@ -149,6 +150,27 @@ CLocalFeature::~CLocalFeature()
 
 
 
+}
+
+void CLocalFeature::GetWH(int &w, int &h)
+{
+    w = m_image_w;
+    h = m_image_h;
+}
+
+void CLocalFeature::SetSWWH(int w, int h)
+{
+    m_sw.SetWH(w, h);
+}
+
+void CLocalFeature::SetNeedThread(bool need_thread)
+{
+    m_need_thread = need_thread;
+}
+
+bool CLocalFeature::GetNeedThread()
+{
+    return m_need_thread;
 }
 
 bool CLocalFeature::HasParam()
@@ -312,8 +334,8 @@ int CLocalFeature::PickUpFiles(vector<string> & feedin, int rows, int cols)
 
 	if (feedin.size() > 0)
 	{
-//		image_w = rows;
-//		image_h = cols;
+//		m_image_w = rows;
+//		m_image_h = cols;
 
 		m_filelist.clear();
 
@@ -333,13 +355,13 @@ int CLocalFeature::PickUpFiles(vector<string> & feedin, int rows, int cols)
 					sscanf(pch, "%*[^_]_%d_%d", &w, &h);
 					printf("%s\n", it->c_str());
 
-					if (image_w == 0 && image_h == 0)
+					if (m_image_w == 0 && m_image_h == 0)
 					{
-						image_w = w;
-						image_h = h;
+						m_image_w = w;
+						m_image_h = h;
 					}
 
-					if (image_w && image_w == w && image_h && image_h == h)
+					if (m_image_w && m_image_w == w && m_image_h && m_image_h == h)
 						m_filelist.push_back(it->c_str());
 
 					it->clear();
@@ -518,7 +540,7 @@ double CLocalFeature::GetScore()
     pthread_mutex_unlock(&m_Mutex);
 }
 
-int CLocalFeature::DoDetection()
+int CLocalFeature::DoDetection(CLocalFeature *garbage_lf)
 {
     int rows, cols;
     int temp_r, temp_c;
@@ -778,6 +800,7 @@ void CLocalFeature::SetLocalImg(uint8_t *imgy, int o_w, int o_h, int r, int c, i
 {
     int rr, cc;
     int shift = (r * o_w) + c;
+    int sw_w, sw_h;
 
     if (!imgy || !w || !h)
         return;
@@ -803,17 +826,22 @@ void CLocalFeature::SetLocalImg(uint8_t *imgy, int o_w, int o_h, int r, int c, i
             gsl_matrix_set(m_imgy, rr, cc, imgy[ shift + rr * pitch + cc]);
 
     // Initialization position of shift windows.
+    m_sw.GetWH(sw_w, sw_h);
+
     switch (m_local_type)
     {
         case FCWS__LOCAL__TYPE__LEFT:
-            m_sw.SetInfo(0, 0, 30, 50);
+            //m_sw.SetInfo(0, 0, 30, 50);
+            m_sw.SetPos(0, 0);
             break;
         case FCWS__LOCAL__TYPE__RIGHT:
-            m_sw.SetInfo(0, m_imgy->size2 - 30, 30, 50);
+            //m_sw.SetInfo(0, m_imgy->size2 - 30, 30, 50);
+            m_sw.SetPos(0, m_imgy->size2 - sw_w);
             break;
             break;
         case FCWS__LOCAL__TYPE__CENTER: 
-            m_sw.SetInfo(0, 0, 75, 20);
+            //m_sw.SetInfo(0, 0, 75, 20);
+            m_sw.SetPos(0, 0);
             break;
         default:
             break;
@@ -893,11 +921,11 @@ int	CLocalFeature::GenImageMat()
 
 	file_count = m_filelist.size();
 
-	if (file_count && image_w && image_h)
+	if (file_count && m_image_w && m_image_h)
 	{
-		printf("[%s] file_count %d(%dx%d) of %s of %s\n\n", __func__, file_count, image_w, image_h, m_local_name, m_vm_name);
+		printf("[%s] file_count %d(%dx%d) of %s of %s\n\n", __func__, file_count, m_image_w, m_image_h, m_local_name, m_vm_name);
 
-		y_size = image_w * image_h;
+		y_size = m_image_w * m_image_h;
 		temp = (unsigned char*)malloc(sizeof(unsigned char) * y_size);
 		m_image_matrix = gsl_matrix_alloc(y_size, file_count);
 

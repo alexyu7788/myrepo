@@ -13,6 +13,11 @@
 
 using namespace std;
 
+typedef struct dual_lf_param {
+   CLocalFeature    *this_lf;
+   CLocalFeature    *garbage_lf;
+}dual_lf_param;
+
 class CVehicleModel {
 protected:
         bool                     m_terminate;
@@ -38,6 +43,12 @@ public:
 		int	StartTrainingThreads();
         
 		int	StartDetectionThreads();
+
+        void GetLocalFeatureWH(FCWS__Local__Type local_type, int &w, int &h);
+
+        void SetLocalFeatureSWWH(FCWS__Local__Type local_type, int w, int h);
+        
+        void SetLocalFeatureNeedThread(FCWS__Local__Type local_type, bool need_thread);
 
 		int SetParam(FCWS__VehicleModel__Type vm_type, FCWS__Local__Type local_type, FCWS__Para__Type para_type, gsl_matrix *from);
 

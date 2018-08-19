@@ -130,6 +130,9 @@ int FCWS::LoadModel(string model_name)
 					{
 						local_type = models->vm[i]->local[j]->local;
 
+                        m_vm[vm_type]->SetLocalFeatureSWWH(local_type, models->vm[i]->local[j]->sw_w, models->vm[i]->local[j]->sw_h);
+                        m_vm[vm_type]->SetLocalFeatureNeedThread(local_type, models->vm[i]->local[j]->need_thread);
+
 						for (k=0 ; k<models->vm[i]->local[j]->n_para ; k++)
 						{
 							if (models->vm[i]->local[j]->para[k])
@@ -236,6 +239,8 @@ int FCWS::SaveModel(string model_name)
 					models.vm[i]->local[j]->local 	= (FCWS__Local__Type)j;
 					models.vm[i]->local[j]->n_para 	= FCWS__PARA__TYPE__TOTAL;
 					models.vm[i]->local[j]->para	= (FCWS__Para**)malloc(sizeof(FCWS__Para*) * models.vm[i]->local[j]->n_para);
+                    m_vm[i]->GetLocalFeatureWH((FCWS__Local__Type)j, models.vm[i]->local[j]->sw_w, models.vm[i]->local[j]->sw_h);
+                    models.vm[i]->local[j]->need_thread = (j == FCWS__LOCAL__TYPE__GARBAGE ? false : true);
 
 					for (k=FCWS__PARA__TYPE__PCA ; k<FCWS__PARA__TYPE__TOTAL ; k++)
 					{

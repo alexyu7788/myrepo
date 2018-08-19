@@ -574,23 +574,25 @@ const ProtobufCMessageDescriptor fcws__para__descriptor =
   (ProtobufCMessageInit) fcws__para__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-static const ProtobufCEnumValue fcws__local__type__enum_values_by_number[5] =
+static const ProtobufCEnumValue fcws__local__type__enum_values_by_number[6] =
 {
   { "UnKonwn", "FCWS__LOCAL__TYPE__UnKonwn", -1 },
   { "LEFT", "FCWS__LOCAL__TYPE__LEFT", 0 },
   { "RIGHT", "FCWS__LOCAL__TYPE__RIGHT", 1 },
   { "CENTER", "FCWS__LOCAL__TYPE__CENTER", 2 },
-  { "TOTAL", "FCWS__LOCAL__TYPE__TOTAL", 3 },
+  { "GARBAGE", "FCWS__LOCAL__TYPE__GARBAGE", 3 },
+  { "TOTAL", "FCWS__LOCAL__TYPE__TOTAL", 4 },
 };
 static const ProtobufCIntRange fcws__local__type__value_ranges[] = {
-{-1, 0},{0, 5}
+{-1, 0},{0, 6}
 };
-static const ProtobufCEnumValueIndex fcws__local__type__enum_values_by_name[5] =
+static const ProtobufCEnumValueIndex fcws__local__type__enum_values_by_name[6] =
 {
   { "CENTER", 3 },
+  { "GARBAGE", 4 },
   { "LEFT", 1 },
   { "RIGHT", 2 },
-  { "TOTAL", 4 },
+  { "TOTAL", 5 },
   { "UnKonwn", 0 },
 };
 const ProtobufCEnumDescriptor fcws__local__type__descriptor =
@@ -600,16 +602,16 @@ const ProtobufCEnumDescriptor fcws__local__type__descriptor =
   "Type",
   "FCWS__Local__Type",
   "FCWS",
-  5,
+  6,
   fcws__local__type__enum_values_by_number,
-  5,
+  6,
   fcws__local__type__enum_values_by_name,
   1,
   fcws__local__type__value_ranges,
   NULL,NULL,NULL,NULL   /* reserved[1234] */
 };
 static const FCWS__Local__Type fcws__local__local__default_value = FCWS__LOCAL__TYPE__UnKonwn;
-static const ProtobufCFieldDescriptor fcws__local__field_descriptors[3] =
+static const ProtobufCFieldDescriptor fcws__local__field_descriptors[6] =
 {
   {
     "local",
@@ -647,16 +649,55 @@ static const ProtobufCFieldDescriptor fcws__local__field_descriptors[3] =
     0,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
+  {
+    "sw_w",
+    4,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_INT32,
+    0,   /* quantifier_offset */
+    offsetof(FCWS__Local, sw_w),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "sw_h",
+    5,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_INT32,
+    0,   /* quantifier_offset */
+    offsetof(FCWS__Local, sw_h),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "need_thread",
+    6,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_BOOL,
+    0,   /* quantifier_offset */
+    offsetof(FCWS__Local, need_thread),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
 };
 static const unsigned fcws__local__field_indices_by_name[] = {
   0,   /* field[0] = local */
+  5,   /* field[5] = need_thread */
   1,   /* field[1] = para */
   2,   /* field[2] = para2 */
+  4,   /* field[4] = sw_h */
+  3,   /* field[3] = sw_w */
 };
 static const ProtobufCIntRange fcws__local__number_ranges[1 + 1] =
 {
   { 1, 0 },
-  { 0, 3 }
+  { 0, 6 }
 };
 const ProtobufCMessageDescriptor fcws__local__descriptor =
 {
@@ -666,7 +707,7 @@ const ProtobufCMessageDescriptor fcws__local__descriptor =
   "FCWS__Local",
   "FCWS",
   sizeof(FCWS__Local),
-  3,
+  6,
   fcws__local__field_descriptors,
   fcws__local__field_indices_by_name,
   1,  fcws__local__number_ranges,

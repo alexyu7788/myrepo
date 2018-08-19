@@ -82,6 +82,8 @@ int CVehicleModel::StartTrainingThreads()
 
 int CVehicleModel::StartDetectionThreads()
 {
+    dual_lf_param   param[FCWS__LOCAL__TYPE__TOTAL];
+
 	m_finish = false;
 
 //	pthread_create(&m_monitor_thread, NULL, DetectionMonitorThread, this);
@@ -91,9 +93,12 @@ int CVehicleModel::StartDetectionThreads()
 	// Start Detection Threads.
 	for (int i=0 ; i<FCWS__LOCAL__TYPE__TOTAL ; i++)
 	{
-		if (m_local_feature[i])
+		if (m_local_feature[i] && m_local_feature[i]->GetNeedThread())
         {
-			pthread_create(&m_thread[i], NULL, DetectionProcess, m_local_feature[i]);
+            param[i].this_lf       = m_local_feature[i];
+            param[i].garbage_lf    = m_local_feature[FCWS__LOCAL__TYPE__GARBAGE];
+
+			pthread_create(&m_thread[i], NULL, DetectionProcess, &param[i]);
         }
 	}
 
@@ -112,6 +117,24 @@ int CVehicleModel::StartDetectionThreads()
 	// printf("[VehicleModel] Detection  %d is done\n", m_vm_type);
 
 	return 0;
+}
+
+void CVehicleModel::GetLocalFeatureWH(FCWS__Local__Type local_type, int &w, int &h)
+{
+    if (m_local_feature[local_type])
+        m_local_feature[local_type]->GetWH(w, h);
+}
+
+void CVehicleModel::SetLocalFeatureSWWH(FCWS__Local__Type local_type, int w, int h)
+{
+    if (m_local_feature[local_type])
+        m_local_feature[local_type]->SetSWWH(w, h);
+}
+
+void CVehicleModel::SetLocalFeatureNeedThread(FCWS__Local__Type local_type, bool need_thread)
+{
+    if (m_local_feature[local_type])
+        m_local_feature[local_type]->SetNeedThread(need_thread);
 }
 
 int CVehicleModel::SetParam(FCWS__VehicleModel__Type vm_type, FCWS__Local__Type local_type, FCWS__Para__Type para_type, gsl_matrix *from)
@@ -342,7 +365,8 @@ void CVehicleModel::SetDetectionSource(uint8_t *img, int o_width, int o_height, 
         // Trigger local detection.
         for (int i=FCWS__LOCAL__TYPE__LEFT ; i<FCWS__LOCAL__TYPE__TOTAL ; i++)
         {
-            if (m_local_feature[i] && m_thread[i])
+            //if (m_local_feature[i] && m_thread[i])
+            if (m_local_feature[i] && m_local_feature[i]->GetNeedThread())
             {
                 switch (i)
                 {
@@ -369,7 +393,8 @@ void CVehicleModel::SetDetectionSource(uint8_t *img, int o_width, int o_height, 
                         break;
                 }
 
-                printf("1 %s: %d, %d, %d, %d\n",
+                printf("[%s] %s: %d, %d, %d, %d\n",
+                        __func__,
                         search_local_model_pattern[i],
                         r, c, w, h);
 
@@ -431,7 +456,7 @@ void CVehicleModel::TriggerDetectionOneStep(Candidates &vcs)
             m_local_feature[i]->TriggerDetection(true);
         }
     }
-    
+     
     // Wait all local features are finished.
     while (!m_finish)
     {
@@ -455,7 +480,6 @@ void CVehicleModel::TriggerDetectionOneStep(Candidates &vcs)
             }
         }
     }
-
 }
 
 
@@ -479,13 +503,28 @@ void* CVehicleModel::TrainingProcess(void *arg)
 void* CVehicleModel::DetectionProcess(void *arg)
 {
 	int ret = 0;
+
+#if 1
+    dual_lf_param *param = (dual_lf_param*)arg;
+    CLocalFeature *this_lf = NULL, *garbage_lf = NULL;
+
+    if (param)
+    {
+        this_lf     = param->this_lf;
+        garbage_lf  = param->garbage_lf;
+
+        if (this_lf && garbage_lf)
+            ret = this_lf->DoDetection(garbage_lf);
+    }
+#else
+
 	CLocalFeature* localfeature = (CLocalFeature*)arg;
 
 	if (localfeature)
 	{
 		ret = localfeature->DoDetection();
 	}
-
+#endif
 	return NULL;
 }
 
@@ -565,9 +604,18 @@ bool CVehicleModel::IsIdle()
     for (int i=0 ; i<FCWS__LOCAL__TYPE__TOTAL ; i++)
     {
         if (m_local_feature[i])
+        {
+            if (!m_local_feature[i]->GetNeedThread())
+                continue;
+
             res &= m_local_feature[i]->IsIdle();
-        else
-            res = false;
+#if 0
+            if (m_local_feature[i])
+                res &= m_local_feature[i]->IsIdle();
+            else
+                res = false;
+#endif
+        }
     }
 
     return res;
