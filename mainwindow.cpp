@@ -46,9 +46,9 @@ bool CMainWindow::Init()
 {
     m_fcws = new CFCWS();
 
-    m_vertical_hist = gsl_vector_alloc(m_height);
-    m_horizontal_hist = gsl_vector_alloc(m_width);
-    m_grayscale_hist = gsl_vector_alloc(256);
+    m_vertical_hist     = gsl_vector_alloc(m_width);
+    m_horizontal_hist   = gsl_vector_alloc(m_height);
+    m_grayscale_hist    = gsl_vector_alloc(256);
 
     return CBaseWindow::Init();
 }
@@ -72,8 +72,7 @@ void CMainWindow::ProcessEvent()
                 m_terminate = true;
         }
 
-        if (ProcessImage())
-            UpdateTexture();
+        ProcessImage();
 
         Draw();
     }
@@ -82,6 +81,8 @@ void CMainWindow::ProcessEvent()
 //-------------------------------------------------------------------
 void CMainWindow::Draw()
 {
+    SDL_Color color;
+
     if (m_renderer && m_texture)
     {
         pthread_mutex_lock(&m_mutex);
@@ -99,11 +100,78 @@ void CMainWindow::Draw()
 
         UpdateTexture();
 
-        //DrawShiftWindow();
+        // Draw Grayscale Histogram
+        color.r = 0x80;
+        color.g = 0x00;
+        color.b = 0x80;
+        color.a = 0xFF;
+        DrawHistogram(m_grayscale_hist, 0, 200, &color, 256, 4);
+
+        // Draw Vertical Histogram
+        color.r = 0x00;
+        color.g = 0xff;
+        color.b = 0;
+        color.a = 0xFF;
+        DrawHistogram(m_vertical_hist, 0, 5, &color, m_width, 4);
+
+        // Draw Vertical Histogram
+        color.r = 0xff;
+        color.g = 0x0;
+        color.b = 0x00;
+        color.a = 0xFF;
+        DrawHistogram(m_horizontal_hist, 1, 5, &color, 2, m_height);
+
         // Show
         SDL_RenderPresent(m_renderer);
 
         pthread_mutex_unlock(&m_mutex);
+    }
+}
+
+void CMainWindow::DrawHistogram(gsl_vector* vect, int pos, int offset, SDL_Color* color, int scale_w, int scale_h)
+{
+    if (!vect) {
+        dbg();
+        return ;
+    }
+
+    double max_val = 0;
+
+    SDL_SetRenderDrawColor(m_renderer, color->r, color->g, color->b, color->a);
+
+    switch (pos) {
+        case 0: //bottom
+            max_val = gsl_vector_max(vect);
+
+            for (uint32_t i=0 ; i<vect->size - 1 ; i++)
+            {
+                SDL_RenderDrawLine(m_renderer,
+                        (i * m_width) / scale_w,
+                        m_height - offset - (gsl_vector_get(vect, i) * (m_height / scale_h)) / max_val,
+                        (( i + 1) * m_width ) / scale_w,
+                        m_height - offset - (gsl_vector_get(vect, i+1) * (m_height / scale_h)) / max_val);
+            }
+            break;
+        case 1: // right
+            max_val = gsl_vector_max(vect);
+
+            for (uint32_t i=0 ; i<vect->size - 1 ; i++)
+            {
+                SDL_RenderDrawLine(m_renderer,
+                                   m_width - offset - (gsl_vector_get(vect, i) * (m_width / scale_w)) / max_val,
+                                   i,
+                                   m_width - offset - (gsl_vector_get(vect, i+1) * (m_width / scale_w)) / max_val,
+                                   i + 1);
+            }
+            break;
+        case 2: // up
+
+            break;
+        case 3: // left
+
+            break;
+        default:
+            break;
     }
 }
 
@@ -163,15 +231,6 @@ bool CMainWindow::UpdateTexture()
 //    Viewport.h = m_height;
 //    SDL_RenderSetViewport(m_renderer, &Viewport);
 
-    SDL_SetRenderDrawColor(m_renderer, 0x00, 0x00, 0xFF, 0x80);
-    for (int i=0 ; i<m_grayscale_hist->size - 1 ; i++)
-    {
-        SDL_RenderDrawLine(m_renderer,
-                         240 - i,
-                        gsl_vector_get(m_grayscale_hist, i) * 1/3,
-                        240 - i-1,
-                        gsl_vector_get(m_grayscale_hist, i+1) * 1/3);
-    }
 
     return true;
 }

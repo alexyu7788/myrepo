@@ -30,6 +30,8 @@ public:
 protected:
     void Draw();
 
+    void DrawHistogram(gsl_vector* vect, int pos, int offset, SDL_Color* color, int scale_w, int scale_h);
+
     void ProcessKeyEvent();
 
     bool ProcessImage();

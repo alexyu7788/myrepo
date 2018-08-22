@@ -8,6 +8,7 @@
 class CFCWS {
     protected:
         gsl_matrix* m_imgy;
+        gsl_matrix* m_temp_imgy;
 
     public:
         CFCWS();
@@ -28,9 +29,12 @@ class CFCWS {
         bool EdgeDetect(const gsl_matrix* src, gsl_matrix* edged, int threshold, int grandient, double* dir, int double_edge);
 
 
-        bool CalVertialHist(const gsl_matrix* imgy, gsl_vector* vertical_hist);
+        bool CalGrayscaleHist(const gsl_matrix* imgy, gsl_matrix* result_imgy, gsl_vector* grayscale_hist);
 
-        bool CalGrayscaleHist(const gsl_matrix* imgy, gsl_vector* grayscale_hist);
+        bool CalVerticalHist(const gsl_matrix* imgy, gsl_vector* vertical_hist);
+
+        bool CalHorizontalHist(const gsl_matrix* imgy, gsl_vector* horizontal_hist);
+
 };
 
 #endif
