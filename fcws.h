@@ -3,12 +3,16 @@
 
 #include <gsl/gsl_vector.h>
 #include <gsl/gsl_matrix.h>
+#include <gsl/gsl_blas.h>
 #include "common.h"
 
 class CFCWS {
     protected:
         gsl_matrix* m_imgy;
+        gsl_matrix* m_edged_imgy;
         gsl_matrix* m_temp_imgy;
+
+        gsl_matrix_view m_gaussian_kernel;
 
     public:
         CFCWS();
@@ -26,6 +30,8 @@ class CFCWS {
 
 
     protected:
+        bool GaussianBlur(const gsl_matrix* src, gsl_matrix* dst);
+
         bool EdgeDetect(const gsl_matrix* src, gsl_matrix* edged, int threshold, int grandient, double* dir, int double_edge);
 
 
