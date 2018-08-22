@@ -12,6 +12,7 @@
 #include "models2.pb-c.h"
 
 #define MAX_FN_L    255
+#define dbg(format, args...) printf("[%s][%s][%d] " format "\n", __FILE__, __func__, __LINE__, ##args)
 
 static const char *search_vehicle_model_pattern[FCWS__VEHICLE__MODEL__TYPE__TOTAL] = {"Compact", "Midsize", "Large", "SUV", "Bus", "Truck", "Motocycle", "Bike"};
 static const char *search_local_model_pattern[FCWS__LOCAL__TYPE__TOTAL] = {"Left", "Right", "Center", "Garbage"};

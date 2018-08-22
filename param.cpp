@@ -69,6 +69,11 @@ CParam2::~CParam2()
     }
 }
 
+PCA* CParam2::GetPCA()
+{
+    return m_pca;
+}
+
 bool CParam2::SetPCAParam(gsl_vector* mean, gsl_vector* eval, gsl_matrix* evec)
 {
     if (m_pca)
@@ -483,24 +488,25 @@ double CParam2::CalProbabilityOfPCA(const gsl_vector *img, PCA *pca)
     double eval;
     gsl_vector_view evec_col_view;
 
-    //printf("\n\n[%s] %s\n", __func__, 
-    //            search_local_model_pattern[m_local_type]);
+//    printf("\n\n[%s] Local feature: %s\n", __func__, 
+//                search_local_model_pattern[m_local_type]);
 
     // ---------------------PCA--------------------------------------------
     // Denominator
     for (i=0 ; i<pca->eval_size ; i++)
     {
         temp *= pow(gsl_vector_get(pca->eval_data, i), 0.5);
+#if 0
         if (m_local_type == FCWS__LOCAL__TYPE__LEFT)
         {
             printf("eval[%d] = %+.32lf, %+.32lf\n", i, gsl_vector_get(pca->eval_data, i), pow(gsl_vector_get(pca->eval_data, i), 0.5));
             printf("temp %+.32lf\n", temp);
         }
+#endif
     }
 
     //printf("temp %lf, %lf\n", temp, pow( 2*PI , pca->eval_size * 0.5 ));
     denominator = temp * pow( 2*PI , pca->eval_size * 0.5);
-    //printf("denominator %lf\n", denominator); 
 
     // Numerator
     if (!m_swimage_sub_mean || m_swimage_sub_mean->size != img->size)
@@ -534,12 +540,12 @@ double CParam2::CalProbabilityOfPCA(const gsl_vector *img, PCA *pca)
         }
     }
 
-    printf("=>%lf\n", 0 - (y_sum * 0.5));
+    //printf("=>%lf\n", 0 - (y_sum * 0.5));
     // exp[-1/2*y_sum]
     numerator = exp(0 - (y_sum * 0.5));
 
     res = numerator / denominator;
-    printf("res %lf, %lf/%lf\n", res, numerator , denominator);
+    //printf("res %.32lf, %.32lf/%.32lf\n", res, numerator , denominator);
 
     return res;
 }

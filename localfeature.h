@@ -144,6 +144,8 @@ public:
         void GetSWInfo(CShiftWindow &sw);
 
 protected:
+        CParam2* GetParam2();
+
         bool SetPCAParam(gsl_vector *mean, gsl_vector *eval, gsl_matrix *evec);
 
         bool SetPCA2Param(gsl_vector *mean, gsl_vector *eval, gsl_matrix *evec);

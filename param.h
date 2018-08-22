@@ -36,6 +36,8 @@ public:
         CParam2(FCWS__Local__Type local_type);
 
         ~CParam2();
+
+        PCA* GetPCA();
     
         bool SetPCAParam(gsl_vector* mean, gsl_vector* eval, gsl_matrix* evec);
 

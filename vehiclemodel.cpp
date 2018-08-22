@@ -86,9 +86,10 @@ int CVehicleModel::StartDetectionThreads()
 
 	m_finish = false;
 
-//	pthread_create(&m_monitor_thread, NULL, DetectionMonitorThread, this);
-
+    m_monitor_thread = 0;
     memset(m_thread, 0x0, sizeof(pthread_t) * FCWS__LOCAL__TYPE__TOTAL);
+
+//	pthread_create(&m_monitor_thread, NULL, DetectionMonitorThread, this);
 
 	// Start Detection Threads.
 	for (int i=0 ; i<FCWS__LOCAL__TYPE__TOTAL ; i++)
@@ -101,7 +102,6 @@ int CVehicleModel::StartDetectionThreads()
 			pthread_create(&m_thread[i], NULL, DetectionProcess, &param[i]);
         }
 	}
-
 	// Join Training Threads.
 	for (int i=0 ; i<FCWS__LOCAL__TYPE__TOTAL ; i++)
 	{
@@ -330,9 +330,14 @@ void CVehicleModel::Stop()
 {
     for (int i=FCWS__LOCAL__TYPE__LEFT ; i<FCWS__LOCAL__TYPE__TOTAL ; i++)
     {
-        if (m_local_feature[i])
+        if (m_local_feature[i] && m_local_feature[i]->GetNeedThread())
         {
             m_local_feature[i]->Stop();
+
+            while (m_local_feature[i]->DetectionReady())
+            {
+                usleep(100000);
+            }
         }
     }
 

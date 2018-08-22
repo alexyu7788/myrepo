@@ -557,7 +557,6 @@ int FCWS::InitDetectionThreads(bool debugwindow)
         }
 	}
 
-
 	// Join detection threads.
 	for (int i=0 ; i<FCWS__VEHICLE__MODEL__TYPE__TOTAL ; i++)
 	{

@@ -547,6 +547,8 @@ int CLocalFeature::DoDetection(CLocalFeature *garbage_lf)
     int sw_r, sw_c, sw_w, sw_h;
     bool shift_success = true;
     double max_score = 0, score = 0;
+    double lf_prob = 0, garbage_prob = 0;
+    double final_prob = 0;
     gsl_vector* img_vector = NULL;
     gsl_matrix_view temp_submatrix;
     gsl_vector_view temp_subrow;
@@ -663,6 +665,7 @@ int CLocalFeature::DoDetection(CLocalFeature *garbage_lf)
 #endif
         }
 
+#if 0
         printf("[%s][%d] lf %s of %s: (%d,%d) (%d,%d) (%d, %d)\n", 
                 __func__, __LINE__, 
                 search_local_model_pattern[m_local_type],
@@ -670,6 +673,7 @@ int CLocalFeature::DoDetection(CLocalFeature *garbage_lf)
                 sw_r, sw_c,
                 sw_w, sw_h,
                 rows, cols);
+#endif
 
         if (m_one_step_mode)
         {
@@ -708,8 +712,16 @@ int CLocalFeature::DoDetection(CLocalFeature *garbage_lf)
             if (shift_success)
             {
                 m_sw.SetPos(temp_r, temp_c);
-                score = m_para2->CalProbability((const gsl_vector*)img_vector);
+                lf_prob = m_para2->CalProbability((const gsl_vector*)img_vector);
 
+                if (garbage_lf)
+                {
+                   garbage_prob  = garbage_lf->GetParam2()->CalProbability((const gsl_vector*)img_vector);
+                   final_prob = lf_prob / ( lf_prob / 2.0 + garbage_prob / 2.0);
+                   printf("\n\n======findal prob. %lf(%.16lf/%.16lf) of %s=======\n", final_prob, lf_prob, garbage_prob,
+                           search_local_model_pattern[m_local_type]);
+                }
+#if 0
                 if (score > max_score)
                 {
                     max_score = score;
@@ -717,6 +729,7 @@ int CLocalFeature::DoDetection(CLocalFeature *garbage_lf)
                     m_best_sw.SetWH(sw_w, sw_c);
                     m_best_sw.SetScore(max_score);
                 }
+#endif
             }
         }
         else
@@ -729,14 +742,14 @@ int CLocalFeature::DoDetection(CLocalFeature *garbage_lf)
                     for (temp_c = sw_c ; temp_c < (cols - sw_w) ; temp_c++)
                     {
                         //printf("[%d][%d] (%d, %d)\n", temp_r, temp_c, rows - sw_h, cols - sw_w);
-                        score = m_para2->CalProbability((const gsl_vector*)img_vector);
+                        lf_prob = m_para2->CalProbability((const gsl_vector*)img_vector);
 
-                        if (score > max_score)
+                        if (garbage_lf)
                         {
-                            max_score = score;
-                            m_best_sw.SetPos(temp_r, temp_c);
-                            m_best_sw.SetWH(sw_w, sw_c);
-                            m_best_sw.SetScore(max_score);
+                            garbage_prob  = garbage_lf->GetParam2()->CalProbability((const gsl_vector*)img_vector);
+                            final_prob = lf_prob / ( lf_prob / 2.0 + garbage_prob / 2.0);
+                            printf("\n\n======findal prob. %lf(%.16lf/%.16lf) of %s=======\n", final_prob, lf_prob, garbage_prob,
+                                    search_local_model_pattern[m_local_type]);
                         }
                     }
                 } 
@@ -746,21 +759,28 @@ int CLocalFeature::DoDetection(CLocalFeature *garbage_lf)
                     for (temp_c = (cols - sw_w) ; temp_c > 0 ; temp_c--)
                     {
                         //printf("[%d][%d] (%d, %d)\n", temp_r, temp_c, rows - sw_h, cols - sw_w);
-                        score = m_para2->CalProbability((const gsl_vector*)img_vector);
+                        //score = m_para2->CalProbability((const gsl_vector*)img_vector);
 
-                        if (score > max_score)
+                        //if (score > max_score)
+                        //{
+                        //    max_score = score;
+                        //    m_best_sw.SetPos(temp_r, temp_c);
+                        //    m_best_sw.SetWH(sw_w, sw_c);
+                        //    m_best_sw.SetScore(max_score);
+                        //}
+                        lf_prob = m_para2->CalProbability((const gsl_vector*)img_vector);
+
+                        if (garbage_lf)
                         {
-                            max_score = score;
-                            m_best_sw.SetPos(temp_r, temp_c);
-                            m_best_sw.SetWH(sw_w, sw_c);
-                            m_best_sw.SetScore(max_score);
+                            garbage_prob  = garbage_lf->GetParam2()->CalProbability((const gsl_vector*)img_vector);
+                            final_prob = lf_prob / ( lf_prob / 2.0 + garbage_prob / 2.0);
+                            printf("\n\n======findal prob. %lf(%.16lf/%.16lf) of %s=======\n", final_prob, lf_prob, garbage_prob,
+                                    search_local_model_pattern[m_local_type]);
                         }
                     }
                 } 
             }
         }
-
-        printf("Max score %lf\n", max_score);
 
         m_detectiondone = true;
         pthread_mutex_unlock(&m_Mutex);
@@ -790,10 +810,11 @@ int CLocalFeature::TriggerDetection(bool onestep)
 void CLocalFeature::Stop()
 {
     pthread_mutex_lock(&m_Mutex);
-    pthread_cond_signal(&m_Cond);
-    pthread_mutex_unlock(&m_Mutex);
 
     m_terminate = true;
+
+    pthread_cond_signal(&m_Cond);
+    pthread_mutex_unlock(&m_Mutex);
 }
 
 void CLocalFeature::SetLocalImg(uint8_t *imgy, int o_w, int o_h, int r, int c, int w, int h, int pitch)
@@ -895,6 +916,11 @@ void CLocalFeature::GetSWInfo(CShiftWindow &sw)
 
 
 //-------------------------------------------------------------------
+CParam2* CLocalFeature::GetParam2()
+{
+    return this->m_para2;
+}
+
 bool CLocalFeature::SetPCAParam(gsl_vector *mean, gsl_vector *eval, gsl_matrix *evec)
 {
     if (!m_para2 || !mean || !eval || !evec)
