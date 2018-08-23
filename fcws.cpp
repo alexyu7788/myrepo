@@ -505,14 +505,13 @@ bool CFCWS::VehicleCandidateGenerate(
     printf("\n");
     while (peak_count < 20) {
         peak_idx = gsl_vector_max_index(hh);
-        dbg("peak %d at %d", (uint32_t)gsl_vector_max(hh), peak_idx);
+        //dbg("peak %d at %d", (uint32_t)gsl_vector_max(hh), peak_idx);
         gsl_vector_set(hh, peak_idx, 0);
         peak_count++;
     }
 
 
     gsl_vector_free(hh);
-
 
     return true;
 }

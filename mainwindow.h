@@ -39,6 +39,8 @@ protected:
 
     void ProcessKeyEvent();
 
+    void ProcessWindowEvent();
+
     bool ProcessImage();
 
     bool UpdateTexture();

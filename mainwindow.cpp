@@ -70,6 +70,9 @@ void CMainWindow::ProcessEvent()
 
             if (m_event->type == SDL_QUIT)
                 m_terminate = true;
+
+            if (m_event->type == SDL_WINDOWEVENT)
+                ProcessWindowEvent();
         }
 
         ProcessImage();
@@ -95,9 +98,6 @@ void CMainWindow::Draw()
         DrawYUVImage();
         SDL_RenderCopy(m_renderer, m_texture, NULL, NULL);
 
-        //Draw selector
-//        DrawSelector();
-
         UpdateTexture();
 
         // Draw Grayscale Histogram
@@ -105,21 +105,21 @@ void CMainWindow::Draw()
         color.g = 0x00;
         color.b = 0x80;
         color.a = 0xFF;
-        DrawHistogram(m_grayscale_hist, 0, 200, &color, 256, 4);
+        DrawHistogram(m_grayscale_hist, 0, 5, &color, m_window_width, 2);
 
         // Draw Vertical Histogram
         color.r = 0x00;
         color.g = 0xff;
         color.b = 0;
         color.a = 0xFF;
-        DrawHistogram(m_vertical_hist, 0, 5, &color, m_width, 2);
+        DrawHistogram(m_vertical_hist, 0, 5, &color, m_window_width, 2);
 
-        // Draw Vertical Histogram
+        // Draw Horizontal Histogram
         color.r = 0xff;
         color.g = 0x0;
         color.b = 0x00;
         color.a = 0xFF;
-        DrawHistogram(m_horizontal_hist, 1, 5, &color, 2, m_height);
+        DrawHistogram(m_horizontal_hist, 1, 5, &color, 2, m_window_height);
 
         // Draw Vehicle Candidates
         DrawVehicleCandidates();
@@ -148,11 +148,13 @@ void CMainWindow::DrawHistogram(gsl_vector* vect, int pos, int offset, SDL_Color
 
             for (uint32_t i=0 ; i<vect->size - 1 ; i++)
             {
+                for (int j=0 ; j<3 ; j++) {
                 SDL_RenderDrawLine(m_renderer,
-                        (i * m_width) / scale_w,
-                        m_height - offset - (gsl_vector_get(vect, i) * (m_height / scale_h)) / max_val,
-                        (( i + 1) * m_width ) / scale_w,
-                        m_height - offset - (gsl_vector_get(vect, i+1) * (m_height / scale_h)) / max_val);
+                        (i * scale_w) / vect->size,
+                        m_window_height - offset + j - (gsl_vector_get(vect, i) * (m_window_height / scale_h)) / max_val,
+                        (( i + 1) * scale_w) / vect->size,
+                        m_window_height - offset + j - (gsl_vector_get(vect, i+1) * (m_window_height / scale_h)) / max_val);
+                }
             }
             break;
         case 1: // right
@@ -160,11 +162,13 @@ void CMainWindow::DrawHistogram(gsl_vector* vect, int pos, int offset, SDL_Color
 
             for (uint32_t i=0 ; i<vect->size - 1 ; i++)
             {
+                for (int j=0 ; j<3 ; j++) {
                 SDL_RenderDrawLine(m_renderer,
-                                   m_width - offset - (gsl_vector_get(vect, i) * (m_width / scale_w)) / max_val,
-                                   i,
-                                   m_width - offset - (gsl_vector_get(vect, i+1) * (m_width / scale_w)) / max_val,
-                                   i + 1);
+                        m_window_width - offset + j - (gsl_vector_get(vect, i) * (vect->size / scale_w)) / max_val,
+                        i * m_window_height / vect->size,
+                        m_window_width - offset + j - (gsl_vector_get(vect, i+1) * (vect->size / scale_w)) / max_val,
+                        (i + 1 ) * m_window_height / vect->size);
+                }
             }
             break;
         case 2: // up
@@ -226,6 +230,22 @@ void CMainWindow::ProcessKeyEvent()
     }
 } 
 
+void CMainWindow::ProcessWindowEvent()
+{
+    if (m_event == NULL)
+        return;
+
+    switch (m_event->window.event) {
+        case SDL_WINDOWEVENT_SIZE_CHANGED:
+            //dbg("%d, %d", m_event->window.data1, m_event->window.data2);
+            m_window_width  = m_event->window.data1;
+            m_window_height = m_event->window.data2;
+        break;
+        default:
+        break;
+    }
+} 
+
 bool CMainWindow::ProcessImage()
 {
     bool ret = true;
@@ -256,15 +276,15 @@ bool CMainWindow::UpdateTexture()
 
     rect.x = 0;
     rect.y = 0;
-    rect.w = m_width;
-    rect.h = m_height;
+    rect.w = m_window_width;
+    rect.h = m_window_height;
 
-    SDL_UpdateTexture(m_texture, &rect, m_yuv_buf, m_width);
+    SDL_UpdateTexture(m_texture, &rect, m_yuv_buf, m_window_width);
 
 //    Viewport.x = 0;
 //    Viewport.y = 0;
-//    Viewport.w = m_width;
-//    Viewport.h = m_height;
+//    Viewport.w = m_window_width;
+//    Viewport.h = m_window_height;
 //    SDL_RenderSetViewport(m_renderer, &Viewport);
 
 

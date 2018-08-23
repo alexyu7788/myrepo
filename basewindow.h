@@ -30,6 +30,8 @@ class CBaseWindow {
         string          m_titlename;
         int             m_width;
         int             m_height;
+        int             m_window_width;
+        int             m_window_height;
 
         bool            m_nextfile;
         vector<string>  m_filelist;
@@ -84,7 +86,7 @@ class CBaseWindow {
 
         void ProcessMouseEvent();
 
-        void ProcessWindowEvent();
+        virtual void ProcessWindowEvent();
 
         bool LoadYUVFolder();
 

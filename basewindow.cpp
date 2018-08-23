@@ -15,6 +15,8 @@ m_yuv_folder(yuv_folder),
 m_titlename(titlename),
 m_width(width),
 m_height(height),
+m_window_width(width),
+m_window_height(height),
 m_nextfile(false),
 m_window(NULL), 
 m_renderer(NULL),
@@ -83,9 +85,9 @@ bool CBaseWindow::Init()
         m_window = SDL_CreateWindow((const char*)m_titlename.c_str(), 
                                     200, 
                                     SDL_WINDOWPOS_UNDEFINED,
-                                    m_width,
-                                    m_height,
-                                    SDL_WINDOW_SHOWN);
+                                    m_window_width,
+                                    m_window_height,
+                                    SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
 
         if (m_window == NULL)
         {
@@ -106,7 +108,7 @@ bool CBaseWindow::Init()
                 SDL_SetRenderDrawBlendMode(m_renderer, SDL_BLENDMODE_BLEND);
                 SDL_SetRenderDrawColor(m_renderer, 0xFF, 0xFF, 0xFF, 0xFF);
 
-                m_texture = SDL_CreateTexture(m_renderer, SDL_PIXELFORMAT_IYUV, SDL_TEXTUREACCESS_STREAMING, m_width, m_height);
+                m_texture = SDL_CreateTexture(m_renderer, SDL_PIXELFORMAT_IYUV, SDL_TEXTUREACCESS_STREAMING, m_window_width, m_window_height);
                 
                 if (m_texture == NULL)
                 {
@@ -254,6 +256,9 @@ void CBaseWindow::ProcessEvent()
 
             if (m_event->type == SDL_QUIT)
                 m_terminate = true;
+
+            if (m_event->type == SDL_WINDOWEVENT)
+                ProcessWindowEvent();
         }
 
         Draw();
@@ -347,7 +352,16 @@ void CBaseWindow::ProcessMouseEvent()
 
 void CBaseWindow::ProcessWindowEvent()
 {
+    if (m_event == NULL)
+        return;
 
+    switch (m_event->window.event) {
+        case SDL_WINDOWEVENT_SIZE_CHANGED:
+            dbg("%d, %d", m_event->window.data1, m_event->window.data2);
+        break;
+        default:
+        break;
+    }
 } 
 
 bool CBaseWindow::LoadYUVFolder()
