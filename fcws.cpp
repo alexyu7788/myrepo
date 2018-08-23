@@ -46,6 +46,7 @@ CFCWS::CFCWS()
     m_dx = gsl_matrix_view_array(dx_ary, 3, 3);
     m_dy = gsl_matrix_view_array(dy_ary, 3, 3);
 
+    m_vcs.clear();
 }
 
 CFCWS::~CFCWS()
@@ -76,7 +77,7 @@ CFCWS::~CFCWS()
     }
 }
 
-bool CFCWS::DoDetection(uint8_t* img, int w, int h, gsl_vector* vertical_hist, gsl_vector* hori_hist, gsl_vector* grayscale_hist)
+bool CFCWS::DoDetection(uint8_t* img, int w, int h, gsl_vector* vertical_hist, gsl_vector* hori_hist, gsl_vector* grayscale_hist, Candidates& vcs)
 {
     if (!img || !vertical_hist || !hori_hist || !grayscale_hist) {
         dbg();
@@ -154,18 +155,21 @@ bool CFCWS::DoDetection(uint8_t* img, int w, int h, gsl_vector* vertical_hist, g
             img[r * m_imgy->size2 + c] = (uint8_t)gsl_matrix_get(m_edged_imgy, r, c); 
 #else
     CalGrayscaleHist(m_imgy, m_temp_imgy, grayscale_hist);
-//
+
     CalVerticalHist(m_temp_imgy, vertical_hist);
-//
+
     CalHorizontalHist(m_temp_imgy, hori_hist);
+
+    VehicleCandidateGenerate(m_temp_imgy, vertical_hist, hori_hist, m_vcs);
+
+    vcs.clear();
+    vcs = m_vcs;
 
     // Copy image matrix to image array
     for (uint32_t r=0 ; r<m_imgy->size1 ; r++)
         for (uint32_t c=0 ; c<m_imgy->size2 ; c++)
             img[r * m_imgy->size2 + c] = (uint8_t)gsl_matrix_get(m_temp_imgy, r, c); 
 #endif
-
-
 
     return true;
 }
@@ -412,7 +416,7 @@ bool CFCWS::CalGrayscaleHist(const gsl_matrix* imgy, gsl_matrix* result_imgy, gs
     for (r=0 ; r<imgy->size1 ; r++) {
         for (c=0 ; c<imgy->size2 ; c++) {
             if (gsl_matrix_get(result_imgy, r, c) > pixel_value_peak)
-                gsl_matrix_set(result_imgy, r, c, 255.0);
+                gsl_matrix_set(result_imgy, r, c, NOT_SHADOW);
         }
     }
 
@@ -432,12 +436,11 @@ bool CFCWS::CalVerticalHist(const gsl_matrix* imgy, gsl_vector* vertical_hist)
 
     gsl_vector_set_zero(vertical_hist);
 
-    for (c=0 ; c<imgy->size2 ; c++) {
+    for (c=1 ; c<imgy->size2 - 1 ; c++) {
         column_view = gsl_matrix_column((gsl_matrix*)imgy, c);
 
-        for (r=0 ; r<column_view.vector.size ; r++) {
-            if (gsl_vector_get(&column_view.vector, r) != 255.0)
-            {
+        for (r=1 ; r<column_view.vector.size - 1; r++) {
+            if (gsl_vector_get(&column_view.vector, r) != NOT_SHADOW) {
                 val = gsl_vector_get(vertical_hist, c);
                 gsl_vector_set(vertical_hist, c, ++val);
             }
@@ -460,10 +463,10 @@ bool CFCWS::CalHorizontalHist(const gsl_matrix* imgy, gsl_vector* horizontal_his
 
     gsl_vector_set_zero(horizontal_hist);
 
-    for (r=0 ; r<imgy->size1 ; r++) {
+    for (r=1 ; r<imgy->size1 - 1 ; r++) {
         row_view = gsl_matrix_row((gsl_matrix*)imgy, r);
 
-        for (c=0 ; c<row_view.vector.size ; c++) {
+        for (c=1 ; c<row_view.vector.size - 1 ; c++) {
             if (gsl_vector_get(&row_view.vector, c) != 255)
             {
                 val = gsl_vector_get(horizontal_hist, r);
@@ -471,6 +474,45 @@ bool CFCWS::CalHorizontalHist(const gsl_matrix* imgy, gsl_vector* horizontal_his
             }
         }
     }
+
+    return true;
+}
+
+bool CFCWS::VehicleCandidateGenerate(
+        const gsl_matrix* imgy, 
+        const gsl_vector* vertical_hist, 
+        const gsl_vector* horizontal_hist, 
+        Candidates& vcs)
+{
+    if (!imgy || !vertical_hist || !horizontal_hist) {
+        dbg();
+        return false;
+    }
+
+    uint32_t r, c, row, col;
+    uint32_t peak_count;
+    size_t peak_idx;
+    CCandidate* vc = NULL;
+    gsl_vector* hh = NULL;
+
+    row = imgy->size1;
+    col = imgy->size2;
+    vcs.clear();
+
+    hh = gsl_vector_alloc(horizontal_hist->size);
+    gsl_vector_memcpy(hh, horizontal_hist);
+
+    printf("\n");
+    while (peak_count < 20) {
+        peak_idx = gsl_vector_max_index(hh);
+        dbg("peak %d at %d", (uint32_t)gsl_vector_max(hh), peak_idx);
+        gsl_vector_set(hh, peak_idx, 0);
+        peak_count++;
+    }
+
+
+    gsl_vector_free(hh);
+
 
     return true;
 }

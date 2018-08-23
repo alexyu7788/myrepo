@@ -12,7 +12,7 @@ CMainWindow::CMainWindow(string titlename, string yuv_folder, int w, int h):CBas
     m_horizontal_hist = NULL;
     m_grayscale_hist = NULL;
 
-
+    m_vcs.clear();
 
 
 
@@ -112,7 +112,7 @@ void CMainWindow::Draw()
         color.g = 0xff;
         color.b = 0;
         color.a = 0xFF;
-        DrawHistogram(m_vertical_hist, 0, 5, &color, m_width, 4);
+        DrawHistogram(m_vertical_hist, 0, 5, &color, m_width, 2);
 
         // Draw Vertical Histogram
         color.r = 0xff;
@@ -120,6 +120,9 @@ void CMainWindow::Draw()
         color.b = 0x00;
         color.a = 0xFF;
         DrawHistogram(m_horizontal_hist, 1, 5, &color, 2, m_height);
+
+        // Draw Vehicle Candidates
+        DrawVehicleCandidates();
 
         // Show
         SDL_RenderPresent(m_renderer);
@@ -174,6 +177,33 @@ void CMainWindow::DrawHistogram(gsl_vector* vect, int pos, int offset, SDL_Color
             break;
     }
 }
+void CMainWindow::DrawVehicleCandidates()
+{
+    if (m_vcs.size() == 0)
+        return;
+
+    uint32_t r, c, w, h;
+    CandidatesIT it;
+    SDL_Color color;
+    SDL_Rect rect;
+
+    for (it = m_vcs.begin() ; it != m_vcs.end(); it++) {
+        (*it)->GetPos(r, c);
+        (*it)->GetWH(w, h);
+
+        color.r = 0x0;
+        color.g = 0xFF;
+        color.b = 0xFF;
+        color.a = 0x50;
+        SDL_SetRenderDrawColor(m_renderer, color.r, color.g, color.b, color.a);
+
+        rect.x = c;
+        rect.y = r;
+        rect.w = w;
+        rect.h = h;
+        SDL_RenderFillRect(m_renderer, &rect);
+    }
+}
 
 void CMainWindow::ProcessKeyEvent()
 {
@@ -204,7 +234,13 @@ bool CMainWindow::ProcessImage()
         m_process_image = false;
 
         if (m_fcws) {
-            m_fcws->DoDetection(m_yuv_buf, m_width, m_height, m_vertical_hist, m_horizontal_hist, m_grayscale_hist);
+            m_fcws->DoDetection(m_yuv_buf, 
+                                m_width, 
+                                m_height, 
+                                m_vertical_hist, 
+                                m_horizontal_hist, 
+                                m_grayscale_hist,
+                                m_vcs);
         }
 
         return true;

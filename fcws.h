@@ -5,6 +5,9 @@
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_blas.h>
 #include "common.h"
+#include "candidate.h"
+
+#define NOT_SHADOW   255
 
 class CFCWS {
     protected:
@@ -21,12 +24,14 @@ class CFCWS {
         gsl_matrix_view     m_dx;
         gsl_matrix_view     m_dy;
 
+        Candidates          m_vcs;
+
     public:
         CFCWS();
 
         ~CFCWS();
 
-        bool DoDetection(uint8_t* img, int w, int h, gsl_vector* vertical_hist, gsl_vector* hori_hist, gsl_vector* grayscale_hist);
+        bool DoDetection(uint8_t* img, int w, int h, gsl_vector* vertical_hist, gsl_vector* hori_hist, gsl_vector* grayscale_hist, Candidates& vcs);
 
 
 
@@ -56,6 +61,7 @@ class CFCWS {
 
         bool CalHorizontalHist(const gsl_matrix* imgy, gsl_vector* horizontal_hist);
 
+        bool VehicleCandidateGenerate(const gsl_matrix* imgy, const gsl_vector* vertical_hist, const gsl_vector* horizontal_hist, Candidates& vcs);
 };
 
 #endif

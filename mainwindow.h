@@ -4,6 +4,7 @@
 #include "common.h"
 #include "basewindow.h"
 #include "fcws.h"
+#include "candidate.h"
 
 class CMainWindow : public CBaseWindow
 {
@@ -16,6 +17,8 @@ protected:
     gsl_vector*     m_vertical_hist;
     gsl_vector*     m_horizontal_hist;
     gsl_vector*     m_grayscale_hist;
+
+    Candidates      m_vcs;
 
 public:
     CMainWindow(string titlename, string yuv_folder, int w, int h);
@@ -31,6 +34,8 @@ protected:
     void Draw();
 
     void DrawHistogram(gsl_vector* vect, int pos, int offset, SDL_Color* color, int scale_w, int scale_h);
+
+    void DrawVehicleCandidates();
 
     void ProcessKeyEvent();
 

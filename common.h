@@ -4,8 +4,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <time.h>
 #include <string>
 #include <vector>
+#include <list>
+#include <algorithm>
 #include <pthread.h>
 #include <SDL.h>
 
