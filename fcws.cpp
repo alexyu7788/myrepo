@@ -27,11 +27,80 @@ static double dy_ary[] = {
      1,  2,  1
 };
 
+// Macro
+#define FreeMatrix(m) do {                  \
+    if ((m)) {                              \
+        gsl_matrix_free((m));               \
+        ((m)) = NULL;                       \
+    }                                       \
+}while (0)
+
+#define FreeMatrixUshort(m) do {            \
+    if ((m)) {                              \
+        gsl_matrix_ushort_free((m));        \
+        ((m)) = NULL;                       \
+    }                                       \
+}while (0)
+
+#define FreeMatrixChar(m) do {              \
+    if ((m)) {                              \
+        gsl_matrix_char_free((m));          \
+        ((m)) = NULL;                       \
+    }                                       \
+}while (0)
+
+#define CheckOrReallocMatrix(m, h, w)   do {            \
+    if (!(m) || (m)->size1 != h || (m)->size2 != w) {   \
+        if ((m)) {                                      \
+            gsl_matrix_free((m));                       \
+            (m) = NULL;                                 \
+        }                                               \
+        if ((m = gsl_matrix_alloc(h, w)) == NULL)       \
+            return false;                               \
+        gsl_matrix_set_zero((m));                       \
+    }                                                   \
+} while (0)
+
+#define CheckOrReallocMatrixUshort(m, h, w)   do {      \
+    if (!(m) || (m)->size1 != h || (m)->size2 != w) {   \
+        if ((m)) {                                      \
+            gsl_matrix_ushort_free((m));                \
+            (m) = NULL;                                 \
+        }                                               \
+        if ((m = gsl_matrix_ushort_alloc(h, w)) == NULL)\
+            return false;                               \
+        gsl_matrix_ushort_set_zero((m));                \
+    }                                                   \
+} while (0)
+
+#define CheckOrReallocMatrixChar(m, h, w)   do {        \
+    if (!(m) || (m)->size1 != h || (m)->size2 != w) {   \
+        if ((m)) {                                      \
+            gsl_matrix_char_free((m));                  \
+            (m) = NULL;                                 \
+        }                                               \
+        if ((m = gsl_matrix_char_alloc(h, w)) == NULL)  \
+            return false;                               \
+        gsl_matrix_char_set_zero((m));                  \
+    }                                                   \
+} while (0)
+
+
+
+
+
+
+
+
+
 CFCWS::CFCWS()
 {
-    m_imgy = m_edged_imgy = m_temp_imgy = NULL;
-    m_gradient = NULL;
-    m_direction = NULL;
+    m_imgy          = 
+    m_edged_imgy    = 
+    m_temp_imgy     = NULL;
+
+    m_gradient      = NULL;
+    m_direction     = NULL;
 
     // Gaussian Kernel
     m_gk = gsl_matrix_view_array(gk_5by5, 5, 5);    
@@ -51,30 +120,11 @@ CFCWS::CFCWS()
 
 CFCWS::~CFCWS()
 {
-    if (m_imgy) {
-        gsl_matrix_free(m_imgy);
-        m_imgy = NULL;
-    }
-
-    if (m_edged_imgy) {
-        gsl_matrix_free(m_edged_imgy);
-        m_edged_imgy = NULL;
-    }
-
-    if (m_temp_imgy) {
-        gsl_matrix_free(m_temp_imgy);
-        m_temp_imgy = NULL;
-    }
-
-    if (m_gradient) {
-        gsl_matrix_ushort_free(m_gradient);
-        m_gradient = NULL;
-    }
-
-    if (m_direction) {
-        gsl_matrix_char_free(m_direction);
-        m_direction = NULL;
-    }
+    FreeMatrix(m_imgy);
+    FreeMatrix(m_edged_imgy);
+    FreeMatrix(m_temp_imgy);
+    FreeMatrixUshort(m_gradient);
+    FreeMatrixChar(m_direction);
 }
 
 bool CFCWS::DoDetection(uint8_t* img, int w, int h, gsl_vector* vertical_hist, gsl_vector* hori_hist, gsl_vector* grayscale_hist, Candidates& vcs)
@@ -84,60 +134,11 @@ bool CFCWS::DoDetection(uint8_t* img, int w, int h, gsl_vector* vertical_hist, g
         return false;
     }
 
-    if (!m_imgy || m_imgy->size1 != h || m_imgy->size2 != w) {
-        if (m_imgy) {
-            gsl_matrix_free(m_imgy);
-            m_imgy = NULL;
-        }
-
-        if ((m_imgy = gsl_matrix_alloc(h, w)) == NULL)
-            return false;
-    }
-
-    if (!m_edged_imgy || m_edged_imgy->size1 != h || m_edged_imgy->size2 != w) {
-        if (m_edged_imgy) {
-            gsl_matrix_free(m_edged_imgy);
-            m_edged_imgy = NULL;
-        }
-
-        if ((m_edged_imgy = gsl_matrix_alloc(h, w)) == NULL)
-            return false;
-    }
-
-    if (!m_temp_imgy || m_temp_imgy->size1 != h || m_temp_imgy->size2 != w) {
-        if (m_temp_imgy) {
-            gsl_matrix_free(m_temp_imgy);
-            m_temp_imgy = NULL;
-        }
-
-        if ((m_temp_imgy = gsl_matrix_alloc(h, w)) == NULL)
-            return false;
-    }
-
-    if (!m_gradient || m_gradient->size1 != h || m_gradient->size2 != w) {
-        if (m_gradient) {
-            gsl_matrix_ushort_free(m_gradient);
-            m_gradient = NULL;
-        }
-
-        if ((m_gradient = gsl_matrix_ushort_alloc(h, w)) == NULL)
-            return false;
-    }
-
-    if (!m_direction || m_direction->size1 != h || m_direction->size2 != w) {
-        if (m_direction) {
-            gsl_matrix_char_free(m_direction);
-            m_direction = NULL;
-        }
-
-        if ((m_direction = gsl_matrix_char_alloc(h, w)) == NULL)
-            return false;
-    }
-
-    gsl_matrix_set_zero(m_imgy);
-    gsl_matrix_set_zero(m_temp_imgy);
-    gsl_matrix_ushort_set_zero(m_gradient);
-    gsl_matrix_char_set_zero(m_direction);
+    CheckOrReallocMatrix(m_imgy, h, w);
+    CheckOrReallocMatrix(m_edged_imgy, h, w);
+    CheckOrReallocMatrix(m_temp_imgy, h, w);
+    CheckOrReallocMatrixUshort(m_gradient, h, w);
+    CheckOrReallocMatrixChar(m_direction, h, w);
 
     // Copy image array to image matrix
     for (uint32_t r=0 ; r<m_imgy->size1 ; r++)
@@ -323,8 +324,6 @@ bool CFCWS::Sobel(gsl_matrix_ushort* dst, gsl_matrix_char* dir, const gsl_matrix
         }
     }
 
-
-
     return true;
 }
 
@@ -436,6 +435,7 @@ bool CFCWS::CalVerticalHist(const gsl_matrix* imgy, gsl_vector* vertical_hist)
 
     gsl_vector_set_zero(vertical_hist);
 
+    // skip border
     for (c=1 ; c<imgy->size2 - 1 ; c++) {
         column_view = gsl_matrix_column((gsl_matrix*)imgy, c);
 
@@ -463,6 +463,7 @@ bool CFCWS::CalHorizontalHist(const gsl_matrix* imgy, gsl_vector* horizontal_his
 
     gsl_vector_set_zero(horizontal_hist);
 
+    // skip border
     for (r=1 ; r<imgy->size1 - 1 ; r++) {
         row_view = gsl_matrix_row((gsl_matrix*)imgy, r);
 
