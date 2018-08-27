@@ -146,6 +146,15 @@ CFCWS::~CFCWS()
     FreeMatrix(m_temp_imgy);
     FreeMatrixUshort(m_gradient);
     FreeMatrixChar(m_direction);
+
+    for (CandidatesIT it = m_vcs.begin() ; it != m_vcs.end(); ++it) {
+        if ((*it)) {
+            delete (*it);
+            (*it) = NULL;
+        }
+    }
+    m_vcs.clear();
+
 }
 
 bool CFCWS::DoDetection(uint8_t* img, int w, int h, gsl_vector* vertical_hist, gsl_vector* hori_hist, gsl_vector* grayscale_hist, Candidates& vcs)
@@ -178,11 +187,11 @@ bool CFCWS::DoDetection(uint8_t* img, int w, int h, gsl_vector* vertical_hist, g
 #else
     CalGrayscaleHist(m_imgy, m_temp_imgy, grayscale_hist);
 
-    CalVerticalHist(m_temp_imgy, vertical_hist);
+    //CalVerticalHist(m_temp_imgy, vertical_hist);
 
     CalHorizontalHist(m_temp_imgy, hori_hist);
 
-    VehicleCandidateGenerate(m_temp_imgy, vertical_hist, hori_hist, m_vcs);
+    VehicleCandidateGenerate(m_temp_imgy, hori_hist, vertical_hist, m_vcs);
 
     vcs.clear();
     vcs = m_vcs;
@@ -471,6 +480,56 @@ bool CFCWS::CalVerticalHist(const gsl_matrix* imgy, gsl_vector* vertical_hist)
     return true;
 }
 
+bool CFCWS::CalVerticalHist(const gsl_matrix* imgy, int start_r, int start_c, int w, int h, gsl_vector* vertical_hist)
+{
+    if (!imgy || !vertical_hist) {
+        dbg();
+        return false;
+    }
+
+    uint32_t r, c, sr, sc, size;
+    double val = 0;
+    gsl_matrix_view submatrix;
+    gsl_vector_view column_view;
+
+    // Boundary check.
+    if (start_r < 0)
+        sr = 0;
+    else if (start_r >= imgy->size1)
+        sr = imgy->size1 - 1;
+    else
+        sr = start_r;
+
+    if (start_c < 0)
+        sc = 0;
+    else if (start_c >= imgy->size2)
+        sc = imgy->size2 - 1;
+    else
+        sc = start_c;
+
+    if (sr + h >= imgy->size1)
+        submatrix = gsl_matrix_submatrix((gsl_matrix*)imgy, sr, sc, imgy->size1 - sr, w);
+    else
+        submatrix = gsl_matrix_submatrix((gsl_matrix*)imgy, sr, sc, h, w);
+
+    size = w;
+    CheckOrReallocVector(vertical_hist, size);
+
+    // skip border
+    for (c=1 ; c<submatrix.matrix.size2 - 1 ; c++) {
+        column_view = gsl_matrix_column((gsl_matrix*)&submatrix.matrix, c);
+
+        for (r=1 ; r<column_view.vector.size - 1; r++) {
+            if (gsl_vector_get(&column_view.vector, r) != NOT_SHADOW) {
+                val = gsl_vector_get(vertical_hist, c);
+                gsl_vector_set(vertical_hist, c, ++val);
+            }
+        }
+    }
+
+    return true;
+}
+
 bool CFCWS::CalHorizontalHist(const gsl_matrix* imgy, gsl_vector* horizontal_hist)
 {
     if (!imgy || !horizontal_hist) {
@@ -500,10 +559,16 @@ bool CFCWS::CalHorizontalHist(const gsl_matrix* imgy, gsl_vector* horizontal_his
     return true;
 }
 
+typedef struct PEAK {
+    uint32_t value;
+    uint32_t idx;
+    uint32_t vote_cnt;
+};
+
 bool CFCWS::VehicleCandidateGenerate(
         const gsl_matrix* imgy, 
-        const gsl_vector* vertical_hist, 
         const gsl_vector* horizontal_hist, 
+        gsl_vector* vertical_hist, 
         Candidates& vcs)
 {
     if (!imgy || !vertical_hist || !horizontal_hist) {
@@ -517,22 +582,158 @@ bool CFCWS::VehicleCandidateGenerate(
     size_t peak_idx;
     CCandidate* vc = NULL;
 
+    uint32_t vote_success, vote_fail;
+    uint32_t cur_peak, cur_peak_idx, max_peak, max_peak_idx;
+    PEAK* ppeak = NULL;
+    vector<PEAK*> pg;
+    vector<PEAK*>::iterator pg_it;
+    gsl_vector* temp_hh = NULL;
+
     row = imgy->size1;
     col = imgy->size2;
+
+    for (CandidatesIT it = vcs.begin() ; it != vcs.end(); ++it) {
+        if ((*it)) {
+            delete (*it);
+            (*it) = NULL;
+        }
+    }
     vcs.clear();
 
+    // find possible blob underneath vehicle
     size = horizontal_hist->size;
     CheckOrReallocVector(m_temp_hori_hist, size);
+    CheckOrReallocVector(temp_hh, size);
     gsl_vector_memcpy(m_temp_hori_hist, horizontal_hist);
 
-    printf("\n");
-    while (peak_count < 20) {
-        peak_idx = gsl_vector_max_index(m_temp_hori_hist);
-        dbg("peak %d at %d", (uint32_t)gsl_vector_max(m_temp_hori_hist), peak_idx);
-        gsl_vector_set(m_temp_hori_hist, peak_idx, 0);
-        peak_count++;
+    max_peak = gsl_vector_max(m_temp_hori_hist);
+    max_peak_idx = gsl_vector_max_index(m_temp_hori_hist);
+    dbg("==========max peak %d at %d===========", max_peak, max_peak_idx);
+
+    while (1) {
+        cur_peak = gsl_vector_max(m_temp_hori_hist);
+        cur_peak_idx = gsl_vector_max_index(m_temp_hori_hist);
+
+        dbg("current peak %d at %d", cur_peak, cur_peak_idx);
+        if (cur_peak < (max_peak_idx * 0.6))
+            break;
+
+        gsl_vector_set(m_temp_hori_hist, cur_peak_idx, 0);
+        gsl_vector_memcpy(temp_hh, m_temp_hori_hist);
+
+        ppeak = (PEAK*)malloc(sizeof(PEAK));
+        ppeak->value = cur_peak;
+        ppeak->idx = cur_peak_idx;
+        ppeak->vote_cnt = 0;
+
+        vote_success = vote_fail = 0;
+        dbg("Voting....");
+        while (1) {
+            cur_peak_idx = gsl_vector_max_index(temp_hh);
+            gsl_vector_set(temp_hh, cur_peak_idx, 0);
+            dbg("peak at %d, delta %d", cur_peak_idx, abs((int)ppeak->idx - (int)cur_peak_idx));
+            if (abs((int)ppeak->idx - (int)cur_peak_idx) <= 20) {
+                gsl_vector_set(m_temp_hori_hist, cur_peak_idx, 0);
+
+                if (++vote_success >= 10) {
+                    ppeak->vote_cnt = vote_success;
+                    pg.push_back(ppeak);
+                    break;
+                }
+            } else {
+                if (++vote_fail > 5) {
+                    free(ppeak);
+                    ppeak = NULL;
+                    break;
+                }
+            }
+        }
     }
 
+    // find left boundary and right boundary of this blob
+    uint32_t index;
+    uint32_t max_vh, max_vh_idx;
+    uint32_t left_idx, right_idx;
+
+    for (pg_it = pg.begin() ; pg_it != pg.end(); ++pg_it) {
+        index = (*pg_it)->idx; 
+        CalVerticalHist(imgy, index - 20, 0, imgy->size2, 40, vertical_hist);
+
+        max_vh = gsl_vector_max(vertical_hist);
+        max_vh_idx = gsl_vector_max_index(vertical_hist);
+        dbg("VH max is %d at %d", (int)max_vh, (int)max_vh_idx);
+
+        left_idx = 0;
+        //Find left boundary
+        for (c=5 ; c<max_vh_idx ; ++c) {
+            if (gsl_matrix_get(imgy, index, c) != NOT_SHADOW &&
+                gsl_matrix_get(imgy, index, c-1) == NOT_SHADOW &&
+                gsl_matrix_get(imgy, index, c-2) == NOT_SHADOW &&
+                gsl_matrix_get(imgy, index, c-3) == NOT_SHADOW &&
+                gsl_matrix_get(imgy, index, c-4) == NOT_SHADOW &&
+                (gsl_matrix_get(imgy, index, c+1) != NOT_SHADOW || gsl_matrix_get(imgy, index, c+2) != NOT_SHADOW) &&
+                (gsl_vector_get(vertical_hist, c+1) >= gsl_vector_get(vertical_hist, c) || 
+                 gsl_vector_get(vertical_hist, c+2) >= gsl_vector_get(vertical_hist, c))) {
+                left_idx = c;
+                dbg("Find left");
+                break;
+            }
+        }
+
+        right_idx = 0;
+        //Find right boundary
+        for (c=max_vh_idx+1 ; c<imgy->size2 - 5 ; ++c) {
+            if (gsl_matrix_get(imgy, index, c) == NOT_SHADOW &&
+                gsl_matrix_get(imgy, index, c+1) == NOT_SHADOW &&
+                gsl_matrix_get(imgy, index, c+2) == NOT_SHADOW &&
+                gsl_matrix_get(imgy, index, c+3) == NOT_SHADOW &&
+                gsl_matrix_get(imgy, index, c+4) == NOT_SHADOW &&
+                (gsl_matrix_get(imgy, index, c-1) != NOT_SHADOW || gsl_matrix_get(imgy, index, c-2) != NOT_SHADOW) &&
+                (gsl_vector_get(vertical_hist, c-1) >= gsl_vector_get(vertical_hist, c) || 
+                gsl_vector_get(vertical_hist, c-2) >= gsl_vector_get(vertical_hist, c))) {
+                right_idx = c;
+                dbg("Find right");
+                break;
+            }
+        }
+
+        for (c=0 ; c<col ; c++) {
+            if (gsl_matrix_get(imgy, index, c) != NOT_SHADOW) {
+                dbg("imgy[%d][%d]=%d, vh=%d(max. %d)", index, c, 
+                                                (int)gsl_matrix_get(imgy, index, c), 
+                                                (int)gsl_vector_get(vertical_hist, c),
+                                                (gsl_vector_get(vertical_hist, c) == gsl_vector_max(vertical_hist) ? 1 : 0));
+            }
+        }
+
+        dbg("left %d right %d", left_idx, right_idx);
+
+        uint32_t vehicle_width, vehicle_height;
+
+        if (left_idx && right_idx) {
+            vehicle_width = (right_idx - left_idx + 1);
+            vehicle_height = vehicle_width * 0.8;
+
+            if (index - vehicle_height > 0) {
+                vc = new CCandidate();
+                vc->SetPos(index - vehicle_height, left_idx);
+                vc->SetWH(vehicle_width, vehicle_height);
+                vcs.push_back(vc);
+            }
+        }
+    }
+
+    FreeVector(temp_hh);
+
+    for (pg_it = pg.begin() ; pg_it != pg.end(); ++pg_it) {
+        if (*pg_it) {
+            dbg("free peak at %d", (*pg_it)->idx);
+            free(*pg_it);
+            (*pg_it) = NULL;
+        }
+    }
+
+    pg.clear();
 
     return true;
 }

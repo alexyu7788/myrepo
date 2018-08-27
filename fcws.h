@@ -61,9 +61,11 @@ class CFCWS {
 
         bool CalVerticalHist(const gsl_matrix* imgy, gsl_vector* vertical_hist);
 
+        bool CalVerticalHist(const gsl_matrix* imgy, int start_r, int start_c, int w, int h, gsl_vector* vertical_hist);
+
         bool CalHorizontalHist(const gsl_matrix* imgy, gsl_vector* horizontal_hist);
 
-        bool VehicleCandidateGenerate(const gsl_matrix* imgy, const gsl_vector* vertical_hist, const gsl_vector* horizontal_hist, Candidates& vcs);
+        bool VehicleCandidateGenerate(const gsl_matrix* imgy, const gsl_vector* horizontal_hist, gsl_vector* vertical_hist, Candidates& vcs);
 };
 
 #endif

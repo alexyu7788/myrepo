@@ -1,5 +1,26 @@
 #include "mainwindow.h"
 
+enum {
+    COLOR_RED = 0,
+    COLOR_GREEN,
+    COLOR_BLUE,
+    COLOR_YELLOW,
+    COLOR_CYAN,
+    COLOR_GOLD,
+    COLOR_MAGENTA,
+    COLOR_TOTAL
+};
+
+static SDL_Color COLOR[COLOR_TOTAL] = {
+   [COLOR_RED]      = {0xff,    0,    0, 0x50},
+   [COLOR_GREEN]    = {   0, 0xff,    0, 0x50},
+   [COLOR_BLUE]     = {   0,    0, 0xff, 0x50},
+   [COLOR_YELLOW]   = {0xff, 0xff,    0, 0x50},
+   [COLOR_CYAN]     = {   0, 0xff, 0xff, 0x50},
+   [COLOR_GOLD]     = {0xff, 0xd7,    0, 0x50},
+   [COLOR_MAGENTA]  = {0xff,    0, 0xff, 0x50},
+};
+
 CMainWindow::CMainWindow(string titlename, string yuv_folder, int w, int h):CBaseWindow(titlename, yuv_folder, w, h)
 {
     m_process_image = 
@@ -39,7 +60,6 @@ CMainWindow::~CMainWindow()
         delete m_fcws;
         m_fcws = NULL;
     }
-
 }
 
 bool CMainWindow::Init()
@@ -101,12 +121,12 @@ void CMainWindow::Draw()
         UpdateTexture();
 
         // Draw Grayscale Histogram
-        color.r = 0x80;
-        color.g = 0x00;
-        color.b = 0x80;
-        color.a = 0xFF;
-        DrawHistogram(m_grayscale_hist, 0, 5, &color, m_window_width, 2);
-
+//        color.r = 0x80;
+//        color.g = 0x00;
+//        color.b = 0x80;
+//        color.a = 0xFF;
+//        DrawHistogram(m_grayscale_hist, 0, 5, &color, m_window_width, 2);
+//
         // Draw Vertical Histogram
         color.r = 0x00;
         color.g = 0xff;
@@ -181,31 +201,33 @@ void CMainWindow::DrawHistogram(gsl_vector* vect, int pos, int offset, SDL_Color
             break;
     }
 }
+
 void CMainWindow::DrawVehicleCandidates()
 {
     if (m_vcs.size() == 0)
         return;
 
     uint32_t r, c, w, h;
+    uint32_t vehicle_count = 0;
     CandidatesIT it;
-    SDL_Color color;
+    SDL_Color *color;
     SDL_Rect rect;
 
     for (it = m_vcs.begin() ; it != m_vcs.end(); it++) {
         (*it)->GetPos(r, c);
         (*it)->GetWH(w, h);
 
-        color.r = 0x0;
-        color.g = 0xFF;
-        color.b = 0xFF;
-        color.a = 0x50;
-        SDL_SetRenderDrawColor(m_renderer, color.r, color.g, color.b, color.a);
+        color = &COLOR[vehicle_count];
+        SDL_SetRenderDrawColor(m_renderer, color->r, color->g, color->b, color->a);
 
         rect.x = c;
         rect.y = r;
         rect.w = w;
         rect.h = h;
         SDL_RenderFillRect(m_renderer, &rect);
+
+        if (++vehicle_count > COLOR_TOTAL)
+            vehicle_count = 0;
     }
 }
 
