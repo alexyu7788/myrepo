@@ -287,7 +287,6 @@ bool CMainWindow::UpdateTexture()
 //    Viewport.h = m_window_height;
 //    SDL_RenderSetViewport(m_renderer, &Viewport);
 
-
     return true;
 }
 

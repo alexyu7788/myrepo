@@ -26,6 +26,8 @@ class CFCWS {
 
         Candidates          m_vcs;
 
+        gsl_vector*         m_temp_hori_hist;
+
     public:
         CFCWS();
 

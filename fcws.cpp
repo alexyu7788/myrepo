@@ -28,6 +28,13 @@ static double dy_ary[] = {
 };
 
 // Macro
+#define FreeVector(m) do {                  \
+    if ((m)) {                              \
+        gsl_vector_free((m));               \
+        ((m)) = NULL;                       \
+    }                                       \
+}while (0)
+
 #define FreeMatrix(m) do {                  \
     if ((m)) {                              \
         gsl_matrix_free((m));               \
@@ -49,6 +56,18 @@ static double dy_ary[] = {
     }                                       \
 }while (0)
 
+#define CheckOrReallocVector(v, size)   do {            \
+    if (!(v) || (v)->size != size) {                    \
+        if ((v)) {                                      \
+            gsl_vector_free((v));                       \
+            (v) = NULL;                                 \
+        }                                               \
+        if ((v = gsl_vector_alloc(size)) == NULL)       \
+            return false;                               \
+    }                                                   \
+    gsl_vector_set_zero((v));                           \
+} while (0)
+
 #define CheckOrReallocMatrix(m, h, w)   do {            \
     if (!(m) || (m)->size1 != h || (m)->size2 != w) {   \
         if ((m)) {                                      \
@@ -57,8 +76,8 @@ static double dy_ary[] = {
         }                                               \
         if ((m = gsl_matrix_alloc(h, w)) == NULL)       \
             return false;                               \
-        gsl_matrix_set_zero((m));                       \
     }                                                   \
+    gsl_matrix_set_zero((m));                           \
 } while (0)
 
 #define CheckOrReallocMatrixUshort(m, h, w)   do {      \
@@ -69,8 +88,8 @@ static double dy_ary[] = {
         }                                               \
         if ((m = gsl_matrix_ushort_alloc(h, w)) == NULL)\
             return false;                               \
-        gsl_matrix_ushort_set_zero((m));                \
     }                                                   \
+    gsl_matrix_ushort_set_zero((m));                           \
 } while (0)
 
 #define CheckOrReallocMatrixChar(m, h, w)   do {        \
@@ -81,8 +100,8 @@ static double dy_ary[] = {
         }                                               \
         if ((m = gsl_matrix_char_alloc(h, w)) == NULL)  \
             return false;                               \
-        gsl_matrix_char_set_zero((m));                  \
     }                                                   \
+    gsl_matrix_char_set_zero((m));                           \
 } while (0)
 
 
@@ -95,13 +114,13 @@ static double dy_ary[] = {
 
 CFCWS::CFCWS()
 {
-    m_imgy          = 
-    m_edged_imgy    = 
-    m_temp_imgy     = NULL;
+    m_imgy              = 
+    m_edged_imgy        = 
+    m_temp_imgy         = NULL;
 
-    m_gradient      = NULL;
-    m_direction     = NULL;
-
+    m_gradient          = NULL;
+    m_direction         = NULL;
+    m_temp_hori_hist    = NULL;
     // Gaussian Kernel
     m_gk = gsl_matrix_view_array(gk_5by5, 5, 5);    
     
@@ -120,6 +139,8 @@ CFCWS::CFCWS()
 
 CFCWS::~CFCWS()
 {
+    FreeVector(m_temp_hori_hist);
+
     FreeMatrix(m_imgy);
     FreeMatrix(m_edged_imgy);
     FreeMatrix(m_temp_imgy);
@@ -491,28 +512,27 @@ bool CFCWS::VehicleCandidateGenerate(
     }
 
     uint32_t r, c, row, col;
+    uint32_t size;
     uint32_t peak_count;
     size_t peak_idx;
     CCandidate* vc = NULL;
-    gsl_vector* hh = NULL;
 
     row = imgy->size1;
     col = imgy->size2;
     vcs.clear();
 
-    hh = gsl_vector_alloc(horizontal_hist->size);
-    gsl_vector_memcpy(hh, horizontal_hist);
+    size = horizontal_hist->size;
+    CheckOrReallocVector(m_temp_hori_hist, size);
+    gsl_vector_memcpy(m_temp_hori_hist, horizontal_hist);
 
     printf("\n");
     while (peak_count < 20) {
-        peak_idx = gsl_vector_max_index(hh);
-        //dbg("peak %d at %d", (uint32_t)gsl_vector_max(hh), peak_idx);
-        gsl_vector_set(hh, peak_idx, 0);
+        peak_idx = gsl_vector_max_index(m_temp_hori_hist);
+        dbg("peak %d at %d", (uint32_t)gsl_vector_max(m_temp_hori_hist), peak_idx);
+        gsl_vector_set(m_temp_hori_hist, peak_idx, 0);
         peak_count++;
     }
 
-
-    gsl_vector_free(hh);
 
     return true;
 }
