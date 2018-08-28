@@ -85,8 +85,10 @@ class CFCWS {
                 const gsl_matrix* imgy,
                 const gsl_matrix_ushort* gradient,
                 const gsl_matrix_char* direction,
-                uint32_t& left_idx,
-                uint32_t& right_idx);
+                int&  vsr,
+                int&  vsc,
+                int&  vw,
+                int&  vh);
 
 };
 

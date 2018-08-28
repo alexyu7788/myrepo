@@ -795,13 +795,13 @@ bool CFCWS::VehicleCandidateGenerate(
     }
 
     // Guessing  left boundary and right boundary of this blob
-    uint32_t index;
+    int bottom_idx;
     uint32_t max_vh, max_vh_idx;
     uint32_t left_idx, right_idx;
 
     for (pg_it = pg.begin() ; pg_it != pg.end(); ++pg_it) {
-        index = (*pg_it)->idx; 
-        CalVerticalHist(imgy, index - 20, 0, imgy->size2, 40, vertical_hist);
+        bottom_idx = (*pg_it)->idx; 
+        CalVerticalHist(imgy, bottom_idx - 20, 0, imgy->size2, 40, vertical_hist);
 
         max_vh = gsl_vector_max(vertical_hist);
         max_vh_idx = gsl_vector_max_index(vertical_hist);
@@ -810,12 +810,12 @@ bool CFCWS::VehicleCandidateGenerate(
         left_idx = 0;
         //Find left boundary
         for (c=5 ; c<max_vh_idx ; ++c) {
-            if (gsl_matrix_get(imgy, index, c) != NOT_SHADOW &&
-                gsl_matrix_get(imgy, index, c-1) == NOT_SHADOW &&
-                gsl_matrix_get(imgy, index, c-2) == NOT_SHADOW &&
-                gsl_matrix_get(imgy, index, c-3) == NOT_SHADOW &&
-                gsl_matrix_get(imgy, index, c-4) == NOT_SHADOW &&
-                (gsl_matrix_get(imgy, index, c+1) != NOT_SHADOW || gsl_matrix_get(imgy, index, c+2) != NOT_SHADOW) &&
+            if (gsl_matrix_get(imgy, bottom_idx, c) != NOT_SHADOW &&
+                gsl_matrix_get(imgy, bottom_idx, c-1) == NOT_SHADOW &&
+                gsl_matrix_get(imgy, bottom_idx, c-2) == NOT_SHADOW &&
+                gsl_matrix_get(imgy, bottom_idx, c-3) == NOT_SHADOW &&
+                gsl_matrix_get(imgy, bottom_idx, c-4) == NOT_SHADOW &&
+                (gsl_matrix_get(imgy, bottom_idx, c+1) != NOT_SHADOW || gsl_matrix_get(imgy, bottom_idx, c+2) != NOT_SHADOW) &&
                 (gsl_vector_get(vertical_hist, c+1) >= gsl_vector_get(vertical_hist, c) || 
                  gsl_vector_get(vertical_hist, c+2) >= gsl_vector_get(vertical_hist, c))) {
                 left_idx = c;
@@ -827,12 +827,12 @@ bool CFCWS::VehicleCandidateGenerate(
         right_idx = 0;
         //Find right boundary
         for (c=max_vh_idx+1 ; c<imgy->size2 - 5 ; ++c) {
-            if (gsl_matrix_get(imgy, index, c) == NOT_SHADOW &&
-                gsl_matrix_get(imgy, index, c+1) == NOT_SHADOW &&
-                gsl_matrix_get(imgy, index, c+2) == NOT_SHADOW &&
-                gsl_matrix_get(imgy, index, c+3) == NOT_SHADOW &&
-                gsl_matrix_get(imgy, index, c+4) == NOT_SHADOW &&
-                (gsl_matrix_get(imgy, index, c-1) != NOT_SHADOW || gsl_matrix_get(imgy, index, c-2) != NOT_SHADOW) &&
+            if (gsl_matrix_get(imgy, bottom_idx, c) == NOT_SHADOW &&
+                gsl_matrix_get(imgy, bottom_idx, c+1) == NOT_SHADOW &&
+                gsl_matrix_get(imgy, bottom_idx, c+2) == NOT_SHADOW &&
+                gsl_matrix_get(imgy, bottom_idx, c+3) == NOT_SHADOW &&
+                gsl_matrix_get(imgy, bottom_idx, c+4) == NOT_SHADOW &&
+                (gsl_matrix_get(imgy, bottom_idx, c-1) != NOT_SHADOW || gsl_matrix_get(imgy, bottom_idx, c-2) != NOT_SHADOW) &&
                 (gsl_vector_get(vertical_hist, c-1) >= gsl_vector_get(vertical_hist, c) || 
                 gsl_vector_get(vertical_hist, c-2) >= gsl_vector_get(vertical_hist, c))) {
                 right_idx = c;
@@ -843,124 +843,85 @@ bool CFCWS::VehicleCandidateGenerate(
 
 #if 0
         for (c=0 ; c<col ; c++) {
-            if (gsl_matrix_get(imgy, index, c) != NOT_SHADOW) {
-                dbg("imgy[%d][%d]=%d, vh=%d(max. %d)", index, c, 
-                                                (int)gsl_matrix_get(imgy, index, c), 
+            if (gsl_matrix_get(imgy, bottom_idx, c) != NOT_SHADOW) {
+                dbg("imgy[%d][%d]=%d, vh=%d(max. %d)", bottom_idx, c, 
+                                                (int)gsl_matrix_get(imgy, bottom_idx, c), 
                                                 (int)gsl_vector_get(vertical_hist, c),
                                                 (gsl_vector_get(vertical_hist, c) == gsl_vector_max(vertical_hist) ? 1 : 0));
             }
         }
 #endif
 
-        dbg("left %d right %d", left_idx, right_idx);
+        dbg("Guessing left %d right %d at bottom %d", left_idx, right_idx, bottom_idx);
 
-        uint32_t vehicle_startr, vehicle_startc;
-        uint32_t vehicle_width, vehicle_height;
-        char dir;
-        uint32_t magnitude, max_magnitude = 0;
-        uint32_t max_magnitude_idx;
-        gsl_matrix_ushort_view gradient_submatrix, gradient_block;
-        gsl_matrix_char_view direction_submatrix, direction_block;
+        gsl_matrix_ushort_view gradient_submatrix;
+        gsl_matrix_char_view direction_submatrix;
+        int vehicle_startr, vehicle_startc;
+        int vehicle_width, vehicle_height;
 
         if (left_idx && right_idx) {
             left_idx *= 0.7;
             right_idx *= 1.3;
 
-            vehicle_width = (right_idx - left_idx + 1);
-            vehicle_height = vehicle_width * 0.5;
+            if (right_idx >= imgy->size2)
+                right_idx = imgy->size2 - 1;
 
-            if (index - vehicle_height < 0) {
+
+            vehicle_width = (right_idx - left_idx + 1);
+            vehicle_height = vehicle_width * 0.3;
+
+            dbg("Guessing left %d right %d at bottom %d", left_idx, right_idx, bottom_idx);
+
+            if (bottom_idx - vehicle_height < 0) {
                 vehicle_startr = 0;
             } else {
-                vehicle_startr = (index - vehicle_height);
+                vehicle_startr = (bottom_idx - vehicle_height);
             }
+
+            vehicle_startc = left_idx;
 
             if (left_idx + vehicle_width >= imgy->size2) {
-                vehicle_width = imgy->size2 - left_idx;
                 right_idx = imgy->size2 - 1;
+                vehicle_width = right_idx - left_idx + 1;
             } 
 
+            dbg("Vehicle at (%d,%d) with (%d,%d)", 
+                        vehicle_startr,
+                        vehicle_startc,
+                        vehicle_width,
+                        vehicle_height);
 
-            if (index - vehicle_height < 0) {
-dbg("%d:%d, %d %d %d %d", direction->size1, direction->size2, index - vehicle_height, left_idx, vehicle_height, vehicle_width);
-                gradient_submatrix = gsl_matrix_ushort_submatrix((gsl_matrix_ushort*)gradient, 0, left_idx, index, vehicle_width);
-                direction_submatrix = gsl_matrix_char_submatrix((gsl_matrix_char*)direction, 0, left_idx, index, vehicle_width);
-            } else {
-dbg("%d:%d, %d %d %d %d", direction->size1, direction->size2, index - vehicle_height, left_idx, vehicle_height, vehicle_width);
-                gradient_submatrix = gsl_matrix_ushort_submatrix((gsl_matrix_ushort*)gradient, index - vehicle_height, left_idx, vehicle_height, vehicle_width);
-                direction_submatrix = gsl_matrix_char_submatrix((gsl_matrix_char*)direction, index - vehicle_height, left_idx, vehicle_height, vehicle_width);
-            }
+            gradient_submatrix = gsl_matrix_ushort_submatrix((gsl_matrix_ushort*)gradient,
+                                                                vehicle_startr,
+                                                                vehicle_startc,
+                                                                vehicle_height,
+                                                                vehicle_width);
 
-dbg();
+            direction_submatrix = gsl_matrix_char_submatrix((gsl_matrix_char*)gradient,
+                                                                vehicle_startr,
+                                                                vehicle_startc,
+                                                                vehicle_height,
+                                                                vehicle_width);
+
             
-            UpdateVehicleCanidateByGradient(imgy, &gradient_submatrix.matrix, &direction_submatrix.matrix, left_idx, right_idx);
-            // upate Left index
-            max_magnitude = 0;
-            max_magnitude_idx = 0;
-            for (c=0 ; c<((gradient_submatrix.matrix.size2 / 3) - 2) ; ++c) {
-                gradient_block = gsl_matrix_ushort_submatrix(&gradient_submatrix.matrix, 0, c, gradient_submatrix.matrix.size1, 2);
-                direction_block = gsl_matrix_char_submatrix(&direction_submatrix.matrix, 0, c, direction_submatrix.matrix.size1, 2);
+            UpdateVehicleCanidateByGradient(imgy, 
+                                            &gradient_submatrix.matrix, 
+                                            &direction_submatrix.matrix,
+                                            vehicle_startr,
+                                            vehicle_startc,
+                                            vehicle_width,
+                                            vehicle_height);
 
-                magnitude = 0;
-                for (uint32_t rr=0 ; rr<gradient_block.matrix.size1 ; ++rr) {
-                    for (uint32_t cc=0 ; cc<gradient_block.matrix.size2 ; ++cc) {
-                        dir = gsl_matrix_char_get(&direction_block.matrix, rr, cc);
-                        if ( dir == 2) {
-                        //if ( direction == 0 || direction == 1 || direction == 11) {
-                            magnitude += gsl_matrix_ushort_get(&gradient_block.matrix, rr, cc);
-                        }
-                    }
-                }
+            dbg("Vehicle at (%d,%d) with (%d,%d)", 
+                        vehicle_startr,
+                        vehicle_startc,
+                        vehicle_width,
+                        vehicle_height);
 
-                if (magnitude > max_magnitude) {
-                    max_magnitude = magnitude;
-                    max_magnitude_idx = c;
-                    dbg("max %d %d %d %d", max_magnitude, max_magnitude_idx, magnitude, max_magnitude);
-                }
-            }
-
-dbg();
-            left_idx += max_magnitude_idx;
-
-#if 0
-            dbg("Update right index");
-            // upate right index
-            max_magnitude = 0;
-            max_magnitude_idx = 0;
-            for (c=m_gradient->size2- 2 ; c>((m_gradient->size2 * 2 / 3) - 2) ; --c) {
-                gradient_submatrix = gsl_matrix_ushort_submatrix(m_gradient, 0, c, m_gradient->size1, 2);
-                direction_submatrix = gsl_matrix_char_submatrix(m_direction, 0, c, m_direction->size1, 2);
-                
-                magnitude = 0;
-                for (uint32_t rr=0 ; rr<gradient_submatrix.matrix.size1 ; ++rr) {
-                    for (uint32_t cc=0 ; cc<gradient_submatrix.matrix.size2 ; ++cc) {
-                        direction = gsl_matrix_char_get(&direction_submatrix.matrix, rr, cc);
-                        if ( direction == 2) {
-                        //if ( direction == 0 || direction == 1 || direction == 11) {
-                            magnitude += gsl_matrix_ushort_get(&gradient_submatrix.matrix, rr, cc);
-                        }
-                    }
-                }
-
-                if (magnitude > max_magnitude) {
-                    max_magnitude = magnitude;
-                    max_magnitude_idx = c;
-                    dbg("max %d %d %d %d", max_magnitude, max_magnitude_idx, magnitude, max_magnitude);
-                }
-            }
-
-            right_idx = max_magnitude_idx;
-#endif
-
-            vehicle_width = (right_idx - left_idx + 1);
-            vehicle_height = vehicle_width * 0.5;
-
-            if (index - vehicle_height > 0) {
-                vc = new CCandidate();
-                vc->SetPos(index - vehicle_height, left_idx);
-                vc->SetWH(vehicle_width, vehicle_height);
-                vcs.push_back(vc);
-            }
+            vc = new CCandidate();
+            vc->SetPos(vehicle_startr, vehicle_startc);
+            vc->SetWH(vehicle_width, vehicle_height);
+            vcs.push_back(vc);
         }
     }
 
@@ -981,37 +942,96 @@ bool CFCWS::UpdateVehicleCanidateByGradient(
         const gsl_matrix* imgy,
         const gsl_matrix_ushort* gradient,
         const gsl_matrix_char* direction,
-        uint32_t& left_idx,
-        uint32_t& right_idx)
+        int&  vsr,
+        int&  vsc,
+        int&  vw,
+        int&  vh)
 {
     if (!imgy || !gradient || !direction) {
         dbg();
         return false;
     }
 
+    char dir;
+    uint32_t r, c;
+    uint32_t right_idx;
+    uint32_t magnitude, max_magnitude = 0;
+    uint32_t max_magnitude_idx;
+    gsl_matrix_ushort_view gradient_block;
+    gsl_matrix_char_view direction_block;
 
+    right_idx = vsc + vw;
 
+    // upate Left bottom_idx
+    max_magnitude = 0;
+    max_magnitude_idx = 0;
 
+    for (c=0 ; c<((gradient->size2 / 4) - 2) ; ++c) {
+        gradient_block = gsl_matrix_ushort_submatrix((gsl_matrix_ushort*)gradient, 
+                                                        0, 
+                                                        c, 
+                                                        gradient->size1, 
+                                                        2);
 
+        direction_block = gsl_matrix_char_submatrix((gsl_matrix_char*)direction, 
+                                                        0, 
+                                                        c, 
+                                                        direction->size1, 
+                                                        2);
 
+        magnitude = 0;
 
+        for (uint32_t rr=0 ; rr<gradient_block.matrix.size1 ; ++rr) {
+            for (uint32_t cc=0 ; cc<gradient_block.matrix.size2 ; ++cc) {
+                dir = gsl_matrix_char_get(&direction_block.matrix, rr, cc);
+                if (dir == 2) {
+                    //if ( direction == 0 || direction == 1 || direction == 11) {
+                    magnitude += gsl_matrix_ushort_get(&gradient_block.matrix, rr, cc);
+                }
+            }
+        }
 
+        if (magnitude > max_magnitude) {
+            max_magnitude = magnitude;
+            max_magnitude_idx = c;
+            dbg("max %d at %d", max_magnitude, max_magnitude_idx);
+        }
+    }
 
+    vsc += max_magnitude_idx;
 
+#if 0
+        dbg("Update right bottom_idx");
+        // upate right bottom_idx
+        max_magnitude = 0;
+        max_magnitude_idx = 0;
+        for (c=m_gradient->size2- 2 ; c>((m_gradient->size2 * 2 / 3) - 2) ; --c) {
+            gradient_submatrix = gsl_matrix_ushort_submatrix(m_gradient, 0, c, m_gradient->size1, 2);
+            direction_submatrix = gsl_matrix_char_submatrix(m_direction, 0, c, m_direction->size1, 2);
 
+            magnitude = 0;
+            for (uint32_t rr=0 ; rr<gradient_submatrix.matrix.size1 ; ++rr) {
+                for (uint32_t cc=0 ; cc<gradient_submatrix.matrix.size2 ; ++cc) {
+                    direction = gsl_matrix_char_get(&direction_submatrix.matrix, rr, cc);
+                    if ( direction == 2) {
+                        //if ( direction == 0 || direction == 1 || direction == 11) {
+                        magnitude += gsl_matrix_ushort_get(&gradient_submatrix.matrix, rr, cc);
+                    }
+                    }
+                }
 
+                if (magnitude > max_magnitude) {
+                    max_magnitude = magnitude;
+                    max_magnitude_idx = c;
+                    dbg("max %d %d %d %d", max_magnitude, max_magnitude_idx, magnitude, max_magnitude);
+                }
+            }
 
+            right_idx = max_magnitude_idx;
+#endif
 
-
-
-
-
-
-
-
-
-
-
+    vw = right_idx - vsc + 1;
+    vh = vw * 0.3;
 
     return true;
 }
