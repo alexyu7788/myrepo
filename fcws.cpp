@@ -862,7 +862,6 @@ bool CFCWS::VehicleCandidateGenerate(
         gsl_matrix_ushort_view gradient_submatrix, gradient_block;
         gsl_matrix_char_view direction_submatrix, direction_block;
 
-#if 1
         if (left_idx && right_idx) {
             left_idx *= 0.7;
             right_idx *= 1.3;
@@ -963,19 +962,6 @@ dbg();
                 vcs.push_back(vc);
             }
         }
-#else
-        if (left_idx && right_idx) {
-            vehicle_width = (right_idx - left_idx + 1);
-            vehicle_height = vehicle_width * 0.8;
-
-            if (index - vehicle_height > 0) {
-                vc = new CCandidate();
-                vc->SetPos(index - vehicle_height, left_idx);
-                vc->SetWH(vehicle_width, vehicle_height);
-                vcs.push_back(vc);
-            }
-        }
-#endif
     }
 
     FreeVector(temp_hh);
