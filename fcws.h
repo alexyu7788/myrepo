@@ -4,6 +4,8 @@
 #include <gsl/gsl_vector.h>
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_blas.h>
+#include <gsl/gsl_math.h>
+#include <math.h>
 #include "common.h"
 #include "candidate.h"
 
@@ -23,6 +25,8 @@ class CFCWS {
 
         gsl_matrix_view     m_dx;
         gsl_matrix_view     m_dy;
+        gsl_vector_view     m_dx1d;
+        gsl_vector_view     m_dy1d;
 
         Candidates          m_vcs;
 
@@ -46,11 +50,13 @@ class CFCWS {
     protected:
         int  GetRounded_Direction(int gx, int gy);
 
+        int  GetRounded_Direction2(int gx, int gy);
+
         bool NonMaximum_Suppression(gsl_matrix* dst, gsl_matrix_char* dir, gsl_matrix_ushort* src);
 
         bool DoubleThreshold(int low, int high, gsl_matrix* dst, const gsl_matrix* src);
 
-        bool Sobel(gsl_matrix_ushort* dst, gsl_matrix_char* dir, const gsl_matrix* src);
+        bool Sobel(gsl_matrix_ushort* dst, gsl_matrix_char* dir, const gsl_matrix* src, int crop_r = 0, int crop_c = 0, int crop_w = 0, int crop_h = 0);
 
         bool GaussianBlur(gsl_matrix* dst, const gsl_matrix* src);
 
@@ -65,7 +71,23 @@ class CFCWS {
 
         bool CalHorizontalHist(const gsl_matrix* imgy, gsl_vector* horizontal_hist);
 
-        bool VehicleCandidateGenerate(const gsl_matrix* imgy, const gsl_vector* horizontal_hist, gsl_vector* vertical_hist, Candidates& vcs);
+        bool CalGradient(gsl_matrix_ushort* dst, gsl_matrix_char* dir, const gsl_matrix* src, int crop_r = 0, int crop_c = 0, int crop_w = 0, int crop_h = 0);
+
+        bool VehicleCandidateGenerate(
+                const gsl_matrix* imgy, 
+                const gsl_vector* horizontal_hist, 
+                gsl_vector* vertical_hist, 
+                const gsl_matrix_ushort* gradient,
+                const gsl_matrix_char* direction,
+                Candidates& vcs);
+
+        bool UpdateVehicleCanidateByGradient(
+                const gsl_matrix* imgy,
+                const gsl_matrix_ushort* gradient,
+                const gsl_matrix_char* direction,
+                uint32_t& left_idx,
+                uint32_t& right_idx);
+
 };
 
 #endif

@@ -21,6 +21,10 @@ static double dx_ary[] = {
     -1, 0, 1
 };
 
+static double dx1d_ary[] = {
+    -1, 0, 1
+};
+
 static double dy_ary[] = {
     -1, -2, -1,
      0,  0,  0,
@@ -131,8 +135,10 @@ CFCWS::CFCWS()
             m_gk_weight += gsl_matrix_get(&m_gk.matrix, r, c);
 
     // dx & dy
-    m_dx = gsl_matrix_view_array(dx_ary, 3, 3);
-    m_dy = gsl_matrix_view_array(dy_ary, 3, 3);
+    m_dx    = gsl_matrix_view_array(dx_ary, 3, 3);
+    m_dy    = gsl_matrix_view_array(dy_ary, 3, 3);
+    m_dx1d  = gsl_vector_view_array(dx1d_ary, 3);
+    m_dy1d  = gsl_vector_view_array(dx1d_ary, 3);
 
     m_vcs.clear();
 }
@@ -191,7 +197,9 @@ bool CFCWS::DoDetection(uint8_t* img, int w, int h, gsl_vector* vertical_hist, g
 
     CalHorizontalHist(m_temp_imgy, hori_hist);
 
-    VehicleCandidateGenerate(m_temp_imgy, hori_hist, vertical_hist, m_vcs);
+    CalGradient(m_gradient, m_direction, m_imgy);
+
+    VehicleCandidateGenerate(m_temp_imgy, hori_hist, vertical_hist, m_gradient, m_direction, m_vcs);
 
     vcs.clear();
     vcs = m_vcs;
@@ -232,6 +240,20 @@ int  CFCWS::GetRounded_Direction(int gx, int gy)
     }
 
     return DIRECTION_VERTICAL;
+}
+
+int  CFCWS::GetRounded_Direction2(int gx, int gy)
+{
+    double degrees = 0;
+
+    degrees = (atan2((double)gx ,(double)gy) * 180.0 / M_PI);
+
+    if (degrees < 0)
+        degrees += 360.0;
+
+    //dbg("%d %d, degrees %.02lf, %d", gy, gx, degrees, (int)(degrees / 30));
+
+    return (int)(degrees / 30);
 }
 
 bool CFCWS::NonMaximum_Suppression(gsl_matrix* dst, gsl_matrix_char* dir, gsl_matrix_ushort* src)
@@ -315,27 +337,66 @@ bool CFCWS::DoubleThreshold(int low, int high, gsl_matrix* dst, const gsl_matrix
     return true;
 }
 
-bool CFCWS::Sobel(gsl_matrix_ushort* dst, gsl_matrix_char* dir, const gsl_matrix* src)
+bool CFCWS::Sobel(gsl_matrix_ushort* dst, gsl_matrix_char* dir, const gsl_matrix* src, int crop_r, int crop_c, int crop_w, int crop_h)
 {
     if (!src || !dst || !dir) {
         dbg();
         return false;
     }
 
+    int cr, cc, cw, ch;
     uint32_t i, j;
     uint32_t r, c, row, col;
     uint32_t size;
+    gsl_matrix*     pmatrix;
     gsl_matrix_view submatrix_src;
+    gsl_matrix_view cropmatrix_src;
 
-    row = src->size1;
-    col = src->size2;
+    if (crop_r && crop_c && crop_w && crop_h) {
+        //Check boundary
+        if (crop_r < 0)
+            cr = 0;
+        else if (crop_r > src->size1)
+            cr = src->size1 - 1;
+        else
+            cr = crop_r;
+
+        if (crop_c < 0)
+            cc = 0;
+        else if (crop_c > src->size2)
+            cc = src->size2 - 1;
+        else
+            cc = crop_c;
+
+        if (crop_r + crop_h >= src->size1)
+            ch = src->size1 - crop_r;
+        else 
+            ch = crop_h;
+
+        if (crop_c + crop_w >= src->size2)
+            cw = src->size2 - crop_c;
+        else
+            cw = crop_w;
+
+        CheckOrReallocMatrixUshort(dst, ch, cw);
+        CheckOrReallocMatrixChar(dir, ch, cw);
+
+        cropmatrix_src = gsl_matrix_submatrix((gsl_matrix*)src, cr, cc, ch, cw);
+        pmatrix = &cropmatrix_src.matrix;
+    } else {
+        pmatrix = (gsl_matrix*)src;
+    }
+
+    row = pmatrix->size1;
+    col = pmatrix->size2;
     size = m_dx.matrix.size1;
 
+    // Convolution operation
     for (r=(size/2) ; r<(row - (size/2)) ; r++) {
         for (c=(size/2) ; c<(col - (size/2)) ; c++) {
             int gx=0, gy=0;
 
-            submatrix_src = gsl_matrix_submatrix((gsl_matrix*)src, r - (size/2), c - (size/2), size, size); 
+            submatrix_src = gsl_matrix_submatrix(pmatrix, r - (size/2), c - (size/2), size, size); 
 
             for (i=0 ; i<submatrix_src.matrix.size1 ; i++) {
                 for (j=0 ; j<submatrix_src.matrix.size2 ; j++) {
@@ -559,6 +620,87 @@ bool CFCWS::CalHorizontalHist(const gsl_matrix* imgy, gsl_vector* horizontal_his
     return true;
 }
 
+bool CFCWS::CalGradient(gsl_matrix_ushort* dst, gsl_matrix_char* dir, const gsl_matrix* src, int crop_r, int crop_c, int crop_w, int crop_h)
+{
+    if (!src || !dst || !dir) {
+        dbg();
+        return false;
+    }
+
+    int cr, cc, cw, ch;
+    uint32_t i, j;
+    uint32_t r, c, row, col;
+    uint32_t size;
+    gsl_matrix*     pmatrix;
+    gsl_matrix_view submatrix_src;
+    gsl_matrix_view cropmatrix_src;
+
+    if (crop_r && crop_c && crop_w && crop_h) {
+        //Check boundary
+        if (crop_r < 0)
+            cr = 0;
+        else if (crop_r > src->size1)
+            cr = src->size1 - 1;
+        else
+            cr = crop_r;
+
+        if (crop_c < 0)
+            cc = 0;
+        else if (crop_c > src->size2)
+            cc = src->size2 - 1;
+        else
+            cc = crop_c;
+
+        if (crop_r + crop_h >= src->size1)
+            ch = src->size1 - crop_r;
+        else 
+            ch = crop_h;
+
+        if (crop_c + crop_w >= src->size2)
+            cw = src->size2 - crop_c;
+        else
+            cw = crop_w;
+
+        CheckOrReallocMatrixUshort(dst, ch, cw);
+        CheckOrReallocMatrixChar(dir, ch, cw);
+
+        cropmatrix_src = gsl_matrix_submatrix((gsl_matrix*)src, cr, cc, ch, cw);
+        pmatrix = &cropmatrix_src.matrix;
+    } else {
+        pmatrix = (gsl_matrix*)src;
+    }
+
+    row = pmatrix->size1;
+    col = pmatrix->size2;
+    size = m_dx.matrix.size1;
+
+    // Convolution operation
+    for (r=(size/2) ; r<(row - (size/2)) ; r++) {
+        for (c=(size/2) ; c<(col - (size/2)) ; c++) {
+            int gx=0, gy=0;
+
+            submatrix_src = gsl_matrix_submatrix(pmatrix, r - (size/2), c - (size/2), size, size); 
+
+            for (i=0 ; i<submatrix_src.matrix.size1 ; i++) {
+                for (j=0 ; j<submatrix_src.matrix.size2 ; j++) {
+                    gx += (int)(gsl_matrix_get(&submatrix_src.matrix, i, j) * gsl_matrix_get(&m_dx.matrix, i, j));
+                }
+            }
+
+            for (i=0 ; i<submatrix_src.matrix.size1 ; i++) {
+                for (j=0 ; j<submatrix_src.matrix.size2 ; j++) {
+                    gy += (int)(gsl_matrix_get(&submatrix_src.matrix, i, j) * gsl_matrix_get(&m_dy.matrix, i, j));
+                }
+            }
+
+            gsl_matrix_ushort_set(dst, r, c, gsl_hypot(gx, gy));
+            gsl_matrix_char_set(dir, r, c, GetRounded_Direction(gx, gy));
+        }
+    }
+
+    return true;
+}
+
 typedef struct PEAK {
     uint32_t value;
     uint32_t idx;
@@ -569,9 +711,11 @@ bool CFCWS::VehicleCandidateGenerate(
         const gsl_matrix* imgy, 
         const gsl_vector* horizontal_hist, 
         gsl_vector* vertical_hist, 
+        const gsl_matrix_ushort* gradient,
+        const gsl_matrix_char* direction,
         Candidates& vcs)
 {
-    if (!imgy || !vertical_hist || !horizontal_hist) {
+    if (!imgy || !vertical_hist || !horizontal_hist || !gradient || !direction) {
         dbg();
         return false;
     }
@@ -631,7 +775,7 @@ bool CFCWS::VehicleCandidateGenerate(
         while (1) {
             cur_peak_idx = gsl_vector_max_index(temp_hh);
             gsl_vector_set(temp_hh, cur_peak_idx, 0);
-            dbg("peak at %d, delta %d", cur_peak_idx, abs((int)ppeak->idx - (int)cur_peak_idx));
+            //dbg("peak at %d, delta %d", cur_peak_idx, abs((int)ppeak->idx - (int)cur_peak_idx));
             if (abs((int)ppeak->idx - (int)cur_peak_idx) <= 20) {
                 gsl_vector_set(m_temp_hori_hist, cur_peak_idx, 0);
 
@@ -650,7 +794,7 @@ bool CFCWS::VehicleCandidateGenerate(
         }
     }
 
-    // find left boundary and right boundary of this blob
+    // Guessing  left boundary and right boundary of this blob
     uint32_t index;
     uint32_t max_vh, max_vh_idx;
     uint32_t left_idx, right_idx;
@@ -697,6 +841,7 @@ bool CFCWS::VehicleCandidateGenerate(
             }
         }
 
+#if 0
         for (c=0 ; c<col ; c++) {
             if (gsl_matrix_get(imgy, index, c) != NOT_SHADOW) {
                 dbg("imgy[%d][%d]=%d, vh=%d(max. %d)", index, c, 
@@ -705,11 +850,120 @@ bool CFCWS::VehicleCandidateGenerate(
                                                 (gsl_vector_get(vertical_hist, c) == gsl_vector_max(vertical_hist) ? 1 : 0));
             }
         }
+#endif
 
         dbg("left %d right %d", left_idx, right_idx);
 
+        uint32_t vehicle_startr, vehicle_startc;
         uint32_t vehicle_width, vehicle_height;
+        char dir;
+        uint32_t magnitude, max_magnitude = 0;
+        uint32_t max_magnitude_idx;
+        gsl_matrix_ushort_view gradient_submatrix, gradient_block;
+        gsl_matrix_char_view direction_submatrix, direction_block;
 
+#if 1
+        if (left_idx && right_idx) {
+            left_idx *= 0.7;
+            right_idx *= 1.3;
+
+            vehicle_width = (right_idx - left_idx + 1);
+            vehicle_height = vehicle_width * 0.5;
+
+            if (index - vehicle_height < 0) {
+                vehicle_startr = 0;
+            } else {
+                vehicle_startr = (index - vehicle_height);
+            }
+
+            if (left_idx + vehicle_width >= imgy->size2) {
+                vehicle_width = imgy->size2 - left_idx;
+                right_idx = imgy->size2 - 1;
+            } 
+
+
+            if (index - vehicle_height < 0) {
+dbg("%d:%d, %d %d %d %d", direction->size1, direction->size2, index - vehicle_height, left_idx, vehicle_height, vehicle_width);
+                gradient_submatrix = gsl_matrix_ushort_submatrix((gsl_matrix_ushort*)gradient, 0, left_idx, index, vehicle_width);
+                direction_submatrix = gsl_matrix_char_submatrix((gsl_matrix_char*)direction, 0, left_idx, index, vehicle_width);
+            } else {
+dbg("%d:%d, %d %d %d %d", direction->size1, direction->size2, index - vehicle_height, left_idx, vehicle_height, vehicle_width);
+                gradient_submatrix = gsl_matrix_ushort_submatrix((gsl_matrix_ushort*)gradient, index - vehicle_height, left_idx, vehicle_height, vehicle_width);
+                direction_submatrix = gsl_matrix_char_submatrix((gsl_matrix_char*)direction, index - vehicle_height, left_idx, vehicle_height, vehicle_width);
+            }
+
+dbg();
+            
+            UpdateVehicleCanidateByGradient(imgy, &gradient_submatrix.matrix, &direction_submatrix.matrix, left_idx, right_idx);
+            // upate Left index
+            max_magnitude = 0;
+            max_magnitude_idx = 0;
+            for (c=0 ; c<((gradient_submatrix.matrix.size2 / 3) - 2) ; ++c) {
+                gradient_block = gsl_matrix_ushort_submatrix(&gradient_submatrix.matrix, 0, c, gradient_submatrix.matrix.size1, 2);
+                direction_block = gsl_matrix_char_submatrix(&direction_submatrix.matrix, 0, c, direction_submatrix.matrix.size1, 2);
+
+                magnitude = 0;
+                for (uint32_t rr=0 ; rr<gradient_block.matrix.size1 ; ++rr) {
+                    for (uint32_t cc=0 ; cc<gradient_block.matrix.size2 ; ++cc) {
+                        dir = gsl_matrix_char_get(&direction_block.matrix, rr, cc);
+                        if ( dir == 2) {
+                        //if ( direction == 0 || direction == 1 || direction == 11) {
+                            magnitude += gsl_matrix_ushort_get(&gradient_block.matrix, rr, cc);
+                        }
+                    }
+                }
+
+                if (magnitude > max_magnitude) {
+                    max_magnitude = magnitude;
+                    max_magnitude_idx = c;
+                    dbg("max %d %d %d %d", max_magnitude, max_magnitude_idx, magnitude, max_magnitude);
+                }
+            }
+
+dbg();
+            left_idx += max_magnitude_idx;
+
+#if 0
+            dbg("Update right index");
+            // upate right index
+            max_magnitude = 0;
+            max_magnitude_idx = 0;
+            for (c=m_gradient->size2- 2 ; c>((m_gradient->size2 * 2 / 3) - 2) ; --c) {
+                gradient_submatrix = gsl_matrix_ushort_submatrix(m_gradient, 0, c, m_gradient->size1, 2);
+                direction_submatrix = gsl_matrix_char_submatrix(m_direction, 0, c, m_direction->size1, 2);
+                
+                magnitude = 0;
+                for (uint32_t rr=0 ; rr<gradient_submatrix.matrix.size1 ; ++rr) {
+                    for (uint32_t cc=0 ; cc<gradient_submatrix.matrix.size2 ; ++cc) {
+                        direction = gsl_matrix_char_get(&direction_submatrix.matrix, rr, cc);
+                        if ( direction == 2) {
+                        //if ( direction == 0 || direction == 1 || direction == 11) {
+                            magnitude += gsl_matrix_ushort_get(&gradient_submatrix.matrix, rr, cc);
+                        }
+                    }
+                }
+
+                if (magnitude > max_magnitude) {
+                    max_magnitude = magnitude;
+                    max_magnitude_idx = c;
+                    dbg("max %d %d %d %d", max_magnitude, max_magnitude_idx, magnitude, max_magnitude);
+                }
+            }
+
+            right_idx = max_magnitude_idx;
+#endif
+
+            vehicle_width = (right_idx - left_idx + 1);
+            vehicle_height = vehicle_width * 0.5;
+
+            if (index - vehicle_height > 0) {
+                vc = new CCandidate();
+                vc->SetPos(index - vehicle_height, left_idx);
+                vc->SetWH(vehicle_width, vehicle_height);
+                vcs.push_back(vc);
+            }
+        }
+#else
         if (left_idx && right_idx) {
             vehicle_width = (right_idx - left_idx + 1);
             vehicle_height = vehicle_width * 0.8;
@@ -721,19 +975,57 @@ bool CFCWS::VehicleCandidateGenerate(
                 vcs.push_back(vc);
             }
         }
+#endif
     }
 
     FreeVector(temp_hh);
 
     for (pg_it = pg.begin() ; pg_it != pg.end(); ++pg_it) {
         if (*pg_it) {
-            dbg("free peak at %d", (*pg_it)->idx);
             free(*pg_it);
             (*pg_it) = NULL;
         }
     }
 
     pg.clear();
+
+    return true;
+}
+bool CFCWS::UpdateVehicleCanidateByGradient(
+        const gsl_matrix* imgy,
+        const gsl_matrix_ushort* gradient,
+        const gsl_matrix_char* direction,
+        uint32_t& left_idx,
+        uint32_t& right_idx)
+{
+    if (!imgy || !gradient || !direction) {
+        dbg();
+        return false;
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     return true;
 }
