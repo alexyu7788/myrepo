@@ -75,13 +75,14 @@ class CFCWS {
 
         bool VehicleCandidateGenerate(
                 const gsl_matrix* imgy, 
+                const gsl_matrix* edged_imgy, 
                 const gsl_vector* horizontal_hist, 
                 gsl_vector* vertical_hist, 
                 const gsl_matrix_ushort* gradient,
                 const gsl_matrix_char* direction,
                 Candidates& vcs);
 
-        bool UpdateVehicleCanidateByGradient(
+        bool UpdateVehicleCanidateByEdge(
                 const gsl_matrix* imgy,
                 const gsl_matrix_ushort* gradient,
                 const gsl_matrix_char* direction,
