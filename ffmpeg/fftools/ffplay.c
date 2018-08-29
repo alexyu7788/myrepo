@@ -60,7 +60,10 @@
 
 #include <assert.h>
 
-#include "fcws/fcws.h"
+#include "fcws/candidate.h"
+//#include "fcws/fcws.h"
+
+static Candidate vcs[MAX_CANDIDATES];
 
 const char program_name[] = "ffplay";
 const int program_birth_year = 2003;

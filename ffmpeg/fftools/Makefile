@@ -16,7 +16,7 @@ ifndef CONFIG_VIDEOTOOLBOX
 OBJS-ffmpeg-$(CONFIG_VDA)          += fftools/ffmpeg_videotoolbox.o
 endif
 OBJS-ffmpeg-$(CONFIG_VIDEOTOOLBOX) += fftools/ffmpeg_videotoolbox.o
-#OBJS-ffplay						   += fftools/fcws/candidate.o fftools/fcws/fcws.o
+OBJS-ffplay						   += fftools/fcws/candidate.o fftools/fcws/fcws.o
 
 define DOFFTOOL
 OBJS-$(1) += fftools/cmdutils.o fftools/$(1).o $(OBJS-$(1)-yes)
