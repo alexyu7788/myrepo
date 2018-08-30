@@ -943,14 +943,13 @@ static int upload_texture(SDL_Texture **tex, AVFrame *frame, struct SwsContext *
             if (frame->linesize[0] > 0 && frame->linesize[1] > 0 && frame->linesize[2] > 0) {
 #if 1
                 //---------------------FCW------------------
-                memset(frame->data[1], 128, sizeof(uint8_t)*frame->linesize[1]);
-                memset(frame->data[2], 128, sizeof(uint8_t)*frame->linesize[2]);
 
                 CheckOrReallocVector(&vertical_hist, frame->width);
                 CheckOrReallocVector(&hori_hist, frame->height);
-                CheckOrReallocVector(&grayscale_hist, frame->width);
+                CheckOrReallocVector(&grayscale_hist, 256);
                 
                 FCW_DoDetection(frame->data[0],
+                                frame->linesize[0],
                                 frame->width,
                                 frame->height,
                                 vertical_hist,
@@ -958,6 +957,8 @@ static int upload_texture(SDL_Texture **tex, AVFrame *frame, struct SwsContext *
                                 grayscale_hist,
                                 &vcs); 
 
+                memset(frame->data[1], 128, sizeof(uint8_t)*frame->linesize[1]);
+                memset(frame->data[2], 128, sizeof(uint8_t)*frame->linesize[2]);
 
  
 
@@ -1090,13 +1091,10 @@ static void video_image_display(VideoState *is)
     {
         uint32_t i, j;
         double max_val;
-        uint32_t max_idx;
 
         SDL_SetRenderDrawColor(renderer, 0xff, 0, 0, 0xff);
 
         max_val = gsl_vector_max(grayscale_hist);
-        max_idx = gsl_vector_max_index(grayscale_hist);
-        //dbg("%d at %d", (int)max_val, max_idx);
         for (i=0 ; i<grayscale_hist->size - 1; ++i) {
             SDL_RenderDrawLine(renderer, 
                                 rect.x + i * rect.w / 256.0,
@@ -1109,13 +1107,11 @@ static void video_image_display(VideoState *is)
         SDL_SetRenderDrawColor(renderer, 0, 0xff, 0, 0xff);
 
         max_val = gsl_vector_max(hori_hist);
-        max_idx = gsl_vector_max_index(hori_hist);
-        //dbg("%d at %d", (int)max_val, max_idx);
         for (i=0 ; i<hori_hist->size - 1; ++i) {
             SDL_RenderDrawLine(renderer, 
-                                rect.w - (gsl_vector_get(hori_hist, i) * (rect.w / 3.0) / max_val),
+                                rect.w - (gsl_vector_get(hori_hist, i) * (rect.w / 2.0) / max_val),
                                 rect.y + (i * rect.h / hori_hist->size),
-                                rect.w - (gsl_vector_get(hori_hist, i+1) * (rect.w / 3.0) / max_val),
+                                rect.w - (gsl_vector_get(hori_hist, i+1) * (rect.w / 2.0) / max_val),
                                 rect.y + ((i+1) * rect.h / hori_hist->size)
                                 );
         }

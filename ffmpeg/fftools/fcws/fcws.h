@@ -23,7 +23,7 @@ bool FCW_Init(void);
 
 bool FCW_DeInit(void);
 
-bool FCW_DoDetection(uint8_t* img, int w, int h, gsl_vector* vertical_hist, gsl_vector* hori_hist, gsl_vector* grayscale_hist, VehicleCandidates *vcs);
+bool FCW_DoDetection(uint8_t* img, int linesize,int w, int h, gsl_vector* vertical_hist, gsl_vector* hori_hist, gsl_vector* grayscale_hist, VehicleCandidates *vcs);
 
 int  FCW_GetRounded_Direction(int gx, int gy);
 

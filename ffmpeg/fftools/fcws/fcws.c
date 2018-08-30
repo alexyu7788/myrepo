@@ -93,7 +93,7 @@ bool FCW_DeInit()
     return true;
 }
 
-bool FCW_DoDetection(uint8_t* img, int w, int h, gsl_vector* vertical_hist, gsl_vector* hori_hist, gsl_vector* grayscale_hist, VehicleCandidates *vcs)
+bool FCW_DoDetection(uint8_t* img,int linesize, int w, int h, gsl_vector* vertical_hist, gsl_vector* hori_hist, gsl_vector* grayscale_hist, VehicleCandidates *vcs)
 {
     if (!img || !vertical_hist || !hori_hist || !grayscale_hist) {
         dbg();
@@ -111,7 +111,7 @@ bool FCW_DoDetection(uint8_t* img, int w, int h, gsl_vector* vertical_hist, gsl_
     // Copy image array to image matrix
     for (r=0 ; r<m_imgy->size1 ; r++)
         for (c=0 ; c<m_imgy->size2 ; c++)
-            gsl_matrix_set(m_imgy, r, c, img[r * m_imgy->size2 + c]); 
+            gsl_matrix_set(m_imgy, r, c, img[r * linesize + c]); 
 
     gsl_matrix_memcpy(m_temp_imgy, m_imgy);
 
@@ -128,6 +128,9 @@ bool FCW_DoDetection(uint8_t* img, int w, int h, gsl_vector* vertical_hist, gsl_
 
 
 
+    for (r=0 ; r<m_imgy->size1 ; r++)
+        for (c=0 ; c<m_imgy->size2 ; c++)
+            img[r * linesize + c] = (uint8_t)gsl_matrix_get(m_temp_imgy, r,c); 
 
 
 
@@ -165,7 +168,7 @@ int FCW_GetRounded_Direction(int gx, int gy)
 bool FCW_CalGrayscaleHist(const gsl_matrix* imgy, gsl_matrix* result_imgy, gsl_vector* grayscale_hist)
 {
     uint32_t r, c, i;
-    int cutoff_pixel_value = 70;
+    int cutoff_pixel_value = 60;
     int pixel_value_peak = 0;
     double hist_peak = 0;
 
@@ -180,8 +183,7 @@ bool FCW_CalGrayscaleHist(const gsl_matrix* imgy, gsl_matrix* result_imgy, gsl_v
         for (c=0 ; c<imgy->size2 ; c++) {
             uint8_t pixel_val = (uint8_t)gsl_matrix_get(imgy, r, c);
             double val = gsl_vector_get(grayscale_hist, pixel_val);
-            if (pixel_val != 0) // 20180830.
-                gsl_vector_set(grayscale_hist, pixel_val, ++val);
+            gsl_vector_set(grayscale_hist, pixel_val, ++val);
         }
     }
 
@@ -300,7 +302,7 @@ bool FCW_CalHorizontalHist(const gsl_matrix* imgy, gsl_vector* horizontal_hist)
         row_view = gsl_matrix_row((gsl_matrix*)imgy, r);
 
         for (c=1 ; c<row_view.vector.size - 1 ; c++) {
-            if (gsl_vector_get(&row_view.vector, c) != 255)
+            if (gsl_vector_get(&row_view.vector, c) != NOT_SHADOW)
             {
                 val = gsl_vector_get(horizontal_hist, r);
                 gsl_vector_set(horizontal_hist, r, ++val);
