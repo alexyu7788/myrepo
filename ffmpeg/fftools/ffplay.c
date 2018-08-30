@@ -60,10 +60,16 @@
 
 #include <assert.h>
 
+// -----------------------------------FCWS---------------------------------------------
 #include "fcws/candidate.h"
-//#include "fcws/fcws.h"
+#include "fcws/fcws.h"
 
-static Candidate vcs[MAX_CANDIDATES];
+static VehicleCandidates vcs;
+static gsl_vector* vertical_hist = NULL;
+static gsl_vector* hori_hist = NULL;
+static gsl_vector* grayscale_hist = NULL;
+
+// -----------------------------------FCWS---------------------------------------------
 
 const char program_name[] = "ffplay";
 const int program_birth_year = 2003;
@@ -930,12 +936,33 @@ static int upload_texture(SDL_Texture **tex, AVFrame *frame, struct SwsContext *
                     SDL_UnlockTexture(*tex);
                 }
             } else {
-                av_log(NULL, AV_LOG_FATAL, "Cannot initialize the conversion context\n");
                 ret = -1;
             }
             break;
         case SDL_PIXELFORMAT_IYUV:
             if (frame->linesize[0] > 0 && frame->linesize[1] > 0 && frame->linesize[2] > 0) {
+#if 1
+                //---------------------FCW------------------
+                memset(frame->data[1], 128, sizeof(uint8_t)*frame->linesize[1]);
+                memset(frame->data[2], 128, sizeof(uint8_t)*frame->linesize[2]);
+
+                CheckOrReallocVector(&vertical_hist, frame->width);
+                CheckOrReallocVector(&hori_hist, frame->height);
+                CheckOrReallocVector(&grayscale_hist, frame->width);
+                
+                FCW_DoDetection(frame->data[0],
+                                frame->width,
+                                frame->height,
+                                vertical_hist,
+                                hori_hist,
+                                grayscale_hist,
+                                &vcs); 
+
+
+ 
+
+                //---------------------FCW------------------
+#endif
                 ret = SDL_UpdateYUVTexture(*tex, NULL, frame->data[0], frame->linesize[0],
                                                        frame->data[1], frame->linesize[1],
                                                        frame->data[2], frame->linesize[2]);
@@ -1027,7 +1054,9 @@ static void video_image_display(VideoState *is)
         }
     }
 
+    //dbg("%d %d %d %d %d %d",is->xleft, is->ytop, is->width, is->height, vp->width, vp->height);
     calculate_display_rect(&rect, is->xleft, is->ytop, is->width, is->height, vp->width, vp->height, vp->sar);
+    //dbg("%d %d %d %d", rect.x, rect.y, rect.w, rect.h);
 
     if (!vp->uploaded) {
         if (upload_texture(&is->vid_texture, vp->frame, &is->img_convert_ctx) < 0)
@@ -1055,6 +1084,41 @@ static void video_image_display(VideoState *is)
             SDL_RenderCopy(renderer, is->sub_texture, sub_rect, &target);
         }
 #endif
+    }
+
+    //----------------------FCW------------------------------------
+    {
+        uint32_t i, j;
+        double max_val;
+        uint32_t max_idx;
+
+        SDL_SetRenderDrawColor(renderer, 0xff, 0, 0, 0xff);
+
+        max_val = gsl_vector_max(grayscale_hist);
+        max_idx = gsl_vector_max_index(grayscale_hist);
+        //dbg("%d at %d", (int)max_val, max_idx);
+        for (i=0 ; i<grayscale_hist->size - 1; ++i) {
+            SDL_RenderDrawLine(renderer, 
+                                rect.x + i * rect.w / 256.0,
+                                rect.y + rect.h - (gsl_vector_get(grayscale_hist, i) * (rect.h / 2.0) / max_val),
+                                rect.x + (i+1) * rect.w / 256.0,
+                                rect.y + rect.h - (gsl_vector_get(grayscale_hist, i+1) * (rect.h / 2.0) / max_val));
+
+        }
+
+        SDL_SetRenderDrawColor(renderer, 0, 0xff, 0, 0xff);
+
+        max_val = gsl_vector_max(hori_hist);
+        max_idx = gsl_vector_max_index(hori_hist);
+        //dbg("%d at %d", (int)max_val, max_idx);
+        for (i=0 ; i<hori_hist->size - 1; ++i) {
+            SDL_RenderDrawLine(renderer, 
+                                rect.w - (gsl_vector_get(hori_hist, i) * (rect.w / 3.0) / max_val),
+                                rect.y + (i * rect.h / hori_hist->size),
+                                rect.w - (gsl_vector_get(hori_hist, i+1) * (rect.w / 3.0) / max_val),
+                                rect.y + ((i+1) * rect.h / hori_hist->size)
+                                );
+        }
     }
 }
 
@@ -1317,6 +1381,11 @@ static void do_exit(VideoState *is)
         printf("\n");
     SDL_Quit();
     av_log(NULL, AV_LOG_QUIET, "%s", "");
+
+    // ---------------FCW-------------------------
+    FCW_DeInit();
+
+
     exit(0);
 }
 
@@ -3753,6 +3822,9 @@ int main(int argc, char **argv)
         av_log(NULL, AV_LOG_FATAL, "Failed to initialize VideoState!\n");
         do_exit(NULL);
     }
+
+    //------------FCW--------------
+    FCW_Init();
 
     event_loop(is);
 

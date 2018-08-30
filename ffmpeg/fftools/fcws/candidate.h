@@ -12,9 +12,14 @@ typedef struct Candidate {
     uint32_t m_h;
 }Candidate;
 
-void CandidateGetGeoInfo(Candidate* _candidate, uint32_t* r, uint32_t* c, uint32_t* w, uint32_t* h);
+typedef struct VehicleCandidates {
+    uint32_t    vc_count;
+    Candidate   vc[MAX_CANDIDATES];
+}VehicleCandidates;
 
-void CandidateSetGeoInfo(Candidate* _candidate, uint32_t r, uint32_t c, uint32_t w, uint32_t h);
+void CandidateGetGeoInfo(Candidate* obj, uint32_t* r,  uint32_t* c, uint32_t* w, uint32_t* h);
+
+void CandidateSetGeoInfo(Candidate* obj, uint32_t r,  uint32_t c, uint32_t w, uint32_t h);
 //using namespace std;
 //
 //class CCandidate;
