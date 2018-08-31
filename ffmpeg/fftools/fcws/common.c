@@ -1,7 +1,37 @@
 #include "common.h"
 
 
+void FreeVector(gsl_vector** v)
+{
+    if (*v) {
+        gsl_vector_free(*v);
+        *v = NULL;
+    }
+}
 
+void FreeMatrix(gsl_matrix** m)
+{
+    if (*m) {
+        gsl_matrix_free(*m);
+        *m = NULL;
+    }
+}
+
+void FreeMatrixUshort(gsl_matrix_ushort** m)
+{
+    if (*m) {
+        gsl_matrix_ushort_free(*m);
+        *m = NULL;
+    }
+}
+
+void FreeMatrixChar(gsl_matrix_char** m)
+{
+    if (*m) {
+        gsl_matrix_char_free(*m);
+        *m = NULL;
+    }
+}
 
 bool CheckOrReallocVector(gsl_vector** v, int size)
 {

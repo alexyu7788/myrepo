@@ -68,7 +68,6 @@ static VehicleCandidates vcs;
 static gsl_vector* vertical_hist = NULL;
 static gsl_vector* hori_hist = NULL;
 static gsl_vector* grayscale_hist = NULL;
-
 // -----------------------------------FCWS---------------------------------------------
 
 const char program_name[] = "ffplay";
@@ -943,7 +942,6 @@ static int upload_texture(SDL_Texture **tex, AVFrame *frame, struct SwsContext *
             if (frame->linesize[0] > 0 && frame->linesize[1] > 0 && frame->linesize[2] > 0) {
 #if 1
                 //---------------------FCW------------------
-
                 CheckOrReallocVector(&vertical_hist, frame->width);
                 CheckOrReallocVector(&hori_hist, frame->height);
                 CheckOrReallocVector(&grayscale_hist, 256);
@@ -957,11 +955,8 @@ static int upload_texture(SDL_Texture **tex, AVFrame *frame, struct SwsContext *
                                 grayscale_hist,
                                 &vcs); 
 
-                memset(frame->data[1], 128, sizeof(uint8_t)*frame->linesize[1]);
-                memset(frame->data[2], 128, sizeof(uint8_t)*frame->linesize[2]);
-
- 
-
+                //memset(frame->data[1], 128, sizeof(uint8_t)*frame->linesize[1]*frame->height/2);
+                //memset(frame->data[2], 128, sizeof(uint8_t)*frame->linesize[2]*frame->height/2);
                 //---------------------FCW------------------
 #endif
                 ret = SDL_UpdateYUVTexture(*tex, NULL, frame->data[0], frame->linesize[0],
@@ -1055,9 +1050,7 @@ static void video_image_display(VideoState *is)
         }
     }
 
-    //dbg("%d %d %d %d %d %d",is->xleft, is->ytop, is->width, is->height, vp->width, vp->height);
     calculate_display_rect(&rect, is->xleft, is->ytop, is->width, is->height, vp->width, vp->height, vp->sar);
-    //dbg("%d %d %d %d", rect.x, rect.y, rect.w, rect.h);
 
     if (!vp->uploaded) {
         if (upload_texture(&is->vid_texture, vp->frame, &is->img_convert_ctx) < 0)
@@ -1089,18 +1082,31 @@ static void video_image_display(VideoState *is)
 
     //----------------------FCW------------------------------------
     {
-        uint32_t i, j;
+        uint32_t i;
         double max_val;
+        SDL_Rect vrect;
+        SDL_Color *color;
+        //SDL_SetRenderDrawColor(renderer, 0xff, 0, 0, 0xff);
 
-        SDL_SetRenderDrawColor(renderer, 0xff, 0, 0, 0xff);
+        //max_val = gsl_vector_max(grayscale_hist);
+        //for (i=0 ; i<grayscale_hist->size - 1; ++i) {
+        //    SDL_RenderDrawLine(renderer, 
+        //                        rect.x + i * rect.w / 256.0,
+        //                        rect.y + rect.h - (gsl_vector_get(grayscale_hist, i) * (rect.h / 2.0) / max_val),
+        //                        rect.x + (i+1) * rect.w / 256.0,
+        //                        rect.y + rect.h - (gsl_vector_get(grayscale_hist, i+1) * (rect.h / 2.0) / max_val));
 
-        max_val = gsl_vector_max(grayscale_hist);
-        for (i=0 ; i<grayscale_hist->size - 1; ++i) {
+        //}
+
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0xff, 0xff);
+
+        max_val = gsl_vector_max(vertical_hist);
+        for (i=0 ; i<vertical_hist->size - 1; ++i) {
             SDL_RenderDrawLine(renderer, 
-                                rect.x + i * rect.w / 256.0,
-                                rect.y + rect.h - (gsl_vector_get(grayscale_hist, i) * (rect.h / 2.0) / max_val),
-                                rect.x + (i+1) * rect.w / 256.0,
-                                rect.y + rect.h - (gsl_vector_get(grayscale_hist, i+1) * (rect.h / 2.0) / max_val));
+                                rect.x + i * rect.w / vertical_hist->size,
+                                rect.y + rect.h - (gsl_vector_get(vertical_hist, i) * (rect.h / 2.0) / max_val),
+                                rect.x + (i+1) * rect.w / vertical_hist->size,
+                                rect.y + rect.h - (gsl_vector_get(vertical_hist, i+1) * (rect.h / 2.0) / max_val));
 
         }
 
@@ -1114,6 +1120,19 @@ static void video_image_display(VideoState *is)
                                 rect.w - (gsl_vector_get(hori_hist, i+1) * (rect.w / 2.0) / max_val),
                                 rect.y + ((i+1) * rect.h / hori_hist->size)
                                 );
+        }
+
+        for (i=0 ; i<vcs.vc_count ; i++) {
+
+            color = &COLOR[i];
+
+            SDL_SetRenderDrawColor(renderer, color->r, color->g, color->b, color->a);
+            vrect.x = rect.x + vcs.vc[i].m_c;
+            vrect.y = rect.y + vcs.vc[i].m_r;
+            vrect.w = vcs.vc[i].m_w;
+            vrect.h = vcs.vc[i].m_h;
+
+            SDL_RenderDrawRect(renderer, &vrect);
         }
     }
 }

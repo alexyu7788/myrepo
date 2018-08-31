@@ -27,6 +27,10 @@ bool FCW_DoDetection(uint8_t* img, int linesize,int w, int h, gsl_vector* vertic
 
 int  FCW_GetRounded_Direction(int gx, int gy);
 
+bool FCW_NonMaximum_Suppression(gsl_matrix* dst, gsl_matrix_char* dir, gsl_matrix_ushort* src);
+
+bool FCW_GaussianBlur(gsl_matrix* dst, const gsl_matrix* src);
+
 bool FCW_CalGrayscaleHist(const gsl_matrix* imgy, gsl_matrix* result_imgy, gsl_vector* grayscale_hist);
 
 bool FCW_CalVerticalHist(const gsl_matrix* imgy, gsl_vector* vertical_hist);
@@ -46,7 +50,6 @@ bool FCW_VehicleCandidateGenerate(
         const gsl_matrix_char* direction,
         VehicleCandidates* vcs);
 
-
 bool FCW_UpdateVehicleCanidateByEdge(
         const gsl_matrix* imgy,
         const gsl_matrix_ushort* gradient,
@@ -55,6 +58,7 @@ bool FCW_UpdateVehicleCanidateByEdge(
         int*  vsc,
         int*  vw,
         int*  vh);
+
 
 
 

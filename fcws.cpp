@@ -950,6 +950,7 @@ bool CFCWS::VehicleCandidateGenerate(
 
     return true;
 }
+
 bool CFCWS::UpdateVehicleCanidateByEdge(
         const gsl_matrix* imgy,
         const gsl_matrix_ushort* gradient,

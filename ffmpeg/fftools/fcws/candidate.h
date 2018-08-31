@@ -20,6 +20,7 @@ typedef struct VehicleCandidates {
 void CandidateGetGeoInfo(Candidate* obj, uint32_t* r,  uint32_t* c, uint32_t* w, uint32_t* h);
 
 void CandidateSetGeoInfo(Candidate* obj, uint32_t r,  uint32_t c, uint32_t w, uint32_t h);
+
 //using namespace std;
 //
 //class CCandidate;

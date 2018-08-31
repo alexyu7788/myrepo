@@ -37,34 +37,38 @@
 #define false (0)
 #endif
 
-// Macro
-#define FreeVector(m) do {                  \
-    if ((m)) {                              \
-        gsl_vector_free((m));               \
-        ((m)) = NULL;                       \
-    }                                       \
-}while (0)
+enum {
+    COLOR_RED,
+    COLOR_BLUE,
+    COLOR_DARKGREEN,
+    COLOR_GOLD,
+    COLOR_BROWN,
+    COLOR_YELLOW,
+    COLOR_MAGENTA,
+    COLOR_CYAN,
+    COLOR_GREEN,
+    COLOR_TOTAL
+};
 
-#define FreeMatrix(m) do {                  \
-    if ((m)) {                              \
-        gsl_matrix_free((m));               \
-        ((m)) = NULL;                       \
-    }                                       \
-}while (0)
+static SDL_Color COLOR[COLOR_TOTAL] = {
+   [COLOR_RED]          = {0xff,    0,    0, 0x50},
+   [COLOR_GREEN]        = {   0, 0xff,    0, 0x50},
+   [COLOR_BLUE]         = {   0,    0, 0xff, 0x50},
+   [COLOR_YELLOW]       = {0xff, 0xff,    0, 0x50},
+   [COLOR_CYAN]         = {   0, 0xff, 0xff, 0x50},
+   [COLOR_GOLD]         = {0xff, 0xd7,    0, 0x50},
+   [COLOR_MAGENTA]      = {0xff,    0, 0xff, 0x50},
+   [COLOR_DARKGREEN]    = {   0, 0x64,    0, 0x50},
+   [COLOR_BROWN]        = {0x8b, 0x45, 0x13, 0x50},
+};
 
-#define FreeMatrixUshort(m) do {            \
-    if ((m)) {                              \
-        gsl_matrix_ushort_free((m));        \
-        ((m)) = NULL;                       \
-    }                                       \
-}while (0)
+void FreeVector(gsl_vector** v);
 
-#define FreeMatrixChar(m) do {              \
-    if ((m)) {                              \
-        gsl_matrix_char_free((m));          \
-        ((m)) = NULL;                       \
-    }                                       \
-}while (0)
+void FreeMatrix(gsl_matrix** m);
+
+void FreeMatrixUshort(gsl_matrix_ushort** m);
+
+void FreeMatrixChar(gsl_matrix_char** m);
 
 bool CheckOrReallocVector(gsl_vector** v, int size);
 
