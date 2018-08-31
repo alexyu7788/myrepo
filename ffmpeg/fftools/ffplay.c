@@ -1080,24 +1080,28 @@ static void video_image_display(VideoState *is)
 #endif
     }
 
+#if 1
     //----------------------FCW------------------------------------
     {
         uint32_t i;
         double max_val;
         SDL_Rect vrect;
         SDL_Color *color;
-        //SDL_SetRenderDrawColor(renderer, 0xff, 0, 0, 0xff);
 
-        //max_val = gsl_vector_max(grayscale_hist);
-        //for (i=0 ; i<grayscale_hist->size - 1; ++i) {
-        //    SDL_RenderDrawLine(renderer, 
-        //                        rect.x + i * rect.w / 256.0,
-        //                        rect.y + rect.h - (gsl_vector_get(grayscale_hist, i) * (rect.h / 2.0) / max_val),
-        //                        rect.x + (i+1) * rect.w / 256.0,
-        //                        rect.y + rect.h - (gsl_vector_get(grayscale_hist, i+1) * (rect.h / 2.0) / max_val));
+        // Draw grayscale histogram
+        SDL_SetRenderDrawColor(renderer, 0xff, 0, 0, 0xff);
 
-        //}
+        max_val = gsl_vector_max(grayscale_hist);
+        for (i=0 ; i<grayscale_hist->size - 1; ++i) {
+            SDL_RenderDrawLine(renderer, 
+                                rect.x + i * rect.w / 256.0,
+                                rect.y + rect.h - (gsl_vector_get(grayscale_hist, i) * (rect.h / 2.0) / max_val),
+                                rect.x + (i+1) * rect.w / 256.0,
+                                rect.y + rect.h - (gsl_vector_get(grayscale_hist, i+1) * (rect.h / 2.0) / max_val));
 
+        }
+
+        // Draw vertical histogram
         SDL_SetRenderDrawColor(renderer, 0, 0, 0xff, 0xff);
 
         max_val = gsl_vector_max(vertical_hist);
@@ -1110,18 +1114,20 @@ static void video_image_display(VideoState *is)
 
         }
 
+        // Draw horizontal histogram
         SDL_SetRenderDrawColor(renderer, 0, 0xff, 0, 0xff);
 
         max_val = gsl_vector_max(hori_hist);
         for (i=0 ; i<hori_hist->size - 1; ++i) {
             SDL_RenderDrawLine(renderer, 
-                                rect.w - (gsl_vector_get(hori_hist, i) * (rect.w / 2.0) / max_val),
+                                rect.x + (gsl_vector_get(hori_hist, i) * (rect.w / 2.0) / max_val),
                                 rect.y + (i * rect.h / hori_hist->size),
-                                rect.w - (gsl_vector_get(hori_hist, i+1) * (rect.w / 2.0) / max_val),
+                                rect.x + (gsl_vector_get(hori_hist, i+1) * (rect.w / 2.0) / max_val),
                                 rect.y + ((i+1) * rect.h / hori_hist->size)
                                 );
         }
 
+        // Draw rectangle of candidate
         for (i=0 ; i<vcs.vc_count ; i++) {
 
             color = &COLOR[i];
@@ -1135,6 +1141,7 @@ static void video_image_display(VideoState *is)
             SDL_RenderDrawRect(renderer, &vrect);
         }
     }
+#endif
 }
 
 static inline int compute_mod(int a, int b)
