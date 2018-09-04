@@ -19,6 +19,15 @@ typedef struct PEAK_GROUP {
     PEAK peak[MAX_PEAK_COUNT];
 }PEAK_GROUP;
 
+typedef struct blob {
+    int number;
+    int r;
+    int c;
+    int w;
+    int h;
+    struct blob* next;
+}blob;
+
 bool FCW_Init(void);
 
 bool FCW_DeInit(void);
@@ -41,6 +50,16 @@ bool FCW_CalHorizontalHist(const gsl_matrix* imgy, gsl_vector* horizontal_hist);
 
 bool FCW_CalGradient(gsl_matrix_ushort* dst, gsl_matrix_char* dir, const gsl_matrix* src, int crop_r, int crop_c, int crop_w, int crop_h);
 
+bool FCW_BlobFindIdentical(blob** bhead, blob* nblob);
+
+bool FCW_BlobRearrange(blob** bhead);
+
+bool FCW_BlobAdd(blob** bhead, blob* blob);
+
+void FCW_BlobClear(blob** bhead);
+
+bool FCW_BlobGenerator(const gsl_matrix* imgy, uint32_t peak_idx, blob** bhead);
+
 bool FCW_VehicleCandidateGenerate(
         const gsl_matrix* imgy, 
         const gsl_matrix* edged_imgy, 
@@ -59,6 +78,7 @@ bool FCW_UpdateVehicleCanidateByEdge(
         int*  vw,
         int*  vh);
 
+bool FCW_UpdateVehicleCanidateByEdge2(const gsl_matrix* imgy, blob*  blob);
 
 
 

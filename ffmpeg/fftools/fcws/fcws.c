@@ -51,6 +51,7 @@ VehicleCandidates   m_vcs;
 
 gsl_vector*         m_temp_hori_hist= NULL;
 
+blob*               m_blob_head = NULL;
 
 
 
@@ -119,7 +120,8 @@ bool FCW_DoDetection(uint8_t* img,int linesize, int w, int h, gsl_vector* vertic
 
     FCW_CalHorizontalHist(m_temp_imgy, hori_hist);
 
-    FCW_GaussianBlur(m_edged_imgy, m_imgy); 
+    gsl_matrix_memcpy(m_edged_imgy, m_imgy);
+    //FCW_GaussianBlur(m_edged_imgy, m_imgy); 
 
     FCW_CalGradient(m_gradient,
                     m_direction,
@@ -151,8 +153,8 @@ bool FCW_DoDetection(uint8_t* img,int linesize, int w, int h, gsl_vector* vertic
     for (r=0 ; r<m_imgy->size1 ; r++)
         for (c=0 ; c<m_imgy->size2 ; c++)
             //img[r * linesize + c] = (uint8_t)gsl_matrix_get(m_imgy, r,c); 
-            img[r * linesize + c] = (uint8_t)gsl_matrix_get(m_temp_imgy, r,c); 
-            //img[r * linesize + c] = (uint8_t)gsl_matrix_get(m_edged_imgy, r,c); 
+            //img[r * linesize + c] = (uint8_t)gsl_matrix_get(m_temp_imgy, r,c); 
+            img[r * linesize + c] = (uint8_t)gsl_matrix_get(m_edged_imgy, r,c); 
 
     return true;
 }
@@ -335,11 +337,11 @@ bool FCW_CalGradient(gsl_matrix_ushort* dst, gsl_matrix_char* dir, const gsl_mat
                 }
             }
 
-            for (i=0 ; i<submatrix_src.matrix.size1 ; i++) {
-                for (j=0 ; j<submatrix_src.matrix.size2 ; j++) {
-                    gy += (int)(gsl_matrix_get(&submatrix_src.matrix, i, j) * gsl_matrix_get(&m_dy.matrix, i, j));
-                }
-            }
+            //for (i=0 ; i<submatrix_src.matrix.size1 ; i++) {
+            //    for (j=0 ; j<submatrix_src.matrix.size2 ; j++) {
+            //        gy += (int)(gsl_matrix_get(&submatrix_src.matrix, i, j) * gsl_matrix_get(&m_dy.matrix, i, j));
+            //    }
+            //}
 
             //gsl_matrix_ushort_set(dst, r, c, gsl_hypot(gx, gy));
             gsl_matrix_ushort_set(dst, r, c, abs(gx) + abs(gy));
@@ -500,6 +502,321 @@ bool FCW_CalHorizontalHist(const gsl_matrix* imgy, gsl_vector* horizontal_hist)
     return true;
 }
 
+bool FCW_BlobFindIdentical(blob** bhead, blob* nblob)
+{
+    blob* cur = NULL;
+
+    cur = *bhead;
+
+    while (cur != NULL) {
+        if (cur->r == nblob->r && cur->c == nblob->c && cur->w == nblob->w && cur->h == nblob->h)
+            return true;
+
+        cur = cur->next;
+    }
+
+    return false;
+}
+
+bool FCW_BlobRearrange(blob** bhead)
+{
+    int diff;
+    bool need_add = true;
+    blob *head = NULL, *cur = NULL, *next = NULL, *pre = NULL, *temp = NULL; 
+
+    head = *bhead;
+
+    if (!head)
+        return false;
+
+redo:
+
+    cur = head;
+    while (cur) {
+        //dbg("=====checking cur blob(%d,%d,%d)======",
+        //            cur->r,
+        //            cur->c,
+        //            cur->w);
+
+        next = cur->next;
+        while (next) {
+            //dbg("next blob(%d,%d,%d) <==> cur blob(%d,%d,%d).",
+            //        next->r,
+            //        next->c,
+            //        next->w,
+            //        cur->r,
+            //        cur->c,
+            //        cur->w);
+
+            // next blob is above cur blob.
+            if (next->r < cur->r) {
+                if ((next->c >= cur->c && next->c <= cur->c + cur->w) ||
+                    (next->c < cur->c && next->c + next->w > cur->c && next->c + next->w <= cur->c + cur->w)) {
+                    //dbg("next blob(%d,%d,%d) is above cur blob(%d,%d,%d).",
+                    //        next->r,
+                    //        next->c,
+                    //        next->w,
+                    //        cur->r,
+                    //        cur->c,
+                    //        cur->w);
+
+                    pre = cur;
+                    while (pre->next != next)
+                        pre = pre->next;
+
+                    pre->next = next->next;
+                    free(next);
+                    next = pre;
+                } else if (cur->c > next->c && cur->c + cur->w <= next->c + next->w) {
+                    //dbg("\033[1;33mnext blob(%d,%d,%d) is above cur blob(%d,%d,%d).\033[m",
+                    //        next->r,
+                    //        next->c,
+                    //        next->w,
+                    //        cur->r,
+                    //        cur->c,
+                    //        cur->w);
+
+                    //dbg("Update cur blob.");
+                    pre = cur;
+                    while (pre->next != next)
+                        pre = pre->next;
+
+                    memcpy(cur, next, sizeof(blob));
+                    pre->next = next->next;
+                    free(next);
+                    next = pre;
+
+                    goto redo;
+                }
+            }
+            // next blob is below cur blob.
+            else if (next->r > cur->r) {
+                if ((cur->c >= next->c && cur->c <= next->c + next->w) ||
+                    (cur->c < next->c && cur->c + cur->w > next->c && cur->c + cur->w <= next->c + next->w)) {
+                    //dbg("next blob(%d,%d,%d) is below cur blob(%d,%d,%d).",
+                    //        next->r,
+                    //        next->c,
+                    //        next->w,
+                    //        cur->r,
+                    //        cur->c,
+                    //        cur->w);
+
+                    //dbg("Update cur blob.");
+                    pre = cur;
+                    while (pre->next != next)
+                        pre = pre->next;
+
+                    memcpy(cur, next, sizeof(blob));
+                    pre->next = next->next;
+                    free(next);
+                    next = pre;
+
+                    goto redo;
+                }
+            // next overlaps cur.
+            } else if (next->r == cur->r) {
+                if ((cur->c > next->c && cur->c <= next->c + next->w) || 
+                    (cur->c > next->c && cur->c > next->c + next->w && abs(cur->c - next->c - next->w) < 3) || 
+                    (cur->c < next->c && cur->c + cur->w >= next->c)  || 
+                    (cur->c < next->c && cur->c + cur->w < next->c && abs(cur->c + cur->w - next->c) < 3)) {
+                    //dbg("next blob(%d,%d,%d) overlaps cur blob(%d,%d,%d).",
+                    //        next->r,
+                    //        next->c,
+                    //        next->w,
+                    //        cur->r,
+                    //        cur->c,
+                    //        cur->w);
+
+                    // Merge cur & next
+                    if (cur->c > next->c) {
+                        diff = next->c + next->w - cur->c;
+                        cur->c = next->c;
+                        cur->w = cur->w + next->w - diff;
+                    } else {
+                        diff = cur->c + cur->w - next->c;
+                        cur->w = cur->w + next->w - diff;
+                    }
+
+                    pre = cur;
+                    while (pre->next != next)
+                        pre = pre->next;
+
+                    pre->next = next->next;
+                    free(next);
+                    next = pre;
+
+                    goto redo;
+                }
+            }
+
+            next = next->next;
+            //printf("\n");
+        }
+
+        cur = cur->next;
+        //printf("\n");
+    }
+
+    //dbg("--------End of Rearrange----------");
+    return true;
+}
+
+bool FCW_BlobAdd(blob** bhead, blob* nblob)
+{
+    blob *cur = NULL; 
+
+    if (!nblob)
+        return false;
+
+    if (!*bhead) {
+        *bhead = nblob;
+        (*bhead)->next = NULL;
+    } else {
+        cur = *bhead;
+        while (cur->next) {
+            cur = cur->next;
+        }
+
+        cur->next = nblob;
+        cur = nblob;
+    }
+
+    FCW_BlobRearrange(bhead);
+
+    return true;
+}
+
+void FCW_BlobClear(blob** bhead)
+{
+    blob* cur;
+
+    while ((cur = *bhead) != NULL) {
+        *bhead = (*bhead)->next;
+        free(cur);
+        cur = NULL;
+    }
+}
+
+#define BLOB_MARGIN 5
+
+bool FCW_BlobGenerator(const gsl_matrix* imgy, uint32_t peak_idx, blob** bhead)
+{
+    uint32_t i, r, c;
+    uint32_t blob_pixel_cnt, max_blob_pixel_cnt;
+    uint32_t blob_cnt;
+    int blob_r, blob_c, blob_w, blob_h;
+    int max_blob_r, max_blob_c, max_blob_w, max_blob_h;
+    int sm_r, sm_c, sm_w, sm_h;
+    float blob_pixel_desity;
+    bool has_neighborhood = false;
+    blob *newblob = NULL, *curblob = NULL;
+    gsl_matrix_view submatrix;
+
+    if (!imgy) {
+        dbg();
+        return false;
+    }
+
+    if (peak_idx > BLOB_MARGIN - 1 && peak_idx < (imgy->size1 - BLOB_MARGIN - 1)) {
+
+        //dbg("peak index %d", peak_idx);
+
+        sm_r = peak_idx - BLOB_MARGIN;
+        sm_c = 0;
+        sm_w = imgy->size2;
+        sm_h = BLOB_MARGIN * 2;
+
+        submatrix = gsl_matrix_submatrix((gsl_matrix*)imgy, sm_r, sm_c, sm_h, sm_w);
+
+        blob_cnt = 0;
+        blob_pixel_cnt = max_blob_pixel_cnt = 0;
+
+        max_blob_r = max_blob_c = max_blob_w = max_blob_h = 
+        blob_r = blob_c = blob_w = blob_h = -1;
+
+        for (c=1 ; c<submatrix.matrix.size2-1 ; ++c) {
+            for (r=1 ; r<submatrix.matrix.size1-1 ; ++r) {
+                if ( r == 1)
+                    has_neighborhood = false;
+
+                if (gsl_matrix_get(&submatrix.matrix, r, c) != NOT_SHADOW && 
+                    (gsl_matrix_get(&submatrix.matrix, r-1, c+1) != NOT_SHADOW || 
+                    gsl_matrix_get(&submatrix.matrix, r, c+1) != NOT_SHADOW || 
+                    gsl_matrix_get(&submatrix.matrix, r+1, c+1) != NOT_SHADOW))
+                    has_neighborhood = true;
+
+                if (gsl_matrix_get(&submatrix.matrix, r, c) != NOT_SHADOW) {
+                    blob_pixel_cnt++;
+
+                    if (blob_r <= r)
+                        blob_r = r;
+
+                    if (blob_c == -1)
+                        blob_c = c;
+
+                    if (gsl_matrix_get(&submatrix.matrix, r-1, c+1) == NOT_SHADOW && 
+                        gsl_matrix_get(&submatrix.matrix,   r, c+1) == NOT_SHADOW &&
+                        gsl_matrix_get(&submatrix.matrix, r+1, c+1) == NOT_SHADOW &&
+                        has_neighborhood == false) {
+
+                        blob_w = c - blob_c + 1;
+                        blob_h = r - blob_r + 1;
+
+                        if (blob_pixel_cnt > max_blob_pixel_cnt && blob_w > max_blob_w) {
+                            max_blob_pixel_cnt = blob_pixel_cnt;
+                            max_blob_r = peak_idx;//sm_r + blob_r;
+                            max_blob_c = sm_c + blob_c;
+                            max_blob_w = blob_w;
+                            max_blob_h = 4;//blob_h;
+
+                            blob_pixel_desity = max_blob_pixel_cnt / (float)(max_blob_w * max_blob_h);
+                        }
+
+                        if (max_blob_w >= 20 && blob_pixel_desity > 0.7) {
+
+                            //dbg("Max blob %d %d %d %d %.02lf", max_blob_r, max_blob_c, max_blob_pixel_cnt, max_blob_w, blob_pixel_desity);
+
+                            newblob = (blob*)malloc(sizeof(blob));         
+                            newblob->r = max_blob_r;
+                            newblob->c = max_blob_c;
+                            newblob->w = max_blob_w;
+                            newblob->h = max_blob_h;
+                            newblob->number = blob_cnt;
+                            newblob->next = NULL;
+
+                            if (FCW_BlobFindIdentical(bhead, newblob) == false) {
+                                FCW_BlobAdd(bhead, newblob);
+                            } else {
+                                free(newblob);
+                                newblob = NULL;
+                            }
+
+                            blob_cnt++;
+                            max_blob_pixel_cnt = 0;
+                            max_blob_r = 
+                            max_blob_c = 
+                            max_blob_w = 
+                            max_blob_h = -1;
+                            blob_pixel_desity = 0;
+                        }
+
+                        blob_pixel_cnt = 0;
+                        blob_r = blob_c = blob_w = blob_h = -1;
+                    }
+                }
+            }
+        }
+    }
+
+//    curblob = *bhead;
+//    while (curblob!= NULL) {
+//        dbg("[%d,%d] with [%d,%d]", curblob->r, curblob->c, curblob->w, curblob->h);
+//        curblob = curblob->next;
+//    }
+
+    return true;
+}
+
 bool FCW_VehicleCandidateGenerate(
         const gsl_matrix* imgy, 
         const gsl_matrix* edged_imgy, 
@@ -551,8 +868,89 @@ bool FCW_VehicleCandidateGenerate(
     if (max_peak == 0)
         return false;
 
-    dbg("==========max peak %d at %d===========", max_peak, max_peak_idx);
+    //dbg("==========max peak %d at %d===========", max_peak, max_peak_idx);
 
+    FCW_BlobClear(&m_blob_head);
+
+#if 1
+    while (1) {
+        cur_peak = gsl_vector_max(m_temp_hori_hist);
+        cur_peak_idx = gsl_vector_max_index(m_temp_hori_hist);
+
+        if (cur_peak < (max_peak * 0.4))
+            break;
+
+        //printf("\n");
+        //dbg("Search blobs for current peak %d at %d", cur_peak, cur_peak_idx);
+
+        gsl_vector_set(m_temp_hori_hist, cur_peak_idx, 0);
+
+        FCW_BlobGenerator(imgy, cur_peak_idx, &m_blob_head);
+    }
+    
+    if (m_blob_head) {
+
+        blob *cur = m_blob_head;
+        int left_idx, right_idx, bottom_idx;
+        int vehicle_startr, vehicle_startc;
+        int vehicle_width, vehicle_height;
+        gsl_matrix_view imgy_submatrix;
+
+        while (cur != NULL) {
+
+            //scale up searching region of blob with 1/4 time of width on the left & right respectively.
+            bottom_idx      = cur->r;
+            left_idx        = (cur->c - (cur->w >> 2));
+            right_idx       = (cur->c + cur->w + (cur->w >> 2));
+
+            left_idx        = (left_idx < 0 ? 0 : left_idx);
+            right_idx       = (right_idx >= edged_imgy->size2 ? edged_imgy->size2 - 1 : right_idx);
+
+            vehicle_width   = (right_idx - left_idx + 1);
+            vehicle_height  = vehicle_width * 0.5;
+
+            //dbg("Scale up left %d right %d at bottom %d", left_idx, right_idx, bottom_idx);
+
+            vehicle_startr  = (bottom_idx - vehicle_height < 0 ? 0 : bottom_idx - vehicle_height);
+            vehicle_startc  = left_idx;
+
+            if (left_idx + vehicle_width >= imgy->size2) {
+                right_idx       = edged_imgy->size2 - 1;
+                vehicle_width   = right_idx - left_idx + 1;
+            } 
+
+            //dbg("Vehicle at (%d,%d) with (%d,%d)", 
+            //            vehicle_startr,
+            //            vehicle_startc,
+            //            vehicle_width,
+            //            vehicle_height);
+
+            cur->r = vehicle_startr;
+            cur->c = vehicle_startc;
+            cur->w = vehicle_width;
+            cur->h = vehicle_height;
+
+            imgy_submatrix = gsl_matrix_submatrix((gsl_matrix*)edged_imgy,
+                                                                vehicle_startr,
+                                                                vehicle_startc,
+                                                                vehicle_height,
+                                                                vehicle_width);
+
+            FCW_UpdateVehicleCanidateByEdge2(&imgy_submatrix.matrix, cur);
+
+            vcs->vc[vcs->vc_count].m_r = cur->r;
+            vcs->vc[vcs->vc_count].m_c = cur->c;
+            vcs->vc[vcs->vc_count].m_w = cur->w;
+            vcs->vc[vcs->vc_count].m_h = cur->h;
+
+            vcs->vc_count++;
+            cur = cur->next;
+        }
+    }
+
+
+    return true;
+#else
     while (1) {
         cur_peak = gsl_vector_max(m_temp_hori_hist);
         cur_peak_idx = gsl_vector_max_index(m_temp_hori_hist);
@@ -604,6 +1002,7 @@ bool FCW_VehicleCandidateGenerate(
         }
     }
 
+#endif
     printf("\n");
     dbg("Guessing left & right boundary....");
     // Guessing left boundary and right boundary of this blob
@@ -784,6 +1183,38 @@ bool FCW_VehicleCandidateGenerate(
     //}
 
     //pg.clear();
+
+    return true;
+}
+
+bool FCW_UpdateVehicleCanidateByEdge2(const gsl_matrix* imgy, blob*  blob)
+{
+    char dir;
+    uint32_t r, c;
+    uint32_t right_idx, bottom_idx;
+    uint32_t magnitude, max_magnitude = 0;
+    uint32_t max_magnitude_idx;
+    gsl_matrix_view imgy_block;
+    gsl_matrix_ushort_view gradient_block;
+    gsl_matrix_char_view direction_block;
+
+    if (!imgy) {
+        dbg();
+        return false;
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     return true;
 }

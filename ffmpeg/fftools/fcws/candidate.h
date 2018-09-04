@@ -3,7 +3,7 @@
 
 #include "common.h"
 
-#define MAX_CANDIDATES 12
+#define MAX_CANDIDATES 128
 
 typedef struct Candidate {
     uint32_t m_r;

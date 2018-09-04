@@ -1088,6 +1088,7 @@ static void video_image_display(VideoState *is)
         SDL_Rect vrect;
         SDL_Color *color;
 
+#if 0
         // Draw grayscale histogram
         SDL_SetRenderDrawColor(renderer, 0xff, 0, 0, 0xff);
 
@@ -1126,7 +1127,7 @@ static void video_image_display(VideoState *is)
                                 rect.y + ((i+1) * rect.h / hori_hist->size)
                                 );
         }
-
+#endif
         // Draw rectangle of candidate
         for (i=0 ; i<vcs.vc_count ; i++) {
 
