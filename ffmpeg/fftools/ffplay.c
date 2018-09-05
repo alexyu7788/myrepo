@@ -1212,11 +1212,11 @@ static void video_image_display(VideoState *is)
         }
 
         // Draw horizontal histogram
-        SDL_SetRenderDrawColor(renderer, 0, 0xff, 0, 0xff);
+        SDL_SetRenderDrawColor(fcw_renderer[FCW_WINDOW_SHADOW], 0, 0xff, 0, 0xff);
 
         max_val = gsl_vector_max(hori_hist);
         for (i=0 ; i<hori_hist->size - 1; ++i) {
-            SDL_RenderDrawLine(renderer, 
+            SDL_RenderDrawLine(fcw_renderer[FCW_WINDOW_SHADOW], 
                                 rect.x + (gsl_vector_get(hori_hist, i) * (rect.w / 2.0) / max_val),
                                 rect.y + (i * rect.h / hori_hist->size),
                                 rect.x + (gsl_vector_get(hori_hist, i+1) * (rect.w / 2.0) / max_val),
@@ -1230,12 +1230,15 @@ static void video_image_display(VideoState *is)
             color = &COLOR[i%COLOR_TOTAL];
 
             SDL_SetRenderDrawColor(fcw_renderer[FCW_WINDOW_VEHICLE], color->r, color->g, color->b, color->a);
+            SDL_SetRenderDrawColor(fcw_renderer[FCW_WINDOW_EDGE], color->r, color->g, color->b, color->a);
+
             vrect.x = rect.x + vcs.vc[i].m_c;
             vrect.y = rect.y + vcs.vc[i].m_r;
             vrect.w = vcs.vc[i].m_w;
             vrect.h = vcs.vc[i].m_h;
 
             SDL_RenderDrawRect(fcw_renderer[FCW_WINDOW_VEHICLE], &vrect);
+            SDL_RenderDrawRect(fcw_renderer[FCW_WINDOW_EDGE], &vrect);
         }
     }
 #endif

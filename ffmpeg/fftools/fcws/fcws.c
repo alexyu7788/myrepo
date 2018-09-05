@@ -1223,20 +1223,20 @@ bool FCW_UpdateVehicleCanidateByEdge(const gsl_matrix* imgy, blob*  blob)
         return false;
     }
 
-//    dbg("==================");
-//
-//    dbg("Before (%d, %d) with (%d, %d)",
-//        blob->r,
-//        blob->c,
-//        blob->w,
-//        blob->h);
+    dbg("==================");
+
+    dbg("Before (%d, %d) with (%d, %d)",
+        blob->r,
+        blob->c,
+        blob->w,
+        blob->h);
 
     bottom_idx  = blob->r + blob->h;
     left_idx    = blob->c;
     right_idx   = blob->c + blob->w - 1;
 
     // update left idx
-//    dbg("Update left idx");
+    dbg("Update left idx");
     max_magnitude = 0;
     max_magnitude_idx = 0;
 
@@ -1258,7 +1258,7 @@ bool FCW_UpdateVehicleCanidateByEdge(const gsl_matrix* imgy, blob*  blob)
         if (magnitude > max_magnitude) {
             max_magnitude = magnitude;
             max_magnitude_idx = c;
-//           dbg("max %d at %d", max_magnitude, max_magnitude_idx);
+           dbg("max %d at %d", max_magnitude, max_magnitude_idx);
         }
     }
 
@@ -1266,7 +1266,7 @@ bool FCW_UpdateVehicleCanidateByEdge(const gsl_matrix* imgy, blob*  blob)
 //    dbg("blob->c %d", blob->c);
 
     // upate right idx
-//    dbg("Update right idx");
+    dbg("Update right idx");
     max_magnitude = 0;
     max_magnitude_idx = 0;
 
@@ -1287,7 +1287,7 @@ bool FCW_UpdateVehicleCanidateByEdge(const gsl_matrix* imgy, blob*  blob)
         if (magnitude > max_magnitude) {
             max_magnitude = magnitude;
             max_magnitude_idx = c;
-//            dbg("max %d at %d", max_magnitude, max_magnitude_idx);
+            dbg("max %d at %d", max_magnitude, max_magnitude_idx);
         }
     }
 
@@ -1297,11 +1297,11 @@ bool FCW_UpdateVehicleCanidateByEdge(const gsl_matrix* imgy, blob*  blob)
     blob->h = blob->w * 0.5;
     blob->r = bottom_idx - blob->h;
 
-//    dbg("After (%d, %d) with (%d, %d)",
-//        blob->r,
-//        blob->c,
-//        blob->w,
-//        blob->h);
+    dbg("After (%d, %d) with (%d, %d)",
+        blob->r,
+        blob->c,
+        blob->w,
+        blob->h);
 
     return true;
 }
