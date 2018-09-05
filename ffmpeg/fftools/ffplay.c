@@ -74,18 +74,19 @@ static gsl_vector* hori_hist = NULL;
 static gsl_vector* grayscale_hist = NULL;
 
 enum {
-    FCW_WINDOW_EDGE = 0,
-    FCW_WINDOW_SHADOW,
-    FCW_WINDOW_HEATMAP,
+    FCW_WINDOW_SHADOW = 0,
+    FCW_WINDOW_EDGE,
     FCW_WINDOW_VEHICLE,
-    FCW_WINDOW_TOTAL
+    FCW_WINDOW_HEATMAP,
+    FCW_WINDOW_TOTAL,
+    FCW_WINDOW_RESULT
 };
 
 static const char *fcw_window_title[FCW_WINDOW_TOTAL] = {
-    [FCW_WINDOW_EDGE]       = "Vertial Edge",
     [FCW_WINDOW_SHADOW]     = "Shadow",
+    [FCW_WINDOW_EDGE]       = "Vertical Edge",
+    [FCW_WINDOW_VEHICLE]    = "Candidates",
     [FCW_WINDOW_HEATMAP]    = "Heatmap",
-    [FCW_WINDOW_VEHICLE]    = "Vehicle Rectangles"
 };
 static SDL_Window *fcw_window[FCW_WINDOW_TOTAL] = {NULL};
 static SDL_Renderer *fcw_renderer[FCW_WINDOW_TOTAL] = {NULL};
