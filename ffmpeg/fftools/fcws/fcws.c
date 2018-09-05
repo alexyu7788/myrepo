@@ -35,6 +35,7 @@ static double dy_ary[] = {
 gsl_matrix*         m_imgy = NULL;
 gsl_matrix*         m_edged_imgy = NULL;
 gsl_matrix*         m_temp_imgy = NULL;
+gsl_matrix*         m_heatmap = NULL;
 
 gsl_matrix_ushort*  m_gradient = NULL;
 gsl_matrix_char*    m_direction = NULL;
@@ -91,23 +92,37 @@ bool FCW_DeInit()
 
     memset(&m_vcs, 0x0, sizeof(m_vcs));
 
+    FCW_BlobClear(&m_blob_head);
+
     return true;
 }
 
-bool FCW_DoDetection(uint8_t* img,int linesize, int w, int h, gsl_vector* vertical_hist, gsl_vector* hori_hist, gsl_vector* grayscale_hist, VehicleCandidates *vcs)
+bool FCW_DoDetection(
+        uint8_t* img, 
+        int linesize, 
+        int w, 
+        int h, 
+        gsl_vector* vertical_hist, 
+        gsl_vector* hori_hist, 
+        gsl_vector* grayscale_hist, 
+        VehicleCandidates *vcs,
+        uint8_t* edged,
+        uint8_t* shadow,
+        uint8_t* heatmap)
 {
-    if (!img || !vertical_hist || !hori_hist || !grayscale_hist) {
+    if (!img || !vertical_hist || !hori_hist || !grayscale_hist || !edged || !shadow || !heatmap) {
         dbg();
         return false;
     }
 
     uint32_t i, r, c;
 
-    CheckOrReallocMatrix(&m_imgy, h, w);
-    CheckOrReallocMatrix(&m_edged_imgy, h, w);
-    CheckOrReallocMatrix(&m_temp_imgy, h, w);
-    CheckOrReallocMatrixUshort(&m_gradient, h, w);
-    CheckOrReallocMatrixChar(&m_direction, h, w);
+    CheckOrReallocMatrix(&m_imgy, h, w, true);
+    CheckOrReallocMatrix(&m_edged_imgy, h, w, true);
+    CheckOrReallocMatrix(&m_temp_imgy, h, w, true);
+    CheckOrReallocMatrix(&m_heatmap, h, w, false);
+    CheckOrReallocMatrixUshort(&m_gradient, h, w, true);
+    CheckOrReallocMatrixChar(&m_direction, h, w, true);
 
     // Copy image array to image matrix
     for (r=0 ; r<m_imgy->size1 ; r++)
@@ -140,6 +155,8 @@ bool FCW_DoDetection(uint8_t* img,int linesize, int w, int h, gsl_vector* vertic
                                 m_direction,
                                 &m_vcs);
 
+    FCW_UpdateVehicleHeatMap(m_heatmap, &m_vcs);
+
     memset(vcs, 0x0, sizeof(VehicleCandidates));
 
     vcs->vc_count = m_vcs.vc_count;
@@ -150,11 +167,14 @@ bool FCW_DoDetection(uint8_t* img,int linesize, int w, int h, gsl_vector* vertic
         vcs->vc[i].m_h = m_vcs.vc[i].m_h;
     }
 
-    for (r=0 ; r<m_imgy->size1 ; r++)
-        for (c=0 ; c<m_imgy->size2 ; c++)
-            //img[r * linesize + c] = (uint8_t)gsl_matrix_get(m_imgy, r,c); 
-            //img[r * linesize + c] = (uint8_t)gsl_matrix_get(m_temp_imgy, r,c); 
-            img[r * linesize + c] = (uint8_t)gsl_matrix_get(m_edged_imgy, r,c); 
+    for (r=0 ; r<m_imgy->size1 ; r++) {
+        for (c=0 ; c<m_imgy->size2 ; c++) {
+            img[r * linesize + c] = (uint8_t)gsl_matrix_get(m_imgy, r,c); 
+            shadow[r * linesize + c] = (uint8_t)gsl_matrix_get(m_temp_imgy, r,c); 
+            edged[r * linesize + c] = (uint8_t)gsl_matrix_get(m_edged_imgy, r,c); 
+            heatmap[r * linesize + c] = (uint8_t)gsl_matrix_get(m_heatmap, r,c); 
+        }
+    }
 
     return true;
 }
@@ -311,8 +331,8 @@ bool FCW_CalGradient(gsl_matrix_ushort* dst, gsl_matrix_char* dir, const gsl_mat
         else
             cw = crop_w;
 
-        CheckOrReallocMatrixUshort(&dst, ch, cw);
-        CheckOrReallocMatrixChar(&dir, ch, cw);
+        CheckOrReallocMatrixUshort(&dst, ch, cw, true);
+        CheckOrReallocMatrixChar(&dir, ch, cw, true);
 
         cropmatrix_src = gsl_matrix_submatrix((gsl_matrix*)src, cr, cc, ch, cw);
         pmatrix = &cropmatrix_src.matrix;
@@ -456,7 +476,7 @@ bool FCW_CalVerticalHist2(const gsl_matrix* imgy, int start_r, int start_c, int 
         submatrix = gsl_matrix_submatrix((gsl_matrix*)imgy, sr, sc, h, w);
 
     size = w;
-    CheckOrReallocVector(&vertical_hist, size);
+    CheckOrReallocVector(&vertical_hist, size, true);
 
     // skip border
     for (c=1 ; c<submatrix.matrix.size2 - 1 ; c++) {
@@ -858,8 +878,8 @@ bool FCW_VehicleCandidateGenerate(
     //vcs.clear();
 
     // find possible blob underneath vehicle
-    CheckOrReallocVector(&m_temp_hori_hist, horizontal_hist->size);
-    CheckOrReallocVector(&temp_hh, horizontal_hist->size);
+    CheckOrReallocVector(&m_temp_hori_hist, horizontal_hist->size, true);
+    CheckOrReallocVector(&temp_hh, horizontal_hist->size, true);
     gsl_vector_memcpy(m_temp_hori_hist, horizontal_hist);
 
     max_peak = gsl_vector_max(m_temp_hori_hist);
@@ -936,7 +956,7 @@ bool FCW_VehicleCandidateGenerate(
                                                                 vehicle_height,
                                                                 vehicle_width);
 
-            FCW_UpdateVehicleCanidateByEdge2(&imgy_submatrix.matrix, cur);
+            FCW_UpdateVehicleCanidateByEdge(&imgy_submatrix.matrix, cur);
 
             vcs->vc[vcs->vc_count].m_r = cur->r;
             vcs->vc[vcs->vc_count].m_c = cur->c;
@@ -1002,7 +1022,6 @@ bool FCW_VehicleCandidateGenerate(
         }
     }
 
-#endif
     printf("\n");
     dbg("Guessing left & right boundary....");
     // Guessing left boundary and right boundary of this blob
@@ -1172,6 +1191,7 @@ bool FCW_VehicleCandidateGenerate(
             //vcs.push_back(vc);
         }
     }
+#endif
 
     FreeVector(&temp_hh);
 
@@ -1187,161 +1207,153 @@ bool FCW_VehicleCandidateGenerate(
     return true;
 }
 
-bool FCW_UpdateVehicleCanidateByEdge2(const gsl_matrix* imgy, blob*  blob)
+bool FCW_UpdateVehicleCanidateByEdge(const gsl_matrix* imgy, blob*  blob)
 {
     char dir;
+    int left_idx, right_idx, bottom_idx;
     uint32_t r, c;
-    uint32_t right_idx, bottom_idx;
     uint32_t magnitude, max_magnitude = 0;
     uint32_t max_magnitude_idx;
     gsl_matrix_view imgy_block;
     gsl_matrix_ushort_view gradient_block;
     gsl_matrix_char_view direction_block;
 
-    if (!imgy) {
+    if (!imgy || !blob) {
         dbg();
         return false;
     }
 
+//    dbg("==================");
+//
+//    dbg("Before (%d, %d) with (%d, %d)",
+//        blob->r,
+//        blob->c,
+//        blob->w,
+//        blob->h);
 
-
-
-
-
-
-
-
-
-
-
-
-
-    return true;
-}
-
-bool FCW_UpdateVehicleCanidateByEdge(
-        const gsl_matrix* imgy,
-        const gsl_matrix_ushort* gradient,
-        const gsl_matrix_char* direction,
-        int*  vsr,
-        int*  vsc,
-        int*  vw,
-        int*  vh)
-{
-    char dir;
-    uint32_t r, c;
-    uint32_t right_idx, bottom_idx;
-    uint32_t magnitude, max_magnitude = 0;
-    uint32_t max_magnitude_idx;
-    gsl_matrix_view imgy_block;
-    gsl_matrix_ushort_view gradient_block;
-    gsl_matrix_char_view direction_block;
-
-    if (!imgy || !gradient || !direction) {
-        dbg();
-        return false;
-    }
-
-    bottom_idx = *vsr + *vh;
-    right_idx = *vsc + *vw - 1;
+    bottom_idx  = blob->r + blob->h;
+    left_idx    = blob->c;
+    right_idx   = blob->c + blob->w - 1;
 
     // update left idx
-    dbg("Update left idx");
+//    dbg("Update left idx");
     max_magnitude = 0;
     max_magnitude_idx = 0;
 
-    for (c=0 ; c<((gradient->size2 / 4) - 2) ; ++c) {
+    for (c=0 ; c<((imgy->size2 / 4) - 2) ; ++c) {
         imgy_block = gsl_matrix_submatrix((gsl_matrix*)imgy, 
                                                         0, 
                                                         c, 
-                                                        gradient->size1, 
-                                                        2);
-
-        gradient_block = gsl_matrix_ushort_submatrix((gsl_matrix_ushort*)gradient, 
-                                                        0, 
-                                                        c, 
-                                                        gradient->size1, 
-                                                        2);
-
-        direction_block = gsl_matrix_char_submatrix((gsl_matrix_char*)direction, 
-                                                        0, 
-                                                        c, 
-                                                        direction->size1, 
+                                                        imgy->size1, 
                                                         2);
 
         magnitude = 0;
 
-        for (uint32_t rr=0 ; rr<gradient_block.matrix.size1 ; ++rr) {
-            for (uint32_t cc=0 ; cc<gradient_block.matrix.size2 ; ++cc) {
-                dir = gsl_matrix_char_get(&direction_block.matrix, rr, cc);
-                if (1 || dir == DIRECTION_HORIZONTAL) {
-                    //if ( direction == 0 || direction == 1 || direction == 11) {
-                    //magnitude += gsl_matrix_ushort_get(&gradient_block.matrix, rr, cc);
-                    magnitude += gsl_matrix_get(&imgy_block.matrix, rr, cc);
-                }
+        for (uint32_t rr=0 ; rr<imgy_block.matrix.size1 ; ++rr) {
+            for (uint32_t cc=0 ; cc<imgy_block.matrix.size2 ; ++cc) {
+                magnitude += gsl_matrix_get(&imgy_block.matrix, rr, cc);
             }
         }
 
         if (magnitude > max_magnitude) {
             max_magnitude = magnitude;
             max_magnitude_idx = c;
-            dbg("max %d at %d", max_magnitude, max_magnitude_idx);
+//           dbg("max %d at %d", max_magnitude, max_magnitude_idx);
         }
     }
 
-    vsc += max_magnitude_idx;
+    blob->c += max_magnitude_idx;
+//    dbg("blob->c %d", blob->c);
 
     // upate right idx
-    dbg("Update right idx");
+//    dbg("Update right idx");
     max_magnitude = 0;
     max_magnitude_idx = 0;
 
-    for (c=gradient->size2 - 2 ; c>((gradient->size2 * 3 / 4) - 2) ; --c) {
+    for (c=imgy->size2 - 2 ; c>((imgy->size2 * 3 / 4) - 2) ; --c) {
         imgy_block = gsl_matrix_submatrix((gsl_matrix*)imgy, 
                                                         0, 
                                                         c, 
-                                                        gradient->size1, 
+                                                        imgy->size1, 
                                                         2);
-
-        gradient_block = gsl_matrix_ushort_submatrix((gsl_matrix_ushort*)gradient, 
-                                                        0, 
-                                                        c, 
-                                                        gradient->size1, 
-                                                        2);
-
-        direction_block = gsl_matrix_char_submatrix((gsl_matrix_char*)direction, 
-                                                        0, 
-                                                        c, 
-                                                        direction->size1, 
-                                                        2);
-
         magnitude = 0;
 
-        for (uint32_t rr=0 ; rr<gradient_block.matrix.size1 ; ++rr) {
-            for (uint32_t cc=0 ; cc<gradient_block.matrix.size2 ; ++cc) {
-                dir = gsl_matrix_char_get(&direction_block.matrix, rr, cc);
-                if (1 || dir == DIRECTION_HORIZONTAL) {
-                    //if ( direction == 0 || direction == 1 || direction == 11) {
-                    //magnitude += gsl_matrix_ushort_get(&gradient_block.matrix, rr, cc);
-                    magnitude += gsl_matrix_get(&imgy_block.matrix, rr, cc);
-                }
+        for (uint32_t rr=0 ; rr<imgy_block.matrix.size1 ; ++rr) {
+            for (uint32_t cc=0 ; cc<imgy_block.matrix.size2 ; ++cc) {
+                magnitude += gsl_matrix_get(&imgy_block.matrix, rr, cc);
             }
         }
 
         if (magnitude > max_magnitude) {
             max_magnitude = magnitude;
             max_magnitude_idx = c;
-            dbg("max %d at %d", max_magnitude, max_magnitude_idx);
+//            dbg("max %d at %d", max_magnitude, max_magnitude_idx);
         }
     }
 
-    right_idx = right_idx - (*vw - max_magnitude_idx);
+    right_idx = left_idx +  max_magnitude_idx;
 
-    *vw = right_idx - *vsc + 1;
-    *vh = *vw * 0.5;
-    *vsr = bottom_idx - *vh;
+    blob->w = right_idx - blob->c + 1;
+    blob->h = blob->w * 0.5;
+    blob->r = bottom_idx - blob->h;
+
+//    dbg("After (%d, %d) with (%d, %d)",
+//        blob->r,
+//        blob->c,
+//        blob->w,
+//        blob->h);
 
     return true;
 }
 
+#define HeatMapIncrease 10.0
+#define HeatMapDecrease 15.0
 
+bool FCW_UpdateVehicleHeatMap(gsl_matrix* heatmap, VehicleCandidates* vcs)
+{
+    bool pixel_hit = false;
+    uint32_t i, r, c;
+    double val;
+
+    if (!heatmap || !vcs) {
+        dbg();
+        return false;
+    }
+
+    // decrease/increase HeapMap
+    for (r=0 ; r<heatmap->size1 ; ++r) {
+        for (c=0 ; c<heatmap->size2 ; ++c) {
+
+            pixel_hit = false;
+
+            for (i=0 ; i<vcs->vc_count ; ++i) {
+                if (r >= vcs->vc[i].m_r && r<= vcs->vc[i].m_r + vcs->vc[i].m_h && c >= vcs->vc[i].m_c && c <= vcs->vc[i].m_c + vcs->vc[i].m_w) {
+                    pixel_hit = true;
+                    break;
+                }
+            }
+
+            val = gsl_matrix_get(heatmap, r, c);
+
+            if (pixel_hit) {
+                val += HeatMapIncrease;
+                if (val >= 255)
+                    val = 255;
+            } else {
+                val -= HeatMapDecrease;
+                if (val <= 0)
+                    val = 0;
+            }
+
+            gsl_matrix_set(heatmap, r, c, val);
+        }
+    }
+
+
+
+
+
+
+
+    return true;
+}

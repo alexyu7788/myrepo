@@ -32,7 +32,18 @@ bool FCW_Init(void);
 
 bool FCW_DeInit(void);
 
-bool FCW_DoDetection(uint8_t* img, int linesize,int w, int h, gsl_vector* vertical_hist, gsl_vector* hori_hist, gsl_vector* grayscale_hist, VehicleCandidates *vcs);
+bool FCW_DoDetection(
+        uint8_t* img, 
+        int linesize, 
+        int w, 
+        int h, 
+        gsl_vector* vertical_hist, 
+        gsl_vector* hori_hist, 
+        gsl_vector* grayscale_hist, 
+        VehicleCandidates *vcs,
+        uint8_t* edged,
+        uint8_t* shadow,
+        uint8_t* heatmap);
 
 int  FCW_GetRounded_Direction(int gx, int gy);
 
@@ -69,18 +80,9 @@ bool FCW_VehicleCandidateGenerate(
         const gsl_matrix_char* direction,
         VehicleCandidates* vcs);
 
-bool FCW_UpdateVehicleCanidateByEdge(
-        const gsl_matrix* imgy,
-        const gsl_matrix_ushort* gradient,
-        const gsl_matrix_char* direction,
-        int*  vsr,
-        int*  vsc,
-        int*  vw,
-        int*  vh);
+bool FCW_UpdateVehicleCanidateByEdge(const gsl_matrix* imgy, blob*  blob);
 
-bool FCW_UpdateVehicleCanidateByEdge2(const gsl_matrix* imgy, blob*  blob);
-
-
+bool FCW_UpdateVehicleHeatMap(gsl_matrix* heatmap, VehicleCandidates* vcs); 
 
 
 

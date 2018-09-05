@@ -33,7 +33,7 @@ void FreeMatrixChar(gsl_matrix_char** m)
     }
 }
 
-bool CheckOrReallocVector(gsl_vector** v, int size)
+bool CheckOrReallocVector(gsl_vector** v, int size, bool reset)
 {
     if (!(*v) || (*v)->size != size) {
         if (*v) {
@@ -45,12 +45,13 @@ bool CheckOrReallocVector(gsl_vector** v, int size)
             return false;
     }
 
-    gsl_vector_set_zero(*v);
+    if (reset)
+        gsl_vector_set_zero(*v);
 
     return true;
 }
 
-bool CheckOrReallocMatrix(gsl_matrix** m, int h, int w)
+bool CheckOrReallocMatrix(gsl_matrix** m, int h, int w, bool reset)
 {
     if (!*m || (*m)->size1 != h || (*m)->size2 != w) {
         if (*m) {
@@ -62,12 +63,13 @@ bool CheckOrReallocMatrix(gsl_matrix** m, int h, int w)
             return false;
     }
 
-    gsl_matrix_set_zero(*m);
+    if (reset)
+        gsl_matrix_set_zero(*m);
 
     return true;
 }
 
-bool CheckOrReallocMatrixUshort(gsl_matrix_ushort** m, int h, int w)
+bool CheckOrReallocMatrixUshort(gsl_matrix_ushort** m, int h, int w, bool reset)
 {
     if (!*m || (*m)->size1 != h || (*m)->size2 != w) {
         if (*m) {
@@ -79,12 +81,13 @@ bool CheckOrReallocMatrixUshort(gsl_matrix_ushort** m, int h, int w)
             return false;
     }
 
-    gsl_matrix_ushort_set_zero(*m);
+    if (reset)
+        gsl_matrix_ushort_set_zero(*m);
 
     return true;
 }
 
-bool CheckOrReallocMatrixChar(gsl_matrix_char** m, int h, int w)
+bool CheckOrReallocMatrixChar(gsl_matrix_char** m, int h, int w, bool reset)
 {
     if (!*m || (*m)->size1 != h || (*m)->size2 != w) {
         if (*m) {
@@ -96,7 +99,8 @@ bool CheckOrReallocMatrixChar(gsl_matrix_char** m, int h, int w)
             return false;
     }
 
-    gsl_matrix_char_set_zero(*m);
+    if (reset)
+        gsl_matrix_char_set_zero(*m);
 
     return true;
 }
