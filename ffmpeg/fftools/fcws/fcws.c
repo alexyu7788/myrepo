@@ -715,13 +715,16 @@ redo:
 
 bool FCW_BlobAdd(blob** bhead, blob* nblob)
 {
-    blob *cur = NULL; 
+    blob *cur = NULL, *newblob = NULL; 
 
     if (!nblob)
         return false;
 
+    newblob = (blob*)malloc(sizeof(blob));
+    memcpy(newblob, nblob, sizeof(blob));
+
     if (!*bhead) {
-        *bhead = nblob;
+        *bhead = newblob;
         (*bhead)->next = NULL;
     } else {
         cur = *bhead;
@@ -729,8 +732,8 @@ bool FCW_BlobAdd(blob** bhead, blob* nblob)
             cur = cur->next;
         }
 
-        cur->next = nblob;
-        cur = nblob;
+        cur->next = newblob;
+        cur = newblob;
     }
 
     FCW_BlobRearrange(bhead);
@@ -761,7 +764,7 @@ bool FCW_BlobGenerator(const gsl_matrix* imgy, uint32_t peak_idx, blob** bhead)
     uint32_t blob_pixel_cnt, max_blob_pixel_cnt;
     float blob_pixel_density;
     bool has_neighborhood = false;
-    blob *newblob = NULL, *curblob = NULL;
+    blob *curblob = NULL, tblob;
     gsl_matrix_view submatrix;
 
     if (!imgy) {
@@ -841,20 +844,18 @@ bool FCW_BlobGenerator(const gsl_matrix* imgy, uint32_t peak_idx, blob** bhead)
                                     max_blob_r, max_blob_c, max_blob_w, max_blob_h,
                                     max_blob_pixel_cnt, blob_pixel_density);
 
-                            newblob = (blob*)malloc(sizeof(blob));         
-                            newblob->r = max_blob_r;
-                            newblob->c = max_blob_c;
-                            newblob->w = max_blob_w;
-                            newblob->h = max_blob_h;
-                            newblob->number = blob_cnt;
-                            newblob->next = NULL;
-
-                            if (FCW_BlobFindIdentical(bhead, newblob) == false) {
+                            tblob.r = max_blob_r;
+                            tblob.c = max_blob_c;
+                            tblob.w = max_blob_w;
+                            tblob.h = max_blob_h;
+                            tblob.number = blob_cnt;
+                            tblob.next = NULL;
+                            
+                            if (FCW_BlobFindIdentical(bhead, &tblob) == false) {
                                 blob_cnt++;
-                                FCW_BlobAdd(bhead, newblob);
+                                FCW_BlobAdd(bhead, &tblob);
                             } else {
-                                free(newblob);
-                                newblob = NULL;
+                                memset(&tblob, 0x0, sizeof(blob));
                             }
                         }
 
