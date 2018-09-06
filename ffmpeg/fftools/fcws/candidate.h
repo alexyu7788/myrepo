@@ -6,6 +6,8 @@
 #define MAX_CANDIDATES 128
 
 typedef struct Candidate {
+    bool     m_valid;
+    float    m_dist;
     uint32_t m_r;
     uint32_t m_c;
     uint32_t m_w;

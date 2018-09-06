@@ -20,6 +20,7 @@ typedef struct PEAK_GROUP {
 }PEAK_GROUP;
 
 typedef struct blob {
+    bool valid;
     int number;
     int r;
     int c;
@@ -80,11 +81,15 @@ bool FCW_VehicleCandidateGenerate(
         const gsl_matrix_char* direction,
         VehicleCandidates* vcs);
 
-bool FCW_UpdateVehicleCanidateByEdge(const gsl_matrix* imgy, blob*  blob);
+bool FCW_UpdateBlobByEdge(const gsl_matrix* imgy, blob*  blob);
+
+bool FCW_CheckBlobByArea(const gsl_matrix* imgy, blob* cur);
+
+bool FCW_CheckBlobByVerticalEdge(const gsl_matrix* edged_imgy, blob* cur);
+
+bool FCW_CheckBlobValid(const gsl_matrix* imgy, const gsl_matrix* edged_imgy, blob* cur);
 
 bool FCW_UpdateVehicleHeatMap(gsl_matrix* heatmap, VehicleCandidates* vcs); 
-
-
 
 
 

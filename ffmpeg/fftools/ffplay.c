@@ -1224,11 +1224,22 @@ static void video_image_display(VideoState *is)
                                 );
         }
 
+        SDL_SetRenderDrawColor(fcw_renderer[FCW_WINDOW_SHADOW], 0, 0xff, 0, 0xff);
+
+        SDL_RenderDrawLine(fcw_renderer[FCW_WINDOW_SHADOW], rect.w / 2, 0, rect.w / 2, rect.h);
+        SDL_RenderDrawLine(fcw_renderer[FCW_WINDOW_SHADOW], 0, rect.h / 2, rect.w, rect.h / 2);
+
         // Draw rectangle of candidate
+        SDL_SetRenderDrawColor(fcw_renderer[FCW_WINDOW_VEHICLE], 0, 0xff, 0, 0xff);
+
+        SDL_RenderDrawLine(fcw_renderer[FCW_WINDOW_VEHICLE], rect.w / 2, 0, rect.w / 2, rect.h);
+        SDL_RenderDrawLine(fcw_renderer[FCW_WINDOW_VEHICLE], 0, rect.h / 2, rect.w, rect.h / 2);
+
         for (i=0 ; i<vcs.vc_count ; i++) {
 
             color = &COLOR[i%COLOR_TOTAL];
 
+            SDL_SetRenderDrawColor(fcw_renderer[FCW_WINDOW_SHADOW], color->r, color->g, color->b, color->a);
             SDL_SetRenderDrawColor(fcw_renderer[FCW_WINDOW_VEHICLE], color->r, color->g, color->b, color->a);
             SDL_SetRenderDrawColor(fcw_renderer[FCW_WINDOW_EDGE], color->r, color->g, color->b, color->a);
 
@@ -1237,6 +1248,7 @@ static void video_image_display(VideoState *is)
             vrect.w = vcs.vc[i].m_w;
             vrect.h = vcs.vc[i].m_h;
 
+            SDL_RenderDrawRect(fcw_renderer[FCW_WINDOW_SHADOW], &vrect);
             SDL_RenderDrawRect(fcw_renderer[FCW_WINDOW_VEHICLE], &vrect);
             SDL_RenderDrawRect(fcw_renderer[FCW_WINDOW_EDGE], &vrect);
         }
@@ -1574,7 +1586,7 @@ static int video_open(VideoState *is)
         SDL_SetWindowTitle(fcw_window[i], fcw_window_title[i]);
 
         SDL_SetWindowSize(fcw_window[i], w, h);
-        SDL_SetWindowPosition(fcw_window[i], i*w, 0);
+        SDL_SetWindowPosition(fcw_window[i], 0, i*(h+40));
         if (is_full_screen)
             SDL_SetWindowFullscreen(fcw_window[i], SDL_WINDOW_FULLSCREEN_DESKTOP);
         SDL_ShowWindow(fcw_window[i]);
