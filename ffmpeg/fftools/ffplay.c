@@ -67,6 +67,7 @@
 static uint8_t* edged = NULL;
 static uint8_t* shadow = NULL;
 static uint8_t* heatmap = NULL;
+static uint8_t* blur = NULL;
 
 static VehicleCandidates vcs;
 static gsl_vector* vertical_hist = NULL;
@@ -78,8 +79,9 @@ enum {
     FCW_WINDOW_EDGE,
     FCW_WINDOW_VEHICLE,
     FCW_WINDOW_HEATMAP,
+    FCW_WINDOW_RESULT,
     FCW_WINDOW_TOTAL,
-    FCW_WINDOW_RESULT
+    FCW_WINDOW_BLUR,
 };
 
 static const char *fcw_window_title[FCW_WINDOW_TOTAL] = {
@@ -87,6 +89,8 @@ static const char *fcw_window_title[FCW_WINDOW_TOTAL] = {
     [FCW_WINDOW_EDGE]       = "Vertical Edge",
     [FCW_WINDOW_VEHICLE]    = "Candidates",
     [FCW_WINDOW_HEATMAP]    = "Heatmap",
+    [FCW_WINDOW_RESULT]     = "Result",
+    //[FCW_WINDOW_BLUR]       = "Blur",
 };
 static SDL_Window *fcw_window[FCW_WINDOW_TOTAL] = {NULL};
 static SDL_Renderer *fcw_renderer[FCW_WINDOW_TOTAL] = {NULL};
@@ -1018,6 +1022,10 @@ static int upload_texture(SDL_Texture **tex, AVFrame *frame, struct SwsContext *
                     heatmap = av_malloc(frame->linesize[0] * frame->height + 16 + 16/*STRIDE_ALIGN*/ - 1);
                 }
 
+                if (!blur) {
+                    blur = av_malloc(frame->linesize[0] * frame->height + 16 + 16/*STRIDE_ALIGN*/ - 1);
+                }
+
                 FCW_DoDetection(frame->data[0],
                                 frame->linesize[0],
                                 frame->width,
@@ -1046,6 +1054,10 @@ static int upload_texture(SDL_Texture **tex, AVFrame *frame, struct SwsContext *
                                            frame->data[2], frame->linesize[2]);
 
                 ret = SDL_UpdateYUVTexture(fcw_texture[FCW_WINDOW_VEHICLE], NULL, frame->data[0], frame->linesize[0],
+                                           frame->data[1], frame->linesize[1],
+                                           frame->data[2], frame->linesize[2]);
+
+                ret = SDL_UpdateYUVTexture(fcw_texture[FCW_WINDOW_RESULT], NULL, frame->data[0], frame->linesize[0],
                                            frame->data[1], frame->linesize[1],
                                            frame->data[2], frame->linesize[2]);
                 
@@ -1541,6 +1553,9 @@ static void do_exit(VideoState *is)
     if (heatmap)
         av_freep(&heatmap);
 
+    if (blur)
+        av_freep(&blur);
+
     exit(0);
 }
 
@@ -1586,7 +1601,7 @@ static int video_open(VideoState *is)
         SDL_SetWindowTitle(fcw_window[i], fcw_window_title[i]);
 
         SDL_SetWindowSize(fcw_window[i], w, h);
-        SDL_SetWindowPosition(fcw_window[i], 0, i*(h+40));
+        SDL_SetWindowPosition(fcw_window[i], (i%2)*w + (i%2)*40, (i/2)*h + (i/2)*80);
         if (is_full_screen)
             SDL_SetWindowFullscreen(fcw_window[i], SDL_WINDOW_FULLSCREEN_DESKTOP);
         SDL_ShowWindow(fcw_window[i]);

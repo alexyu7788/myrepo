@@ -157,6 +157,8 @@ bool FCW_DoDetection(
 
     FCW_UpdateVehicleHeatMap(m_heatmap, &m_vcs);
 
+    //FCW_UpdateVCStatus(m_heatmap, &m_vcs);
+
     memset(vcs, 0x0, sizeof(VehicleCandidates));
 
     vcs->vc_count = m_vcs.vc_count;
@@ -736,8 +738,6 @@ bool FCW_BlobAdd(blob** bhead, blob* nblob)
         cur = newblob;
     }
 
-    FCW_BlobRearrange(bhead);
-
     return true;
 }
 
@@ -774,7 +774,7 @@ bool FCW_BlobGenerator(const gsl_matrix* imgy, uint32_t peak_idx, blob** bhead)
 
     if (peak_idx > BLOB_MARGIN + 1 && peak_idx < (imgy->size1 - BLOB_MARGIN - 1)) {
 
-        dbg("peak index %d", peak_idx);
+        //dbg("peak index %d", peak_idx);
 
         sm_r = peak_idx - BLOB_MARGIN;
         sm_c = 0;
@@ -832,17 +832,13 @@ bool FCW_BlobGenerator(const gsl_matrix* imgy, uint32_t peak_idx, blob** bhead)
                             blob_pixel_density = max_blob_pixel_cnt / (float)(max_blob_w * max_blob_h);
                         }
 
-                        if (r <= 50 && c >= submatrix.matrix.size2/2) {
-                            dbg("1 Max blob (%d, %d) with  (%d, %d) %d %.02lf", 
-                                    max_blob_r, max_blob_c, max_blob_w, max_blob_h,
-                                    max_blob_pixel_cnt, blob_pixel_density);
-                        }
+                        if (max_blob_h > 1 &&
+                            ((peak_idx <= imgy->size1 / 3.0 && max_blob_w >= 10 && blob_pixel_density >= 0.2) ||
+                             (peak_idx > imgy->size1 / 3.0 && max_blob_w >= 20 && blob_pixel_density >= 0.7))) {
 
-                        if ((max_blob_w >= 20) && (blob_pixel_density >= 0.2)) {
-
-                            dbg("2 Max blob (%d, %d) with  (%d, %d) %d %.02lf", 
-                                    max_blob_r, max_blob_c, max_blob_w, max_blob_h,
-                                    max_blob_pixel_cnt, blob_pixel_density);
+//                            dbg("Max blob (%d, %d) with  (%d, %d) %d %.02lf", 
+//                                    max_blob_r, max_blob_c, max_blob_w, max_blob_h,
+//                                    max_blob_pixel_cnt, blob_pixel_density);
 
                             tblob.r = max_blob_r;
                             tblob.c = max_blob_c;
@@ -858,6 +854,13 @@ bool FCW_BlobGenerator(const gsl_matrix* imgy, uint32_t peak_idx, blob** bhead)
                                 memset(&tblob, 0x0, sizeof(blob));
                             }
                         }
+//                        else {
+//                            if (r <= 50 && c >= submatrix.matrix.size2/2) {
+//                                dbg("Fail: Max blob (%d, %d) with  (%d, %d) %d %.02lf", 
+//                                        max_blob_r, max_blob_c, max_blob_w, max_blob_h,
+//                                        max_blob_pixel_cnt, blob_pixel_density);
+//                            }
+//                        }
 
                         blob_pixel_cnt = 0;
                         blob_c = blob_w = blob_h = -1;
@@ -876,12 +879,21 @@ bool FCW_BlobGenerator(const gsl_matrix* imgy, uint32_t peak_idx, blob** bhead)
         }
     }
 
-    //curblob = *bhead;
-    //while (curblob!= NULL) {
-    //    dbg("[%d,%d] with [%d,%d]", curblob->r, curblob->c, curblob->w, curblob->h);
-    //    curblob = curblob->next;
-    //}
+//    curblob = *bhead;
+//    while (curblob!= NULL) {
+//        dbg("[%d,%d] with [%d,%d]", curblob->r, curblob->c, curblob->w, curblob->h);
+//        curblob = curblob->next;
+//    }
+//
+//    dbg("=====");
+    FCW_BlobRearrange(bhead);
 
+//    curblob = *bhead;
+//    while (curblob!= NULL) {
+//        dbg("[%d,%d] with [%d,%d]", curblob->r, curblob->c, curblob->w, curblob->h);
+//        curblob = curblob->next;
+//    }
+//    printf("\n");
     return true;
 }
 
@@ -936,7 +948,7 @@ bool FCW_VehicleCandidateGenerate(
     if (max_peak == 0)
         return false;
 
-    dbg("\033[1;33m==========max peak %d===========\033[m", max_peak);
+    //dbg("\033[1;33m==========max peak %d===========\033[m", max_peak);
 
     FCW_BlobClear(&m_blob_head);
 
@@ -1004,11 +1016,27 @@ bool FCW_VehicleCandidateGenerate(
                                                    vehicle_height,
                                                    vehicle_width);
 
+            //dbg("Before Edge: Vehicle at (%d,%d) with (%d,%d)",
+            //        cur->r,
+            //        cur->c,
+            //        cur->w,
+            //        cur->h);
             FCW_UpdateBlobByEdge(&imgy_submatrix.matrix, cur);
+            //    dbg("Before Valid: Vehicle at (%d,%d) with (%d,%d)",
+            //            cur->r,
+            //            cur->c,
+            //            cur->w,
+            //            cur->h);
 
             FCW_CheckBlobValid(imgy, edged_imgy, cur);
 
             if (cur->valid) {
+                //dbg("Vehicle at (%d,%d) with (%d,%d)\n\n",
+                //        cur->r,
+                //        cur->c,
+                //        cur->w,
+                //        cur->h);
+
                 vcs->vc[vcs->vc_count].m_valid  = true;
                 vcs->vc[vcs->vc_count].m_dist   = 0;
 
@@ -1017,7 +1045,17 @@ bool FCW_VehicleCandidateGenerate(
                 vcs->vc[vcs->vc_count].m_w      = cur->w;
                 vcs->vc[vcs->vc_count].m_h      = cur->h;
 
+                vcs->vc[vcs->vc_count].m_st     = Disappear;
+
                 vcs->vc_count++;
+            }
+            else {
+                //dbg("Fail Vehicle at (%d,%d) with (%d,%d)\n\n",
+                //        cur->r,
+                //        cur->c,
+                //        cur->w,
+                //        cur->h);
+
             }
 
             cur = cur->next;
@@ -1401,9 +1439,9 @@ bool FCW_CheckBlobByArea(const gsl_matrix* imgy, blob* cur)
 
     area_ratio = pixel_cnt / (float)area;
 
-    //dbg("%d / %d = %.02f", pixel_cnt, area, area_ratio);
+    //dbg("Area: %d / %d = %.02f", pixel_cnt, area, area_ratio);
 
-    if (area_ratio >= 0.8)
+    if (area_ratio <= 0.1 || area_ratio >= 0.8)
         cur->valid = false;
 
     return true;
@@ -1437,7 +1475,7 @@ bool FCW_CheckBlobByVerticalEdge(const gsl_matrix* edged_imgy, blob* cur)
 
     percentage = pixel_cnt / (float)area;
 
-    //dbg("%d / %d = %.04f", pixel_cnt, area, percentage);
+    //dbg("VerticalEdge: %d / %d = %.04f", pixel_cnt, area, percentage);
 
     if (percentage < 0.175)
         cur->valid = false;
@@ -1464,6 +1502,7 @@ bool FCW_CheckBlobValid(const gsl_matrix* imgy, const gsl_matrix* edged_imgy, bl
 
 #define HeatMapIncrease 10.0
 #define HeatMapDecrease 10.0
+#define HeatMapAppearThreshold   220 
 
 bool FCW_UpdateVehicleHeatMap(gsl_matrix* heatmap, VehicleCandidates* vcs)
 {
@@ -1482,6 +1521,7 @@ bool FCW_UpdateVehicleHeatMap(gsl_matrix* heatmap, VehicleCandidates* vcs)
 
             pixel_hit = false;
 
+            // this pixel belongs to certain vehicle candidate.
             for (i=0 ; i<vcs->vc_count ; ++i) {
                 if (r >= vcs->vc[i].m_r && r<= vcs->vc[i].m_r + vcs->vc[i].m_h && c >= vcs->vc[i].m_c && c <= vcs->vc[i].m_c + vcs->vc[i].m_w) {
                     pixel_hit = true;
@@ -1505,7 +1545,175 @@ bool FCW_UpdateVehicleHeatMap(gsl_matrix* heatmap, VehicleCandidates* vcs)
         }
     }
 
+    return true;
+}
 
+typedef enum {
+    DIR_RIGHTUP = 0,
+    DIR_RIGHT,
+    DIR_RIGHTDOWN,
+    DIR_DOWN,
+    DIR_LEFTDOWN,
+    DIR_LEFT,
+    DIR_LEFTUP,
+    DIR_UP
+}DIR;
+
+bool FCW_UpdateVCStatus(gsl_matrix* heatmap, VehicleCandidates* vcs)
+{
+    bool pixel_hit = false;
+    uint32_t i;
+    uint32_t r, c, rr, cc; 
+    uint32_t startr, startc;
+    uint32_t left, right, up, down;
+    uint32_t middle;
+    DIR nextdir;
+    bool find_pixel;
+
+    if (!heatmap || !vcs) {
+        dbg();
+        return false;
+    }
+    
+    memset(vcs, 0x0, sizeof(VehicleCandidates));
+
+    dbg("==========================");
+    for (r=1 ; r<heatmap->size1-1 ; ++r) {
+        for (c=1 ; c<heatmap->size2-1 ; ++c) {
+
+            pixel_hit = false;
+
+            // this pixel belongs to certain vehicle candidate.
+            for (i=0 ; i<vcs->vc_count ; ++i) {
+                if (r >= vcs->vc[i].m_r && r<= vcs->vc[i].m_r + vcs->vc[i].m_h && c >= vcs->vc[i].m_c && c <= vcs->vc[i].m_c + vcs->vc[i].m_w) {
+                    pixel_hit = true;
+                    break;
+                }
+            }
+
+            if (pixel_hit)
+                continue;
+
+            if (gsl_matrix_get(heatmap, r, c) >= HeatMapAppearThreshold) {
+                startr = rr = up = down = r;
+                startc = cc = left = right = c;
+                nextdir = DIR_RIGHTUP;
+                find_pixel = false;
+
+                while (1) {
+                    while (1) {
+                        switch (nextdir) {
+                            case DIR_RIGHTUP:
+                                if (gsl_matrix_get(heatmap, rr-1, cc+1) >= HeatMapAppearThreshold) {
+                                    --rr;
+                                    ++cc;
+                                    find_pixel = true;
+                                    nextdir = DIR_LEFTUP;
+                                    up = rr;
+                                    right = cc;
+                                } else 
+                                    nextdir = DIR_RIGHT;
+                                break;
+                            case DIR_RIGHT:
+                                if (gsl_matrix_get(heatmap, rr, cc+1) >= HeatMapAppearThreshold) {
+                                    ++cc;
+                                    find_pixel = true;
+                                    nextdir = DIR_RIGHTUP;
+                                    right = cc;
+                                } else
+                                    nextdir = DIR_RIGHTDOWN;
+                                break;
+                            case DIR_RIGHTDOWN:
+                                if (gsl_matrix_get(heatmap, rr+1, cc+1) >= HeatMapAppearThreshold) {
+                                    ++rr;
+                                    ++cc;
+                                    find_pixel = true;
+                                    nextdir = DIR_RIGHTUP;
+                                    down = rr;
+                                    right = cc;
+                                } else
+                                    nextdir = DIR_DOWN;
+                                break;
+                            case DIR_DOWN:
+                                if (gsl_matrix_get(heatmap, rr+1, cc) >= HeatMapAppearThreshold) {
+                                    ++rr;
+                                    find_pixel = true;
+                                    nextdir = DIR_RIGHTDOWN;
+                                    down = rr;
+                                } else
+                                    nextdir = DIR_LEFTDOWN;
+                                break;
+                            case DIR_LEFTDOWN:
+                                if (gsl_matrix_get(heatmap, rr+1, cc-1) >= HeatMapAppearThreshold) {
+                                    ++rr;
+                                    --cc;
+                                    find_pixel = true;
+                                    nextdir = DIR_RIGHTDOWN;
+                                    down = rr;
+                                    left = cc;
+                                } else
+                                    nextdir = DIR_LEFT;
+                                break;
+                            case DIR_LEFT:
+                                if (gsl_matrix_get(heatmap, rr, cc-1) >= HeatMapAppearThreshold) {
+                                    --cc;
+                                    find_pixel = true;
+                                    nextdir = DIR_LEFTDOWN;
+                                    left = cc;
+                                } else
+                                    nextdir = DIR_LEFTUP;
+                                break;
+                            case DIR_LEFTUP:
+                                if (gsl_matrix_get(heatmap, rr-1, cc-1) >= HeatMapAppearThreshold) {
+                                    --rr;
+                                    --cc;
+                                    find_pixel = true;
+                                    nextdir = DIR_LEFTDOWN;
+                                    up = rr;
+                                    left = cc;
+                                } else
+                                    nextdir = DIR_UP;
+                                break;
+                            case DIR_UP:
+                                if (gsl_matrix_get(heatmap, rr-1, cc) >= HeatMapAppearThreshold) {
+                                    --rr;
+                                    find_pixel = true;
+                                    nextdir = DIR_LEFTUP;
+                                    up = rr;
+                                } else
+                                    nextdir = DIR_RIGHTUP;
+                                break;
+                        }
+
+                        if (find_pixel) {
+                            find_pixel = false;
+                            break;
+                        }
+                    }
+
+                    dbg("(%d,%d) <==> (%d,%d) dir %d", startr, startc, rr, cc, nextdir);
+                    if (startr == rr && startc == cc) {
+                        dbg("Find a VC.(%d,%d) (%d,%d)", up, left, down, right);
+                        vcs->vc[vcs->vc_count].m_r = up;
+                        vcs->vc[vcs->vc_count].m_c = left;
+                        vcs->vc[vcs->vc_count].m_w = right - left + 1;
+                        vcs->vc[vcs->vc_count].m_h = down - up + 1;
+                        dbg("[%d] => [%d, %d] with [%d, %d]", 
+                                vcs->vc_count,
+                                vcs->vc[vcs->vc_count].m_r,
+                                vcs->vc[vcs->vc_count].m_c,
+                                vcs->vc[vcs->vc_count].m_w,
+                                vcs->vc[vcs->vc_count].m_h);
+                        vcs->vc_count++;
+
+                        if (vcs->vc_count >= 9)
+                            while(1){usleep(1000);};
+                        break;
+                    }
+                }
+            }
+        }
+    }
 
 
 

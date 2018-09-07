@@ -5,6 +5,11 @@
 
 #define MAX_CANDIDATES 128
 
+typedef enum CandidateStatus{
+    Disappear = 0,
+    Appear,
+}CandidateStatus;
+
 typedef struct Candidate {
     bool     m_valid;
     float    m_dist;
@@ -12,6 +17,7 @@ typedef struct Candidate {
     uint32_t m_c;
     uint32_t m_w;
     uint32_t m_h;
+    CandidateStatus m_st;
 }Candidate;
 
 typedef struct VehicleCandidates {

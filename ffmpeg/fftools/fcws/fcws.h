@@ -91,7 +91,7 @@ bool FCW_CheckBlobValid(const gsl_matrix* imgy, const gsl_matrix* edged_imgy, bl
 
 bool FCW_UpdateVehicleHeatMap(gsl_matrix* heatmap, VehicleCandidates* vcs); 
 
-
+bool FCW_UpdateVCStatus(gsl_matrix* heatmap, VehicleCandidates* vcs);
 
 //class CFCWS {
 //    protected:
