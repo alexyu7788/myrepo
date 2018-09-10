@@ -110,7 +110,8 @@ bool FCW_DoDetection(
         VehicleCandidates *vcs,
         uint8_t* edged,
         uint8_t* shadow,
-        uint8_t* heatmap)
+        uint8_t* heatmap,
+        uint8_t* otsu)
 {
     if (!img || !vertical_hist || !hori_hist || !grayscale_hist || !edged || !shadow || !heatmap) {
         dbg();
@@ -136,6 +137,8 @@ bool FCW_DoDetection(
     FCW_CalGrayscaleHist(m_imgy, m_temp_imgy, grayscale_hist);
 
     FCW_CalHorizontalHist(m_temp_imgy, hori_hist);
+
+    //FCW_OtsuThreshold(grayscale_hist, m_imgy->size1 * m_imgy->size2);
 
     gsl_matrix_memcpy(m_edged_imgy, m_imgy);
     //FCW_GaussianBlur(m_edged_imgy, m_imgy); 
@@ -408,7 +411,7 @@ bool FCW_CalGrayscaleHist(const gsl_matrix* imgy, gsl_matrix* result_imgy, gsl_v
         }
     }
             
-    //dbg("%d %lf\n", pixel_value_peak, hist_peak);
+    //dbg("%d %lf/%lf at %d", pixel_value_peak, hist_peak, gsl_vector_max(grayscale_hist), gsl_vector_max_index(grayscale_hist));
 
     for (r=0 ; r<imgy->size1 ; r++) {
         for (c=0 ; c<imgy->size2 ; c++) {
@@ -418,6 +421,37 @@ bool FCW_CalGrayscaleHist(const gsl_matrix* imgy, gsl_matrix* result_imgy, gsl_v
     }
 
     return true;
+}
+
+uint8_t FCW_OtsuThreshold(gsl_vector* grayscale_hist, int pixel_count)
+{
+    uint8_t sumB=0, sum1=0;
+    float wB=0, wF=0, mF=0, max_var=0, inter_var=0;
+    uint8_t th=0;
+    uint16_t index_histo=0;
+
+    for (index_histo = 1 ; index_histo < grayscale_hist->size ; index_histo++)
+        sum1 += index_histo * gsl_vector_get(grayscale_hist, index_histo);
+
+    for (index_histo = 1 ; index_histo < grayscale_hist->size ; index_histo++) {
+        wB = wB + gsl_vector_get(grayscale_hist, index_histo);
+        wF = pixel_count - wB;
+
+        if (wB == 0 || wF == 0)
+            continue;
+
+        sumB = sumB + index_histo * gsl_vector_get(grayscale_hist, index_histo);
+        mF = (sum1 - sumB) / wF;
+        inter_var = wB * wF * ((sumB / wB) - mF) * ((sumB / wB) - mF);
+
+        if (inter_var >= max_var) {
+            th = index_histo;
+            max_var = inter_var;
+        }
+    }
+
+    //dbg("th %d", th);
+    return th;
 }
 
 bool FCW_CalVerticalHist(const gsl_matrix* imgy, gsl_vector* vertical_hist)

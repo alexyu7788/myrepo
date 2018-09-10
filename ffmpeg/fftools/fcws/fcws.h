@@ -44,7 +44,8 @@ bool FCW_DoDetection(
         VehicleCandidates *vcs,
         uint8_t* edged,
         uint8_t* shadow,
-        uint8_t* heatmap);
+        uint8_t* heatmap,
+        uint8_t* otsu);
 
 int  FCW_GetRounded_Direction(int gx, int gy);
 
@@ -53,6 +54,8 @@ bool FCW_NonMaximum_Suppression(gsl_matrix* dst, gsl_matrix_char* dir, gsl_matri
 bool FCW_GaussianBlur(gsl_matrix* dst, const gsl_matrix* src);
 
 bool FCW_CalGrayscaleHist(const gsl_matrix* imgy, gsl_matrix* result_imgy, gsl_vector* grayscale_hist);
+
+uint8_t FCW_OtsuThreshold(gsl_vector* grayscale_hist, int pixel_count);
 
 bool FCW_CalVerticalHist(const gsl_matrix* imgy, gsl_vector* vertical_hist);
 

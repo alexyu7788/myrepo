@@ -68,6 +68,7 @@ static uint8_t* edged = NULL;
 static uint8_t* shadow = NULL;
 static uint8_t* heatmap = NULL;
 static uint8_t* blur = NULL;
+static uint8_t* otsu = NULL;
 
 static VehicleCandidates vcs;
 static gsl_vector* vertical_hist = NULL;
@@ -1026,6 +1027,10 @@ static int upload_texture(SDL_Texture **tex, AVFrame *frame, struct SwsContext *
                     blur = av_malloc(frame->linesize[0] * frame->height + 16 + 16/*STRIDE_ALIGN*/ - 1);
                 }
 
+                if (!blur) {
+                    blur = av_malloc(frame->linesize[0] * frame->height + 16 + 16/*STRIDE_ALIGN*/ - 1);
+                }
+
                 FCW_DoDetection(frame->data[0],
                                 frame->linesize[0],
                                 frame->width,
@@ -1036,7 +1041,8 @@ static int upload_texture(SDL_Texture **tex, AVFrame *frame, struct SwsContext *
                                 &vcs,
                                 edged,
                                 shadow,
-                                heatmap); 
+                                heatmap,
+                                otsu); 
 
                 memset(frame->data[1], 128, sizeof(uint8_t)*frame->linesize[1]*frame->height/2);
                 memset(frame->data[2], 128, sizeof(uint8_t)*frame->linesize[2]*frame->height/2);
