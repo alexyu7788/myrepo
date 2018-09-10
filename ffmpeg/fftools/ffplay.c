@@ -1248,21 +1248,22 @@ static void video_image_display(VideoState *is)
         SDL_RenderDrawLine(fcw_renderer[FCW_WINDOW_VEHICLE], 0, rect.h / 2, rect.w, rect.h / 2);
 
         for (i=0 ; i<vcs.vc_count ; i++) {
+            if (vcs.vc[i].m_valid == true) {
+                color = &COLOR[i%COLOR_TOTAL];
 
-            color = &COLOR[i%COLOR_TOTAL];
+                SDL_SetRenderDrawColor(fcw_renderer[FCW_WINDOW_SHADOW], color->r, color->g, color->b, color->a);
+                SDL_SetRenderDrawColor(fcw_renderer[FCW_WINDOW_VEHICLE], color->r, color->g, color->b, color->a);
+                SDL_SetRenderDrawColor(fcw_renderer[FCW_WINDOW_EDGE], color->r, color->g, color->b, color->a);
 
-            SDL_SetRenderDrawColor(fcw_renderer[FCW_WINDOW_SHADOW], color->r, color->g, color->b, color->a);
-            SDL_SetRenderDrawColor(fcw_renderer[FCW_WINDOW_VEHICLE], color->r, color->g, color->b, color->a);
-            SDL_SetRenderDrawColor(fcw_renderer[FCW_WINDOW_EDGE], color->r, color->g, color->b, color->a);
+                vrect.x = rect.x + vcs.vc[i].m_c;
+                vrect.y = rect.y + vcs.vc[i].m_r;
+                vrect.w = vcs.vc[i].m_w;
+                vrect.h = vcs.vc[i].m_h;
 
-            vrect.x = rect.x + vcs.vc[i].m_c;
-            vrect.y = rect.y + vcs.vc[i].m_r;
-            vrect.w = vcs.vc[i].m_w;
-            vrect.h = vcs.vc[i].m_h;
-
-            SDL_RenderDrawRect(fcw_renderer[FCW_WINDOW_SHADOW], &vrect);
-            SDL_RenderDrawRect(fcw_renderer[FCW_WINDOW_VEHICLE], &vrect);
-            SDL_RenderDrawRect(fcw_renderer[FCW_WINDOW_EDGE], &vrect);
+                SDL_RenderDrawRect(fcw_renderer[FCW_WINDOW_SHADOW], &vrect);
+                SDL_RenderDrawRect(fcw_renderer[FCW_WINDOW_VEHICLE], &vrect);
+                SDL_RenderDrawRect(fcw_renderer[FCW_WINDOW_EDGE], &vrect);
+            }
         }
     }
 #endif

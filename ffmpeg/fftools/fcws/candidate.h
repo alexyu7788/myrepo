@@ -12,6 +12,7 @@ typedef enum CandidateStatus{
 
 typedef struct Candidate {
     bool     m_valid;
+    int      m_id;
     float    m_dist;
     uint32_t m_r;
     uint32_t m_c;
