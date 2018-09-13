@@ -64,16 +64,15 @@
 #include "fcws/candidate.h"
 #include "fcws/fcws.h"
 
-static uint8_t* edged = NULL;
+static uint8_t* vedge = NULL;
 static uint8_t* shadow = NULL;
 static uint8_t* heatmap = NULL;
-static uint8_t* blur = NULL;
-static uint8_t* otsu = NULL;
 
 static VehicleCandidates vcs;
 static gsl_vector* vertical_hist = NULL;
 static gsl_vector* hori_hist = NULL;
 static gsl_vector* grayscale_hist = NULL;
+static roi_t roi;
 
 enum {
     FCW_WINDOW_SHADOW = 0,
@@ -82,7 +81,6 @@ enum {
     FCW_WINDOW_HEATMAP,
     FCW_WINDOW_RESULT,
     FCW_WINDOW_TOTAL,
-    FCW_WINDOW_BLUR,
 };
 
 static const char *fcw_window_title[FCW_WINDOW_TOTAL] = {
@@ -91,7 +89,6 @@ static const char *fcw_window_title[FCW_WINDOW_TOTAL] = {
     [FCW_WINDOW_VEHICLE]    = "Candidates",
     [FCW_WINDOW_HEATMAP]    = "Heatmap",
     [FCW_WINDOW_RESULT]     = "Result",
-    //[FCW_WINDOW_BLUR]       = "Blur",
 };
 static SDL_Window *fcw_window[FCW_WINDOW_TOTAL] = {NULL};
 static SDL_Renderer *fcw_renderer[FCW_WINDOW_TOTAL] = {NULL};
@@ -1011,8 +1008,8 @@ static int upload_texture(SDL_Texture **tex, AVFrame *frame, struct SwsContext *
                 CheckOrReallocVector(&hori_hist, frame->height, true);
                 CheckOrReallocVector(&grayscale_hist, 256, true);
 
-                if (!edged) {
-                    edged = av_malloc(frame->linesize[0] * frame->height + 16 + 16/*STRIDE_ALIGN*/ - 1);
+                if (!vedge) {
+                    vedge = av_malloc(frame->linesize[0] * frame->height + 16 + 16/*STRIDE_ALIGN*/ - 1);
                 }
 
                 if (!shadow) {
@@ -1023,13 +1020,19 @@ static int upload_texture(SDL_Texture **tex, AVFrame *frame, struct SwsContext *
                     heatmap = av_malloc(frame->linesize[0] * frame->height + 16 + 16/*STRIDE_ALIGN*/ - 1);
                 }
 
-                if (!blur) {
-                    blur = av_malloc(frame->linesize[0] * frame->height + 16 + 16/*STRIDE_ALIGN*/ - 1);
-                }
+                roi.point[ROI_LEFTTOP].r = frame->height / 6;
+                roi.point[ROI_LEFTTOP].c = frame->width * 4 / 10 ;
 
-                if (!blur) {
-                    blur = av_malloc(frame->linesize[0] * frame->height + 16 + 16/*STRIDE_ALIGN*/ - 1);
-                }
+                roi.point[ROI_RIGHTTOP].r = frame->height / 6;
+                roi.point[ROI_RIGHTTOP].c = frame->width * 6 / 10;
+
+                roi.point[ROI_LEFTBOTTOM].r = frame->height * 5 / 6;
+                roi.point[ROI_LEFTBOTTOM].c = frame->width / 10;
+
+                roi.point[ROI_RIGHTBOTTOM].r = frame->height * 5 / 6;
+                roi.point[ROI_RIGHTBOTTOM].c = frame->width * 9 / 10;
+
+                roi.size = ROI_TOTAL;
 
                 FCW_DoDetection(frame->data[0],
                                 frame->linesize[0],
@@ -1039,15 +1042,15 @@ static int upload_texture(SDL_Texture **tex, AVFrame *frame, struct SwsContext *
                                 hori_hist,
                                 grayscale_hist,
                                 &vcs,
-                                edged,
+                                vedge,
                                 shadow,
                                 heatmap,
-                                otsu); 
+                                &roi); 
 
-                memset(frame->data[1], 128, sizeof(uint8_t)*frame->linesize[1]*frame->height/2);
-                memset(frame->data[2], 128, sizeof(uint8_t)*frame->linesize[2]*frame->height/2);
+                //memset(frame->data[1], 128, sizeof(uint8_t)*frame->linesize[1]*frame->height/2);
+                //memset(frame->data[2], 128, sizeof(uint8_t)*frame->linesize[2]*frame->height/2);
 
-                ret = SDL_UpdateYUVTexture(fcw_texture[FCW_WINDOW_EDGE], NULL, edged, frame->linesize[0],
+                ret = SDL_UpdateYUVTexture(fcw_texture[FCW_WINDOW_EDGE], NULL, vedge, frame->linesize[0],
                                            frame->data[1], frame->linesize[1],
                                            frame->data[2], frame->linesize[2]);
 
@@ -1066,7 +1069,7 @@ static int upload_texture(SDL_Texture **tex, AVFrame *frame, struct SwsContext *
                 ret = SDL_UpdateYUVTexture(fcw_texture[FCW_WINDOW_RESULT], NULL, frame->data[0], frame->linesize[0],
                                            frame->data[1], frame->linesize[1],
                                            frame->data[2], frame->linesize[2]);
-                
+
                 //---------------------FCW------------------
 #endif
                 ret = SDL_UpdateYUVTexture(*tex, NULL, frame->data[0], frame->linesize[0],
@@ -1246,6 +1249,10 @@ static void video_image_display(VideoState *is)
 
         SDL_RenderDrawLine(fcw_renderer[FCW_WINDOW_SHADOW], rect.w / 2, 0, rect.w / 2, rect.h);
         SDL_RenderDrawLine(fcw_renderer[FCW_WINDOW_SHADOW], 0, rect.h / 2, rect.w, rect.h / 2);
+
+        for (int i=0 ; i<ROI_TOTAL ; i++) {
+            SDL_RenderDrawLine(fcw_renderer[FCW_WINDOW_SHADOW], roi.point[i%ROI_TOTAL].c, roi.point[i%ROI_TOTAL].r, roi.point[(i+1)%ROI_TOTAL].c, roi.point[(i+1)%ROI_TOTAL].r);
+        }
 
         // Draw rectangle of candidate
         SDL_SetRenderDrawColor(fcw_renderer[FCW_WINDOW_VEHICLE], 0, 0xff, 0, 0xff);
@@ -1551,17 +1558,14 @@ static void do_exit(VideoState *is)
             SDL_DestroyWindow(fcw_window[i]);
     }
 
-    if (edged)
-        av_freep(&edged);
+    if (vedge)
+        av_freep(&vedge);
 
     if (shadow)
         av_freep(&shadow);
 
     if (heatmap)
         av_freep(&heatmap);
-
-    if (blur)
-        av_freep(&blur);
 
     exit(0);
 }

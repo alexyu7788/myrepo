@@ -29,9 +29,27 @@ typedef struct blob {
     struct blob* next;
 }blob;
 
+enum {
+    ROI_LEFTTOP = 0,
+    ROI_RIGHTTOP,
+    ROI_RIGHTBOTTOM,
+    ROI_LEFTBOTTOM,
+    ROI_TOTAL,
+};
+
+typedef struct roi_s {
+    struct {
+        int r;
+        int c;
+    }point[ROI_TOTAL];
+    int size;
+}roi_t;
+
 bool FCW_Init(void);
 
 bool FCW_DeInit(void);
+
+bool FCW_PixelInROI(uint32_t r, uint32_t c, roi_t* roi);
 
 bool FCW_DoDetection(
         uint8_t* img, 
@@ -42,10 +60,12 @@ bool FCW_DoDetection(
         gsl_vector* hori_hist, 
         gsl_vector* grayscale_hist, 
         VehicleCandidates *vcs,
-        uint8_t* edged,
+        uint8_t* vedge,
         uint8_t* shadow,
         uint8_t* heatmap,
-        uint8_t* otsu);
+        const roi_t* roi);
+
+bool FCW_Thresholding(gsl_matrix* src, gsl_matrix* dst, gsl_vector* grayscale_hist);
 
 int  FCW_GetRounded_Direction(int gx, int gy);
 
