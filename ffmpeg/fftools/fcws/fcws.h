@@ -49,7 +49,7 @@ bool FCW_Init(void);
 
 bool FCW_DeInit(void);
 
-bool FCW_PixelInROI(uint32_t r, uint32_t c, roi_t* roi);
+bool FCW_PixelInROI(uint32_t r, uint32_t c, const roi_t* roi);
 
 bool FCW_DoDetection(
         uint8_t* img, 
@@ -83,7 +83,7 @@ bool FCW_CalVerticalHist2(const gsl_matrix* imgy, int start_r, int start_c, int 
 
 bool FCW_CalHorizontalHist(const gsl_matrix* imgy, gsl_vector* horizontal_hist);
 
-bool FCW_CalGradient(gsl_matrix_ushort* dst, gsl_matrix_char* dir, const gsl_matrix* src, int crop_r, int crop_c, int crop_w, int crop_h);
+bool FCW_CalGradient(gsl_matrix_ushort* dst, gsl_matrix_char* dir, const gsl_matrix* src, int direction, int crop_r, int crop_c, int crop_w, int crop_h);
 
 bool FCW_BlobFindIdentical(blob** bhead, blob* nblob);
 
@@ -99,9 +99,6 @@ bool FCW_VehicleCandidateGenerate(
         const gsl_matrix* imgy, 
         const gsl_matrix* edged_imgy, 
         const gsl_vector* horizontal_hist, 
-        gsl_vector* vertical_hist, 
-        const gsl_matrix_ushort* gradient,
-        const gsl_matrix_char* direction,
         VehicleCandidates* vcs);
 
 bool FCW_UpdateBlobByEdge(const gsl_matrix* imgy, blob*  blob);
@@ -115,6 +112,8 @@ bool FCW_CheckBlobValid(const gsl_matrix* imgy, const gsl_matrix* edged_imgy, bl
 bool FCW_UpdateVehicleHeatMap(gsl_matrix* heatmap, VehicleCandidates* vcs); 
 
 bool FCW_UpdateVCStatus(gsl_matrix* heatmap, VehicleCandidates* vcs);
+
+bool FCW_EdgeDetection(gsl_matrix* src, gsl_matrix* dst, gsl_matrix_ushort* gradient, gsl_matrix_char* dir, int direction);
 
 //class CFCWS {
 //    protected:
