@@ -904,6 +904,7 @@ bool FCW_BlobGenerator(const gsl_matrix* imgy, uint32_t peak_idx, blob** bhead)
     int blob_r_top, blob_r_bottom, blob_c, blob_w, blob_h;
     int max_blob_r, max_blob_c, max_blob_w, max_blob_h;
     int sm_r, sm_c, sm_w, sm_h;
+    int stop_wall_cnt;
     uint32_t blob_cnt;
     uint32_t blob_pixel_cnt, max_blob_pixel_cnt;
     float blob_pixel_density;
@@ -937,8 +938,21 @@ bool FCW_BlobGenerator(const gsl_matrix* imgy, uint32_t peak_idx, blob** bhead)
 
         for (c=1 ; c<submatrix.matrix.size2-1 ; ++c) {
             for (r=1 ; r<submatrix.matrix.size1-1 ; ++r) {
-                if (r == 1)
+                if (r == 1) {
+                    stop_wall_cnt = sm_h - 2;
                     has_neighborhood = false;
+                }
+
+                //dbg("(%d,%d)=> %d %d %d %d, n %d, cnt %d, w %d",
+                //        r,c,
+                //        (uint8_t)gsl_matrix_get(&submatrix.matrix, r, c),
+                //        (uint8_t)gsl_matrix_get(&submatrix.matrix, r-1, c+1),
+                //        (uint8_t)gsl_matrix_get(&submatrix.matrix, r, c+1),
+                //        (uint8_t)gsl_matrix_get(&submatrix.matrix, r+1, c+1),
+                //        has_neighborhood,
+                //        blob_pixel_cnt,
+                //        stop_wall_cnt
+                //   );
 
                 if (gsl_matrix_get(&submatrix.matrix, r, c) != NOT_SHADOW) {
 
@@ -963,52 +977,48 @@ bool FCW_BlobGenerator(const gsl_matrix* imgy, uint32_t peak_idx, blob** bhead)
                         gsl_matrix_get(&submatrix.matrix, r+1, c+1) == NOT_SHADOW &&
                         has_neighborhood == false) {
 
-                        blob_w = c - blob_c + 1;
-                        blob_h = blob_r_bottom - blob_r_top + 1;
+examine:
+                        if (blob_pixel_cnt > 1) {
+                            blob_w = c - blob_c + 1;
+                            blob_h = blob_r_bottom - blob_r_top + 1;
 
-                        if (1 || (blob_pixel_cnt > max_blob_pixel_cnt && blob_w > max_blob_w)) {
-                            max_blob_pixel_cnt = blob_pixel_cnt;
-                            max_blob_r = peak_idx;
-                            max_blob_c = sm_c + blob_c;
-                            max_blob_w = blob_w;
-                            max_blob_h = blob_h;
+                            if (1 || (blob_pixel_cnt > max_blob_pixel_cnt && blob_w > max_blob_w)) {
+                                max_blob_pixel_cnt = blob_pixel_cnt;
+                                max_blob_r = peak_idx;
+                                max_blob_c = sm_c + blob_c;
+                                max_blob_w = blob_w;
+                                max_blob_h = blob_h;
 
-                            blob_pixel_density = max_blob_pixel_cnt / (float)(max_blob_w * max_blob_h);
-                        }
+                                blob_pixel_density = max_blob_pixel_cnt / (float)(max_blob_w * max_blob_h);
+                            }
 
-                        dbg("Max blob (%d, %d) with  (%d, %d) %d %.02lf", 
-                                max_blob_r, max_blob_c, max_blob_w, max_blob_h,
-                                max_blob_pixel_cnt, blob_pixel_density);
-
-                        if (max_blob_h >= 1 &&
-                            ((peak_idx <= imgy->size1 / 3.0 && max_blob_w >= 10 && blob_pixel_density >= 0.2) ||
-                             (peak_idx > imgy->size1 / 3.0 && max_blob_w >= 20 && blob_pixel_density >= 0.55))) {
-
-                            dbg("Valid Max blob (%d, %d) with  (%d, %d) %d %.02lf", 
+                            dbg("Max blob (%d, %d) with  (%d, %d) %d %.02lf", 
                                     max_blob_r, max_blob_c, max_blob_w, max_blob_h,
                                     max_blob_pixel_cnt, blob_pixel_density);
 
-                            tblob.r = max_blob_r;
-                            tblob.c = max_blob_c;
-                            tblob.w = max_blob_w;
-                            tblob.h = max_blob_h;
-                            tblob.number = blob_cnt;
-                            tblob.next = NULL;
-                            
-                            if (FCW_BlobFindIdentical(bhead, &tblob) == false) {
-                                blob_cnt++;
-                                FCW_BlobAdd(bhead, &tblob);
-                            } else {
-                                memset(&tblob, 0x0, sizeof(blob));
+                            if (max_blob_h >= 1 &&
+                                    ((peak_idx <= imgy->size1 / 3.0 && max_blob_w >= 10 && blob_pixel_density >= 0.2) ||
+                                     (peak_idx > imgy->size1 / 3.0 && max_blob_w >= 20 && blob_pixel_density >= 0.55))) {
+
+                                dbg("Valid Max blob (%d, %d) with  (%d, %d) %d %.02lf", 
+                                        max_blob_r, max_blob_c, max_blob_w, max_blob_h,
+                                        max_blob_pixel_cnt, blob_pixel_density);
+
+                                tblob.r = max_blob_r;
+                                tblob.c = max_blob_c;
+                                tblob.w = max_blob_w;
+                                tblob.h = max_blob_h;
+                                tblob.number = blob_cnt;
+                                tblob.next = NULL;
+
+                                if (FCW_BlobFindIdentical(bhead, &tblob) == false) {
+                                    blob_cnt++;
+                                    FCW_BlobAdd(bhead, &tblob);
+                                } else {
+                                    memset(&tblob, 0x0, sizeof(blob));
+                                }
                             }
                         }
-//                        else {
-//                            if (r <= 50 && c >= submatrix.matrix.size2/2) {
-//                                dbg("Fail: Max blob (%d, %d) with  (%d, %d) %d %.02lf", 
-//                                        max_blob_r, max_blob_c, max_blob_w, max_blob_h,
-//                                        max_blob_pixel_cnt, blob_pixel_density);
-//                            }
-//                        }
 
                         blob_pixel_cnt = 0;
                         blob_c = blob_w = blob_h = -1;
@@ -1022,27 +1032,15 @@ bool FCW_BlobGenerator(const gsl_matrix* imgy, uint32_t peak_idx, blob** bhead)
                         max_blob_h = -1;
                         blob_pixel_density = 0;
                     }
+                } else {
+                    if (has_neighborhood == false && --stop_wall_cnt <= 1) {
+                        goto examine;
+                    }
                 }
             }
         }
     }
 
-//    dbg("Before arrange");
-//    curblob = *bhead;
-//    while (curblob!= NULL) {
-//        dbg("[%d,%d] with [%d,%d]", curblob->r, curblob->c, curblob->w, curblob->h);
-//        curblob = curblob->next;
-//    }
-//
-//    FCW_BlobRearrange(bhead);
-//
-//    dbg("After arrange");
-//    curblob = *bhead;
-//    while (curblob!= NULL) {
-//        dbg("[%d,%d] with [%d,%d]", curblob->r, curblob->c, curblob->w, curblob->h);
-//        curblob = curblob->next;
-//    }
-//    printf("\n");
     return true;
 }
 
@@ -1508,9 +1506,9 @@ bool FCW_UpdateBlobByEdge(const gsl_matrix* imgy, blob*  blob)
 
     for (c=0 ; c<((imgy->size2 / 4) - 2) ; ++c) {
         imgy_block = gsl_matrix_submatrix((gsl_matrix*)imgy, 
-                                                        0, 
+                                                        imgy->size1 >> 1, 
                                                         c, 
-                                                        imgy->size1, 
+                                                        imgy->size1 >> 1, 
                                                         2);
 
         magnitude = 0;
@@ -1523,7 +1521,7 @@ bool FCW_UpdateBlobByEdge(const gsl_matrix* imgy, blob*  blob)
 
         vedge_strength = (magnitude / (double)(imgy_block.matrix.size1*imgy_block.matrix.size2));
 
-        if (vedge_strength > 30 && vedge_strength > max_vedge_strength) {
+        if (vedge_strength > 25 && vedge_strength > max_vedge_strength) {
             max_vedge_strength = vedge_strength;
             max_vedge_c = c;
             dbg("%.02lf at %d", max_vedge_strength, c);
@@ -1545,9 +1543,9 @@ bool FCW_UpdateBlobByEdge(const gsl_matrix* imgy, blob*  blob)
 
     for (c=imgy->size2 - 2 ; c>((imgy->size2 * 3 / 4) - 2) ; --c) {
         imgy_block = gsl_matrix_submatrix((gsl_matrix*)imgy, 
-                                                        0, 
+                                                        imgy->size1 >> 1, 
                                                         c, 
-                                                        imgy->size1, 
+                                                        imgy->size1 >> 1, 
                                                         2);
         magnitude = 0;
 
@@ -1559,7 +1557,7 @@ bool FCW_UpdateBlobByEdge(const gsl_matrix* imgy, blob*  blob)
 
         vedge_strength = (magnitude / (double)(imgy_block.matrix.size1*imgy_block.matrix.size2));
 
-        if (vedge_strength > 30 && vedge_strength > max_vedge_strength) {
+        if (vedge_strength > 25 && vedge_strength > max_vedge_strength) {
             max_vedge_strength = vedge_strength;
             max_vedge_c = c;
             dbg("%.02lf at %d", max_vedge_strength, c);

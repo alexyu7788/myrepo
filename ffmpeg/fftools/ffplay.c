@@ -1047,8 +1047,8 @@ static int upload_texture(SDL_Texture **tex, AVFrame *frame, struct SwsContext *
                                 heatmap,
                                 &roi); 
 
-                memset(frame->data[1], 128, sizeof(uint8_t)*frame->linesize[1]*frame->height/2);
-                memset(frame->data[2], 128, sizeof(uint8_t)*frame->linesize[2]*frame->height/2);
+//                memset(frame->data[1], 128, sizeof(uint8_t)*frame->linesize[1]*frame->height/2);
+//                memset(frame->data[2], 128, sizeof(uint8_t)*frame->linesize[2]*frame->height/2);
 
                 ret = SDL_UpdateYUVTexture(fcw_texture[FCW_WINDOW_EDGE], NULL, vedge, frame->linesize[0],
                                            frame->data[1], frame->linesize[1],

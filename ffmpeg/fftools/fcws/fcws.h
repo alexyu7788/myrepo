@@ -26,6 +26,7 @@ typedef struct blob {
     int c;
     int w;
     int h;
+    float density;
     struct blob* next;
 }blob;
 
