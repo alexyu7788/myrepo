@@ -58,7 +58,9 @@ gsl_matrix_char*    m_heatmap_id = NULL;
 
 uint64_t frame_count = 0;
 
-
+#define VehicleWidth 1650   //mm
+#define EFL          2.7    //mm
+#define PixelSize    2.8    //um = 10^-3 mm
 
 
 bool FCW_Init()
@@ -240,7 +242,7 @@ bool FCW_DoDetection(
     // Update HeatMap
     FCW_UpdateVehicleHeatMap(m_heatmap, &m_vcs);
 
-    //FCW_UpdateVCStatus(m_heatmap, &m_vcs);
+    FCW_UpdateVCStatus(m_heatmap, &m_vcs);
 
     memset(vcs, 0x0, sizeof(VehicleCandidates));
 
@@ -1201,15 +1203,9 @@ bool FCW_VehicleCandidateGenerate(
             FCW_CheckBlobValid(imgy, vedge_imgy, cur);
 
             if (cur->valid) {
-                dbg("\033[1;33mVehicle %d at (%d,%d) with (%d,%d)\033[m\n\n",
-                        cur->number,
-                        cur->r,
-                        cur->c,
-                        cur->w,
-                        cur->h);
 
                 vcs->vc[vcs->vc_count].m_valid  = true;
-                vcs->vc[vcs->vc_count].m_dist   = 0;
+                vcs->vc[vcs->vc_count].m_dist   = FCW_GetObjDist(cur->w);
                 vcs->vc[vcs->vc_count].m_id     = cur->number;
 
                 vcs->vc[vcs->vc_count].m_r      = cur->r;
@@ -1218,6 +1214,14 @@ bool FCW_VehicleCandidateGenerate(
                 vcs->vc[vcs->vc_count].m_h      = cur->h;
 
                 vcs->vc[vcs->vc_count].m_st     = Disappear;
+
+                dbg("\033[1;33mVehicle %d at (%d,%d) with (%d,%d), dist %.02lfm\033[m\n\n",
+                        vcs->vc[vcs->vc_count].m_id,
+                        vcs->vc[vcs->vc_count].m_r,
+                        vcs->vc[vcs->vc_count].m_c,
+                        vcs->vc[vcs->vc_count].m_w,
+                        vcs->vc[vcs->vc_count].m_h,
+                        vcs->vc[vcs->vc_count].m_dist);
 
                 vcs->vc_count++;
             }
@@ -1506,9 +1510,9 @@ bool FCW_UpdateBlobByEdge(const gsl_matrix* imgy, blob*  blob)
 
     for (c=0 ; c<((imgy->size2 / 4) - 2) ; ++c) {
         imgy_block = gsl_matrix_submatrix((gsl_matrix*)imgy, 
-                                                        imgy->size1 >> 1, 
+                                                        0, 
                                                         c, 
-                                                        imgy->size1 >> 1, 
+                                                        imgy->size1, 
                                                         2);
 
         magnitude = 0;
@@ -1521,7 +1525,7 @@ bool FCW_UpdateBlobByEdge(const gsl_matrix* imgy, blob*  blob)
 
         vedge_strength = (magnitude / (double)(imgy_block.matrix.size1*imgy_block.matrix.size2));
 
-        if (vedge_strength > 25 && vedge_strength > max_vedge_strength) {
+        if (vedge_strength > 30 && vedge_strength > max_vedge_strength) {
             max_vedge_strength = vedge_strength;
             max_vedge_c = c;
             dbg("%.02lf at %d", max_vedge_strength, c);
@@ -1543,9 +1547,9 @@ bool FCW_UpdateBlobByEdge(const gsl_matrix* imgy, blob*  blob)
 
     for (c=imgy->size2 - 2 ; c>((imgy->size2 * 3 / 4) - 2) ; --c) {
         imgy_block = gsl_matrix_submatrix((gsl_matrix*)imgy, 
-                                                        imgy->size1 >> 1, 
+                                                        0, 
                                                         c, 
-                                                        imgy->size1 >> 1, 
+                                                        imgy->size1, 
                                                         2);
         magnitude = 0;
 
@@ -1557,7 +1561,7 @@ bool FCW_UpdateBlobByEdge(const gsl_matrix* imgy, blob*  blob)
 
         vedge_strength = (magnitude / (double)(imgy_block.matrix.size1*imgy_block.matrix.size2));
 
-        if (vedge_strength > 25 && vedge_strength > max_vedge_strength) {
+        if (vedge_strength > 30 && vedge_strength > max_vedge_strength) {
             max_vedge_strength = vedge_strength;
             max_vedge_c = c;
             dbg("%.02lf at %d", max_vedge_strength, c);
@@ -2012,4 +2016,10 @@ bool FCW_EdgeDetection(gsl_matrix* src, gsl_matrix* dst, gsl_matrix_ushort* grad
     FCW_NonMaximum_Suppression(dst, dir, gradient);
 
     return true;
+}
+
+double FCW_GetObjDist(double pixel)
+{
+    // d = W * f / w 
+    return (VehicleWidth * (EFL / 2.0)) / (pixel * PixelSize);
 }

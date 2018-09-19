@@ -1026,11 +1026,11 @@ static int upload_texture(SDL_Texture **tex, AVFrame *frame, struct SwsContext *
                 roi.point[ROI_RIGHTTOP].r = frame->height / 6;
                 roi.point[ROI_RIGHTTOP].c = frame->width * 6 / 10;
 
-                roi.point[ROI_LEFTBOTTOM].r = frame->height * 5 / 6;
-                roi.point[ROI_LEFTBOTTOM].c = frame->width / 10;
+                roi.point[ROI_LEFTBOTTOM].r = frame->height * 18 / 20;
+                roi.point[ROI_LEFTBOTTOM].c = frame->width / 20;
 
-                roi.point[ROI_RIGHTBOTTOM].r = frame->height * 5 / 6;
-                roi.point[ROI_RIGHTBOTTOM].c = frame->width * 9 / 10;
+                roi.point[ROI_RIGHTBOTTOM].r = frame->height * 18 / 20;
+                roi.point[ROI_RIGHTBOTTOM].c = frame->width * 19 / 20;
 
                 roi.size = ROI_TOTAL;
 
@@ -1219,6 +1219,10 @@ static void video_image_display(VideoState *is)
 
         }
 
+        SDL_SetRenderDrawColor(renderer, 0xff, 0xff, 0, 0xff);
+        for (int i=0 ; i<ROI_TOTAL ; i++)
+            SDL_RenderDrawLine(renderer, roi.point[i%ROI_TOTAL].c, roi.point[i%ROI_TOTAL].r, roi.point[(i+1)%ROI_TOTAL].c, roi.point[(i+1)%ROI_TOTAL].r);
+
         // Draw vertical histogram
         SDL_SetRenderDrawColor(renderer, 0, 0, 0xff, 0xff);
 
@@ -1250,9 +1254,8 @@ static void video_image_display(VideoState *is)
         //SDL_RenderDrawLine(fcw_renderer[FCW_WINDOW_SHADOW], rect.w / 2, 0, rect.w / 2, rect.h);
         //SDL_RenderDrawLine(fcw_renderer[FCW_WINDOW_SHADOW], 0, rect.h / 2, rect.w, rect.h / 2);
 
-        for (int i=0 ; i<ROI_TOTAL ; i++) {
+        for (int i=0 ; i<ROI_TOTAL ; i++)
             SDL_RenderDrawLine(fcw_renderer[FCW_WINDOW_SHADOW], roi.point[i%ROI_TOTAL].c, roi.point[i%ROI_TOTAL].r, roi.point[(i+1)%ROI_TOTAL].c, roi.point[(i+1)%ROI_TOTAL].r);
-        }
 
         // Draw rectangle of candidate
         SDL_SetRenderDrawColor(fcw_renderer[FCW_WINDOW_VEHICLE], 0, 0xff, 0, 0xff);

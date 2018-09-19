@@ -20,8 +20,8 @@
 #define DEBUG
 
 #ifdef DEBUG
-#define dbg(format, args...) printf("[%s][%s][%d] " format "\n", __FILE__, __func__, __LINE__, ##args)
-//#define dbg(format, args...) printf("[%d] " format "\n", __LINE__, ##args)
+//#define dbg(format, args...) printf("[%s][%s][%d] " format "\n", __FILE__, __func__, __LINE__, ##args)
+#define dbg(format, args...) printf("[%d] " format "\n", __LINE__, ##args)
 #else
 #define dbg(format, args...)
 #endif

@@ -116,6 +116,9 @@ bool FCW_UpdateVCStatus(gsl_matrix* heatmap, VehicleCandidates* vcs);
 
 bool FCW_EdgeDetection(gsl_matrix* src, gsl_matrix* dst, gsl_matrix_ushort* gradient, gsl_matrix_char* dir, int direction);
 
+double FCW_GetObjDist(double pixel);
+
+double FCW_GetObjWidth(double objdist);
 //class CFCWS {
 //    protected:
 //        gsl_matrix*         m_imgy;
