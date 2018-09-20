@@ -110,9 +110,11 @@ bool FCW_CheckBlobByVerticalEdge(const gsl_matrix* edged_imgy, blob* cur);
 
 bool FCW_CheckBlobValid(const gsl_matrix* imgy, const gsl_matrix* edged_imgy, blob* cur);
 
-bool FCW_UpdateVehicleHeatMap(gsl_matrix* heatmap, VehicleCandidates* vcs); 
+bool FCW_UpdateVehicleHeatMap(gsl_matrix* heatmap, gsl_matrix_char* heatmap_id, VehicleCandidates* vcs); 
 
-bool FCW_UpdateVCStatus(gsl_matrix* heatmap, VehicleCandidates* vcs);
+bool FCW_UpdateVCStatus(gsl_matrix* heatmap, gsl_matrix_char* heatmap_id, VehicleCandidates* vcs);
+
+bool FCW_ResetVCID(VehicleCandidates* vcs);
 
 bool FCW_EdgeDetection(gsl_matrix* src, gsl_matrix* dst, gsl_matrix_ushort* gradient, gsl_matrix_char* dir, int direction);
 
