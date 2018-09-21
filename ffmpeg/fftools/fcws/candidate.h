@@ -19,6 +19,7 @@ typedef struct Candidate {
     uint32_t m_w;
     uint32_t m_h;
     CandidateStatus m_st;
+    struct Candidate* m_next;
 }Candidate;
 
 typedef struct VehicleCandidates {

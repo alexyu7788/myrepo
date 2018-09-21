@@ -240,7 +240,7 @@ bool FCW_DoDetection(
                                 hori_hist,
                                 &m_vcs);
 
-    FCW_ResetVCID(&m_vcs);
+    //FCW_ResetVCID(&m_vcs);
 
     // Update HeatMap
     FCW_UpdateVehicleHeatMap(m_heatmap, m_heatmap_id, &m_vcs);
@@ -1685,11 +1685,16 @@ bool FCW_CheckBlobValid(const gsl_matrix* imgy, const gsl_matrix* vedge_imgy, bl
 #define HeatMapDecrease 10.0
 #define HeatMapAppearThreshold   180 
 
+Candidate* m_cand_head = NULL;
+
 bool FCW_UpdateVehicleHeatMap(gsl_matrix* heatmap, gsl_matrix_char* heatmap_id, VehicleCandidates* vcs)
 {
     bool pixel_hit = false;
     uint32_t i, r, c;
     double val;
+    double dist;
+    Candidate *cur_cand;
+    point midpoint, cur_cand_midpoint;
 
     if (!heatmap || !vcs) {
         dbg();
@@ -1721,14 +1726,40 @@ bool FCW_UpdateVehicleHeatMap(gsl_matrix* heatmap, gsl_matrix_char* heatmap_id, 
 
                 if (i < vcs->vc_count && val >= HeatMapAppearThreshold) {
                     //dbg("[%d,%d] belongs to vc[%d]=%d", r, c, i, vcs->vc[i].m_id);
-                    gsl_matrix_char_set(heatmap_id, r, c, vcs->vc[i].m_id);
+                    if (!m_cand_head)
+                        gsl_matrix_char_set(heatmap_id, r, c, vcs->vc[i].m_id);
+                    else {
+                        // Find nearest internal candidate.
+                        midpoint.r = vcs->vc[i].m_r + vcs->vc[i].m_h/2;
+                        midpoint.c = vcs->vc[i].m_c + vcs->vc[i].m_w/2;
+
+                        cur_cand = m_cand_head;
+
+                        while (cur_cand) {
+                            cur_cand_midpoint.r = cur_cand->m_r + cur_cand->m_h/2;
+                            cur_cand_midpoint.c = cur_cand->m_c + cur_cand->m_w/2;
+
+                            dist = sqrt(pow(midpoint.r - cur_cand_midpoint.r, 2.0) + pow(midpoint.c - cur_cand_midpoint.c, 2.0));
+
+                            if (dist <= cur_cand->m_w/2 || dist <= cur_cand->m_h/2) 
+                                break;
+
+                            cur_cand = cur_cand->m_next;
+                        }
+
+                        if (cur_cand)
+                            gsl_matrix_char_set(heatmap_id, r, c, cur_cand->m_id);
+                        else {
+
+                        }
+                    }
                 }
             } else {
                 val -= HeatMapDecrease;
                 if (val <= 0)
                     val = 0;
 
-                if (gsl_matrix_get(heatmap, r, c) < HeatMapAppearThreshold && gsl_matrix_char_get(heatmap_id, r, c) != -1) {
+                if (gsl_matrix_get(heatmap, r, c) < HeatMapAppearThreshold /*&& gsl_matrix_char_get(heatmap_id, r, c) != -1*/) {
                     //dbg("[%d,%d] %d disappear", r, c, gsl_matrix_char_get(heatmap_id, r, c));
                     gsl_matrix_char_set(heatmap_id, r, c, -1);
                 }
@@ -2141,12 +2172,22 @@ bool FCW_ResetVCID(VehicleCandidates* vcs)
     }
 
     for (i=0 ; i<vcs->vc_count ; ++i) {
+        dbg("Before\t vc[%d] :id %d, [%d,%d] with [%d,%d]",
+                i,
+                vcs->vc[i].m_id,
+                vcs->vc[i].m_r,
+                vcs->vc[i].m_c,
+                vcs->vc[i].m_w,
+                vcs->vc[i].m_h);
+    }
+
+    for (i=0 ; i<vcs->vc_count ; ++i) {
         for (j=i+1 ; j<vcs->vc_count ; ++j) {
             if (vcs->vc[i].m_valid = true && vcs->vc[j].m_valid == true) {
                 if ((vcs->vc[i].m_r > vcs->vc[j].m_r && vcs->vc[i].m_c > vcs->vc[j].m_c) ||
                     (vcs->vc[i].m_r == vcs->vc[j].m_r && vcs->vc[i].m_c > vcs->vc[j].m_c) ||
                     (vcs->vc[i].m_r > vcs->vc[j].m_r && vcs->vc[i].m_c == vcs->vc[j].m_c)) {
-                    memcpy(&temp_cand , &vcs->vc[i], sizeof(Candidate));
+                   memcpy(&temp_cand , &vcs->vc[i], sizeof(Candidate));
                     memcpy(&vcs->vc[i], &vcs->vc[j], sizeof(Candidate));
                     memcpy(&vcs->vc[j], &temp_cand , sizeof(Candidate));
                 }
@@ -2155,8 +2196,17 @@ bool FCW_ResetVCID(VehicleCandidates* vcs)
     }
 
     for (id=0 ; id<vcs->vc_count ; ++id)
-        vcs->vc[vcs->vc_count].m_id = id;
+        vcs->vc[id].m_id = id;
 
+    for (i=0 ; i<vcs->vc_count ; ++i) {
+        dbg("After\t vc[%d] :id %d, [%d,%d] with [%d,%d]",
+                i,
+                vcs->vc[i].m_id,
+                vcs->vc[i].m_r,
+                vcs->vc[i].m_c,
+                vcs->vc[i].m_w,
+                vcs->vc[i].m_h);
+    }
     return true;
 }
 

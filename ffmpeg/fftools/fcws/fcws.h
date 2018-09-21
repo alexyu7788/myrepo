@@ -38,11 +38,13 @@ enum {
     ROI_TOTAL,
 };
 
+typedef struct point_s {
+    int r;
+    int c;
+}point;
+
 typedef struct roi_s {
-    struct {
-        int r;
-        int c;
-    }point[ROI_TOTAL];
+    point point[ROI_TOTAL];
     int size;
 }roi_t;
 
@@ -109,6 +111,7 @@ bool FCW_CheckBlobByArea(const gsl_matrix* imgy, blob* cur);
 bool FCW_CheckBlobByVerticalEdge(const gsl_matrix* edged_imgy, blob* cur);
 
 bool FCW_CheckBlobValid(const gsl_matrix* imgy, const gsl_matrix* edged_imgy, blob* cur);
+
 
 bool FCW_UpdateVehicleHeatMap(gsl_matrix* heatmap, gsl_matrix_char* heatmap_id, VehicleCandidates* vcs); 
 
