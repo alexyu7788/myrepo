@@ -1709,7 +1709,7 @@ bool FCW_UpdateVehicleHeatMap(gsl_matrix* heatmap, gsl_matrix_char* heatmap_id, 
 
             // this pixel belongs to certain vehicle candidate.
             for (i=0 ; i<vcs->vc_count ; ++i) {
-                if (r >= vcs->vc[i].m_r && r<= vcs->vc[i].m_r + vcs->vc[i].m_h && c >= vcs->vc[i].m_c && c <= vcs->vc[i].m_c + vcs->vc[i].m_w) {
+                if (r >= vcs->vc[i].m_r && r< vcs->vc[i].m_r + vcs->vc[i].m_h && c >= vcs->vc[i].m_c && c < vcs->vc[i].m_c + vcs->vc[i].m_w) {
                     pixel_hit = true;
                     break;
                 }
@@ -1829,8 +1829,8 @@ bool FCW_GetContourOfHeatMap(
 
                 // which new candidate it belongs to.
                 for (i=0 ; i<vcs->vc_count ; ++i) {
-                    if (r >= vcs->vc[i].m_r && r<= vcs->vc[i].m_r + vcs->vc[i].m_h && 
-                        c >= vcs->vc[i].m_c && c <= vcs->vc[i].m_c + vcs->vc[i].m_w) {
+                    if (r >= vcs->vc[i].m_r && r < vcs->vc[i].m_r + vcs->vc[i].m_h && 
+                        c >= vcs->vc[i].m_c && c < vcs->vc[i].m_c + vcs->vc[i].m_w) {
                         which_vc = i;
                         break;
                     }
@@ -1867,6 +1867,15 @@ bool FCW_GetContourOfHeatMap(
                     vc_id = nearest_cand->m_id;
                     dbg("Find nearest candidate %d, (%d,%d), id %d, which_vc %d", vc_id, r, c, gsl_matrix_char_get(heatmap_id, r, c), which_vc);
 
+                    dbg("new vc %d valid %d at (%d,%d) with (%d,%d)",
+                            which_vc,
+                            vcs->vc[which_vc].m_valid,
+                            vcs->vc[which_vc].m_r,
+                            vcs->vc[which_vc].m_c,
+                            vcs->vc[which_vc].m_h,
+                            vcs->vc[which_vc].m_w);
+                            
+
                     heatmap_sm = gsl_matrix_submatrix(heatmap, 
                             vcs->vc[which_vc].m_r,
                             vcs->vc[which_vc].m_c,
@@ -1884,7 +1893,7 @@ bool FCW_GetContourOfHeatMap(
                             if (gsl_matrix_get(&heatmap_sm.matrix, rr, cc) < HeatMapAppearThreshold)
                                 continue;
 
-                            if (gsl_matrix_char_get(&heatmapid_sm.matrix, r, c) != -1)
+                            if (gsl_matrix_char_get(&heatmapid_sm.matrix, rr, cc) != -1)
                                 continue;
 
                             gsl_matrix_char_set(&heatmapid_sm.matrix, rr, cc, vc_id);
@@ -2087,6 +2096,11 @@ bool FCW_GetContourOfHeatMap(
                             find_pixel = false;
                             break;
                         }
+
+                        dbg("(%d,%d) dir %d",
+                                rr, 
+                                cc,
+                                nextdir);
                     }//Scan different direction to get neighbour.
 
                     if (startr == rr && startc == cc) {
@@ -2355,7 +2369,7 @@ bool FCW_GetContourOfHeatMap(
     dbg();
         cur_cand = cur_cand->m_next;
     }
-
+    dbg();
     memset(vcs, 0x0, sizeof(VehicleCandidates));
     dbg();
     cur_cand = *cand_head;
