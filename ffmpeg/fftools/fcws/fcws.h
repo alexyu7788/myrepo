@@ -117,9 +117,8 @@ bool FCW_UpdateVehicleHeatMap(gsl_matrix* heatmap, gsl_matrix_char* heatmap_id, 
 
 bool FCW_GetContourOfHeatMap(
     gsl_matrix* heatmap, 
-    gsl_matrix_char* 
-    heatmap_id, 
-    Candidate* cand_head,
+    gsl_matrix_char* heatmap_id, 
+    Candidate** cand_head,
     VehicleCandidates* vcs
     );
 
