@@ -115,6 +115,14 @@ bool FCW_CheckBlobValid(const gsl_matrix* imgy, const gsl_matrix* edged_imgy, bl
 
 bool FCW_UpdateVehicleHeatMap(gsl_matrix* heatmap, gsl_matrix_char* heatmap_id, VehicleCandidates* vcs); 
 
+bool FCW_GetContourOfHeatMap(
+    gsl_matrix* heatmap, 
+    gsl_matrix_char* 
+    heatmap_id, 
+    Candidate* cand_head,
+    VehicleCandidates* vcs
+    );
+
 bool FCW_UpdateVCStatus(gsl_matrix* heatmap, gsl_matrix_char* heatmap_id, VehicleCandidates* vcs);
 
 bool FCW_ResetVCID(VehicleCandidates* vcs);
