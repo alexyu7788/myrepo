@@ -192,6 +192,7 @@ bool FCW_DoDetection(
         gsl_vector* hori_hist, 
         gsl_vector* grayscale_hist, 
         VehicleCandidates *vcs,
+        VehicleCandidates *vcs2,
         uint8_t* vedge,
         uint8_t* shadow,
         uint8_t* heatmap,
@@ -244,7 +245,7 @@ bool FCW_DoDetection(
     // Update HeatMap
     FCW_UpdateVehicleHeatMap(m_heatmap, m_heatmap_id, &m_vcs);
 
-    FCW_GetContourOfHeatMap(m_heatmap, m_heatmap_id, &m_cand_head, &m_vcs);
+    FCW_GetContourOfHeatMap(m_heatmap, m_heatmap_id, &m_cand_head, &m_vcs, vcs2);
 
     memset(vcs, 0x0, sizeof(VehicleCandidates));
 
@@ -680,25 +681,25 @@ bool FCW_BlobRearrange(blob** bhead)
     if (!head)
         return false;
 
-    dbg("--------Start of Rearrange----------");
+    //dbg("--------Start of Rearrange----------");
 redo:
 
     cur = head;
     while (cur) {
-        dbg("=====checking cur blob(%d,%d,%d)======",
-                    cur->r,
-                    cur->c,
-                    cur->w);
+        //dbg("=====checking cur blob(%d,%d,%d)======",
+        //            cur->r,
+        //            cur->c,
+        //            cur->w);
 
         next = cur->next;
         while (next) {
-            dbg("next blob(%d,%d,%d) <==> cur blob(%d,%d,%d).",
-                    next->r,
-                    next->c,
-                    next->w,
-                    cur->r,
-                    cur->c,
-                    cur->w);
+            //dbg("next blob(%d,%d,%d) <==> cur blob(%d,%d,%d).",
+            //        next->r,
+            //        next->c,
+            //        next->w,
+            //        cur->r,
+            //        cur->c,
+            //        cur->w);
 
             // next blob is above cur blob.
             if (next->r < cur->r) {
@@ -715,13 +716,13 @@ redo:
                  */
                 if ((/*(a)*/next->c >= cur->c && next->c <= cur->c + cur->w) ||
                     (/*(b)*/next->c < cur->c && next->c + next->w > cur->c && next->c + next->w <= cur->c + cur->w)) {
-                    dbg("next blob(%d,%d,%d) is above cur blob(%d,%d,%d).",
-                            next->r,
-                            next->c,
-                            next->w,
-                            cur->r,
-                            cur->c,
-                            cur->w);
+                    //dbg("next blob(%d,%d,%d) is above cur blob(%d,%d,%d).",
+                    //        next->r,
+                    //        next->c,
+                    //        next->w,
+                    //        cur->r,
+                    //        cur->c,
+                    //        cur->w);
 
                     pre = cur;
                     while (pre->next != next)
@@ -732,13 +733,13 @@ redo:
                     next = pre;
                 } else if (/*(c)*/cur->c > next->c && cur->c + cur->w <= next->c + next->w) {
                     if ((cur->r - next->r) < (cur->w / 2)) {
-                        dbg("\033[1;33mnext blob(%d,%d,%d) is above cur blob(%d,%d,%d).\033[m",
-                                next->r,
-                                next->c,
-                                next->w,
-                                cur->r,
-                                cur->c,
-                                cur->w);
+                        //dbg("\033[1;33mnext blob(%d,%d,%d) is above cur blob(%d,%d,%d).\033[m",
+                        //        next->r,
+                        //        next->c,
+                        //        next->w,
+                        //        cur->r,
+                        //        cur->c,
+                        //        cur->w);
 
                         //dbg("Update cur blob.");
                         pre = cur;
@@ -769,13 +770,13 @@ redo:
                  */
                 if (/*(d)*/(cur->c >= next->c && cur->c <= next->c + next->w) ||
                     /*(e)*/(cur->c < next->c && cur->c + cur->w > next->c && cur->c + cur->w <= next->c + next->w)) {
-                    dbg("next blob(%d,%d,%d) is below cur blob(%d,%d,%d).",
-                            next->r,
-                            next->c,
-                            next->w,
-                            cur->r,
-                            cur->c,
-                            cur->w);
+                    //dbg("next blob(%d,%d,%d) is below cur blob(%d,%d,%d).",
+                    //        next->r,
+                    //        next->c,
+                    //        next->w,
+                    //        cur->r,
+                    //        cur->c,
+                    //        cur->w);
 
                     //dbg("Update cur blob.");
                     pre = cur;
@@ -790,7 +791,7 @@ redo:
                     free(next);
                     next = pre;
 
-                    dbg("redo");
+                    //dbg("redo");
                     goto redo;
                 }
             // next overlaps cur.
@@ -812,13 +813,13 @@ redo:
                     /*(g)*/(cur->c > next->c && cur->c > next->c + next->w && abs(cur->c - next->c - next->w) < 3) || 
                     /*(h)*/(cur->c < next->c && cur->c + cur->w >= next->c)  || 
                     /*(i)*/(cur->c < next->c && cur->c + cur->w < next->c && abs(cur->c + cur->w - next->c) < 3)) {
-                    dbg("next blob(%d,%d,%d) overlaps cur blob(%d,%d,%d).",
-                            next->r,
-                            next->c,
-                            next->w,
-                            cur->r,
-                            cur->c,
-                            cur->w);
+                    //dbg("next blob(%d,%d,%d) overlaps cur blob(%d,%d,%d).",
+                    //        next->r,
+                    //        next->c,
+                    //        next->w,
+                    //        cur->r,
+                    //        cur->c,
+                    //        cur->w);
 
                     // Merge cur & next
                     if (cur->c > next->c) {
@@ -838,17 +839,17 @@ redo:
                     free(next);
                     next = pre;
 
-                    dbg("redo");
+                    //dbg("redo");
                     goto redo;
                 }
             }
 
             next = next->next;
-            printf("\n");
+            //printf("\n");
         }
 
         cur = cur->next;
-        printf("\n");
+        //printf("\n");
     }
 
     number = 0;
@@ -859,7 +860,7 @@ redo:
         cur = cur->next;
     }
 
-    dbg("--------End of Rearrange----------");
+    //dbg("--------End of Rearrange----------");
     return true;
 }
 
@@ -923,7 +924,7 @@ bool FCW_BlobGenerator(const gsl_matrix* imgy, uint32_t peak_idx, blob** bhead)
 
     if (peak_idx > BLOB_MARGIN + 1 && peak_idx < (imgy->size1 - BLOB_MARGIN - 1)) {
 
-        dbg("peak index %d", peak_idx);
+        //dbg("peak index %d", peak_idx);
 
         sm_r = peak_idx - BLOB_MARGIN;
         sm_c = 0;
@@ -996,17 +997,17 @@ examine:
                                 blob_pixel_density = max_blob_pixel_cnt / (float)(max_blob_w * max_blob_h);
                             }
 
-                            dbg("Max blob (%d, %d) with  (%d, %d) %d %.02lf", 
-                                    max_blob_r, max_blob_c, max_blob_w, max_blob_h,
-                                    max_blob_pixel_cnt, blob_pixel_density);
+                            //dbg("Max blob (%d, %d) with  (%d, %d) %d %.02lf", 
+                            //        max_blob_r, max_blob_c, max_blob_w, max_blob_h,
+                            //        max_blob_pixel_cnt, blob_pixel_density);
 
                             if (max_blob_h >= 1 &&
                                     ((peak_idx <= imgy->size1 / 3.0 && max_blob_w >= 10 && blob_pixel_density >= 0.2) ||
                                      (peak_idx > imgy->size1 / 3.0 && max_blob_w >= 20 && blob_pixel_density >= 0.55))) {
 
-                                dbg("Valid Max blob (%d, %d) with  (%d, %d) %d %.02lf", 
-                                        max_blob_r, max_blob_c, max_blob_w, max_blob_h,
-                                        max_blob_pixel_cnt, blob_pixel_density);
+                                //dbg("Valid Max blob (%d, %d) with  (%d, %d) %d %.02lf", 
+                                //        max_blob_r, max_blob_c, max_blob_w, max_blob_h,
+                                //        max_blob_pixel_cnt, blob_pixel_density);
 
                                 tblob.r = max_blob_r;
                                 tblob.c = max_blob_c;
@@ -1108,8 +1109,8 @@ bool FCW_VehicleCandidateGenerate(
         if (cur_peak < (max_peak * 0.6))
             break;
 
-        printf("\n");
-        dbg("Search blobs for current peak %d at %d", cur_peak, cur_peak_idx);
+        //printf("\n");
+        //dbg("Search blobs for current peak %d at %d", cur_peak, cur_peak_idx);
 
         gsl_vector_set(m_temp_hori_hist, cur_peak_idx, 0);
 
@@ -1119,22 +1120,22 @@ bool FCW_VehicleCandidateGenerate(
     if (m_blob_head) {
         blob *curblob = NULL;
 
-        dbg("Before arrange");
-        curblob = m_blob_head;
-        while (curblob!= NULL) {
-            dbg("[%d,%d] with [%d,%d]", curblob->r, curblob->c, curblob->w, curblob->h);
-            curblob = curblob->next;
-        }
+        //dbg("Before arrange");
+        //curblob = m_blob_head;
+        //while (curblob!= NULL) {
+        //    dbg("[%d,%d] with [%d,%d]", curblob->r, curblob->c, curblob->w, curblob->h);
+        //    curblob = curblob->next;
+        //}
 
         FCW_BlobRearrange(&m_blob_head);
 
-        dbg("After arrange");
-        curblob = m_blob_head;
-        while (curblob!= NULL) {
-            dbg("[%d,%d] with [%d,%d]", curblob->r, curblob->c, curblob->w, curblob->h);
-            curblob = curblob->next;
-        }
-        printf("\n");
+        //dbg("After arrange");
+        //curblob = m_blob_head;
+        //while (curblob!= NULL) {
+        //    dbg("[%d,%d] with [%d,%d]", curblob->r, curblob->c, curblob->w, curblob->h);
+        //    curblob = curblob->next;
+        //}
+        //printf("\n");
 
         blob *cur = m_blob_head;
         int left_idx, right_idx, bottom_idx;
@@ -1144,11 +1145,11 @@ bool FCW_VehicleCandidateGenerate(
 
         while (cur != NULL) {
 
-            dbg("Before scaleup: blob at (%d,%d) with (%d,%d)",
-                    cur->r,
-                    cur->c,
-                    cur->w,
-                    cur->h);
+            //dbg("Before scaleup: blob at (%d,%d) with (%d,%d)",
+            //        cur->r,
+            //        cur->c,
+            //        cur->w,
+            //        cur->h);
 
             //scale up searching region of blob with 1/4 time of width on the left & right respectively.
             bottom_idx      = cur->r;
@@ -1188,19 +1189,19 @@ bool FCW_VehicleCandidateGenerate(
                                                    vehicle_height,
                                                    vehicle_width);
 
-            dbg("Before Edge: Vehicle at (%d,%d) with (%d,%d)",
-                    cur->r,
-                    cur->c,
-                    cur->w,
-                    cur->h);
+            //dbg("Before Edge: Vehicle at (%d,%d) with (%d,%d)",
+            //        cur->r,
+            //        cur->c,
+            //        cur->w,
+            //        cur->h);
 
             FCW_UpdateBlobByEdge(&imgy_submatrix.matrix, cur);
 
-            dbg("Before Valid: Vehicle at (%d,%d) with (%d,%d)",
-                    cur->r,
-                    cur->c,
-                    cur->w,
-                    cur->h);
+            //dbg("Before Valid: Vehicle at (%d,%d) with (%d,%d)",
+            //        cur->r,
+            //        cur->c,
+            //        cur->w,
+            //        cur->h);
 
             FCW_CheckBlobValid(imgy, vedge_imgy, cur);
 
@@ -1493,20 +1494,20 @@ bool FCW_UpdateBlobByEdge(const gsl_matrix* imgy, blob*  blob)
         return false;
     }
 
-    dbg("==================");
+    //dbg("==================");
 
-    dbg("Before (%d, %d) with (%d, %d)",
-        blob->r,
-        blob->c,
-        blob->w,
-        blob->h);
+    //dbg("Before (%d, %d) with (%d, %d)",
+    //    blob->r,
+    //    blob->c,
+    //    blob->w,
+    //    blob->h);
 
     bottom_idx  = blob->r + blob->h;
     left_idx    = blob->c;
     right_idx   = blob->c + blob->w - 1;
 
     // update left idx
-    dbg("Update left idx");
+    //dbg("Update left idx");
     max_vedge_c = 0;
     max_vedge_strength = 0;
 
@@ -1530,7 +1531,7 @@ bool FCW_UpdateBlobByEdge(const gsl_matrix* imgy, blob*  blob)
         if (vedge_strength > 30 && vedge_strength > max_vedge_strength) {
             max_vedge_strength = vedge_strength;
             max_vedge_c = c;
-            dbg("%.02lf at %d", max_vedge_strength, c);
+            //dbg("%.02lf at %d", max_vedge_strength, c);
         }
     }
 
@@ -1543,7 +1544,7 @@ bool FCW_UpdateBlobByEdge(const gsl_matrix* imgy, blob*  blob)
 //    dbg("blob->c %d", blob->c);
 
     // upate right idx
-    dbg("Update right idx");
+    //dbg("Update right idx");
     max_vedge_c = 0;
     max_vedge_strength = 0;
 
@@ -1566,7 +1567,7 @@ bool FCW_UpdateBlobByEdge(const gsl_matrix* imgy, blob*  blob)
         if (vedge_strength > 30 && vedge_strength > max_vedge_strength) {
             max_vedge_strength = vedge_strength;
             max_vedge_c = c;
-            dbg("%.02lf at %d", max_vedge_strength, c);
+            //dbg("%.02lf at %d", max_vedge_strength, c);
         }
     }
 
@@ -1582,11 +1583,11 @@ bool FCW_UpdateBlobByEdge(const gsl_matrix* imgy, blob*  blob)
     blob->r = bottom_idx - blob->h;
     blob->valid = true;
 
-    dbg("After (%d, %d) with (%d, %d)",
-        blob->r,
-        blob->c,
-        blob->w,
-        blob->h);
+    //dbg("After (%d, %d) with (%d, %d)",
+    //    blob->r,
+    //    blob->c,
+    //    blob->w,
+    //    blob->h);
 
     return true;
 }
@@ -1619,7 +1620,7 @@ bool FCW_CheckBlobByArea(const gsl_matrix* imgy, blob* cur)
 
     area_ratio = pixel_cnt / (float)area;
 
-    dbg("Area: %d / %d = %.02f", pixel_cnt, area, area_ratio);
+    //dbg("Area: %d / %d = %.02f", pixel_cnt, area, area_ratio);
 
     if (/*area_ratio < 0.1 || */area_ratio > 0.8)
         cur->valid = false;
@@ -1655,7 +1656,7 @@ bool FCW_CheckBlobByVerticalEdge(const gsl_matrix* vedge_imgy, blob* cur)
 
     percentage = pixel_cnt / (float)area;
 
-    dbg("VerticalEdge: %d / %d = %.04f", pixel_cnt, area, percentage);
+    //dbg("VerticalEdge: %d / %d = %.04f", pixel_cnt, area, percentage);
 
     if (percentage < 0.175)
         cur->valid = false;
@@ -1682,7 +1683,7 @@ bool FCW_CheckBlobValid(const gsl_matrix* imgy, const gsl_matrix* vedge_imgy, bl
 
 #define HeatMapIncrease 10.0
 #define HeatMapDecrease 10.0
-#define HeatMapAppearThreshold   180 
+#define HeatMapAppearThreshold   100 
 
 
 bool FCW_UpdateVehicleHeatMap(gsl_matrix* heatmap, gsl_matrix_char* heatmap_id, VehicleCandidates* vcs)
@@ -1721,49 +1722,18 @@ bool FCW_UpdateVehicleHeatMap(gsl_matrix* heatmap, gsl_matrix_char* heatmap_id, 
                 val += HeatMapIncrease;
                 if (val >= 255)
                     val = 255;
-
-//                if (i < vcs->vc_count && val >= HeatMapAppearThreshold) {
-//                    //dbg("[%d,%d] belongs to vc[%d]=%d", r, c, i, vcs->vc[i].m_id);
-//                    if (!m_cand_head)
-//                        gsl_matrix_char_set(heatmap_id, r, c, vcs->vc[i].m_id);
-//                    else {
-//                        // Find nearest internal candidate.
-//                        midpoint.r = vcs->vc[i].m_r + vcs->vc[i].m_h/2;
-//                        midpoint.c = vcs->vc[i].m_c + vcs->vc[i].m_w/2;
-//
-//                        cur_cand = m_cand_head;
-//
-//                        while (cur_cand) {
-//                            cur_cand_midpoint.r = cur_cand->m_r + cur_cand->m_h/2;
-//                            cur_cand_midpoint.c = cur_cand->m_c + cur_cand->m_w/2;
-//
-//                            dist = sqrt(pow(midpoint.r - cur_cand_midpoint.r, 2.0) + pow(midpoint.c - cur_cand_midpoint.c, 2.0));
-//
-//                            if (dist <= cur_cand->m_w/2 || dist <= cur_cand->m_h/2) 
-//                                break;
-//
-//                            cur_cand = cur_cand->m_next;
-//                        }
-//
-//                        if (cur_cand)
-//                            gsl_matrix_char_set(heatmap_id, r, c, cur_cand->m_id);
-//                        else {
-//
-//                        }
-//                    }
-//                }
             } else {
                 val -= HeatMapDecrease;
                 if (val <= 0)
                     val = 0;
-
-                if (gsl_matrix_get(heatmap, r, c) < HeatMapAppearThreshold /*&& gsl_matrix_char_get(heatmap_id, r, c) != -1*/) {
-                    //dbg("[%d,%d] %d disappear", r, c, gsl_matrix_char_get(heatmap_id, r, c));
-                    gsl_matrix_char_set(heatmap_id, r, c, -1);
-                }
             }
 
             gsl_matrix_set(heatmap, r, c, val);
+
+            if (val < HeatMapAppearThreshold /*&& gsl_matrix_char_get(heatmap_id, r, c) != -1*/) {
+                //dbg("[%d,%d] %d disappear", r, c, gsl_matrix_char_get(heatmap_id, r, c));
+                gsl_matrix_char_set(heatmap_id, r, c, -1);
+            }
         }
     }
 
@@ -1778,14 +1748,99 @@ typedef enum {
     DIR_LEFTDOWN,
     DIR_LEFT,
     DIR_LEFTUP,
-    DIR_UP
+    DIR_UP,
+    DIR_TOTAL
 }DIR;
+
+
+bool FCW_GetMaxValidRectOfHeapMapID(
+    const gsl_matrix_char* m,
+    rect* rect)
+{
+    bool find;
+    uint32_t r, c;
+    int32_t left, right, top, bottom;
+
+    if (!m || !rect) {
+        dbg();
+        return false;
+    }
+
+    // Find left boundary
+    find = false;
+    for (left=0 ; left<m->size2 ; ++left) {
+        for (r=0 ; r<m->size1 ; ++r) {
+            if (gsl_matrix_char_get(m, r, left) != -1) {
+                find = true;
+                break;
+            }
+        }
+
+        if (find)
+            break;
+    }
+
+    // Find right boundary
+    find = false;
+    for (right=m->size2-1 ; right>0 ; --right) {
+        for (r=0 ; r<m->size1 ; ++r) {
+            if (gsl_matrix_char_get(m, r, right) != -1) {
+                find = true;
+                break;
+            }
+        }
+
+        if (find)
+            break;
+    }
+
+    // Find top boundary
+    find = false;
+    for (top=0 ; top<m->size1 ; ++top) {
+        for (c=0 ; c<m->size2 ; ++c) {
+            if (gsl_matrix_char_get(m, top, c) != -1) {
+                find = true;
+                break;
+            }
+        }
+
+        if (find)
+            break;
+    }
+
+    // Find bottom boundary
+    find = false;
+    for (bottom=m->size1-1 ; bottom>0 ; --bottom) {
+        for (c=0 ; c<m->size2 ; ++c) {
+            if (gsl_matrix_char_get(m, bottom, c) != -1) {
+                find = true;
+                break;
+            }
+        }
+
+        if (find)
+            break;
+    }
+
+    dbg("%d %d %d %d", left, right, top, bottom);
+    if (left >= right || top >= bottom)
+        return false;
+
+    rect->r = top;
+    rect->c = left;
+    rect->w = right - left + 1;
+    rect->h = bottom - top + 1;
+
+    return true;
+}
 
 bool FCW_GetContourOfHeatMap(
     gsl_matrix* heatmap, 
     gsl_matrix_char* heatmap_id, 
     Candidate** cand_head,
-    VehicleCandidates* vcs)
+    VehicleCandidates* vcs,
+    VehicleCandidates* vcs2
+    )
 {
     char vc_id, max_vc_id;
     unsigned char which_vc;
@@ -1793,12 +1848,14 @@ bool FCW_GetContourOfHeatMap(
     uint32_t r, c, rr, cc; 
     uint32_t startr, startc;
     uint32_t left, right, up, down;
+    uint32_t find_fail_cnt;
     DIR nextdir;
     bool find_pixel;
     bool gen_new_cand;
     double dist;
     Candidate *cur_cand, *nearest_cand, *new_cand;
     point midpoint_newcand, midpoint_existedcand;
+    rect max_rect;
     gsl_matrix_view heatmap_sm;
     gsl_matrix_char_view heatmapid_sm;
 
@@ -1817,160 +1874,226 @@ bool FCW_GetContourOfHeatMap(
 
     dbg("vc count %d", vcs->vc_count);
 
-    if (vcs->vc_count > 0) {
-        //Assign an ID to each pixel which exceeds the threshold and does not have an ID yet.
-        for (r=0 ; r<heatmap->size1 ; ++r) {
-            for (c=0 ; c<heatmap->size2 ; ++c) {
-                if (gsl_matrix_get(heatmap, r, c) < HeatMapAppearThreshold)
-                    continue;
+    //Assign an ID to each pixel which exceeds the threshold and does not have an ID yet.
+    for (r=0 ; r<heatmap->size1 ; ++r) {
+        for (c=0 ; c<heatmap->size2 ; ++c) {
+            if (gsl_matrix_get(heatmap, r, c) < HeatMapAppearThreshold)
+                continue;
 
-                if (gsl_matrix_char_get(heatmap_id, r, c) != -1)
-                    continue;
+            if (gsl_matrix_char_get(heatmap_id, r, c) != -1)
+                continue;
 
-                // which new candidate it belongs to.
-                for (i=0 ; i<vcs->vc_count ; ++i) {
-                    if (r >= vcs->vc[i].m_r && r < vcs->vc[i].m_r + vcs->vc[i].m_h && 
+            // which new candidate it belongs to.
+            for (i=0 ; i<vcs->vc_count ; ++i) {
+                if (r >= vcs->vc[i].m_r && r < vcs->vc[i].m_r + vcs->vc[i].m_h && 
                         c >= vcs->vc[i].m_c && c < vcs->vc[i].m_c + vcs->vc[i].m_w) {
-                        which_vc = i;
+                    which_vc = i;
+                    break;
+                }
+            }
+
+            if (vcs->vc[which_vc].m_valid == false)
+                continue;
+
+            dbg("(%d,%d), %lf, id %d", r, c, gsl_matrix_get(heatmap, r, c), gsl_matrix_char_get(heatmap_id, r, c));
+            gen_new_cand = false;
+
+            // Find the nearest existed candidate.
+            nearest_cand = NULL;
+            cur_cand = *cand_head;
+
+            while (cur_cand) {
+                midpoint_newcand.r = vcs->vc[which_vc].m_r + vcs->vc[which_vc].m_h/2;
+                midpoint_newcand.c = vcs->vc[which_vc].m_c + vcs->vc[which_vc].m_w/2;
+
+                midpoint_existedcand.r = cur_cand->m_r + cur_cand->m_h/2;
+                midpoint_existedcand.c = cur_cand->m_c + cur_cand->m_w/2;
+
+                dist = sqrt(pow(midpoint_existedcand.r - midpoint_newcand.r, 2.0) + pow(midpoint_existedcand.c - midpoint_newcand.c, 2.0));
+                dbg("dist %lf between %d and %d", dist, cur_cand->m_id, which_vc);
+                if (dist <= cur_cand->m_w/2 + vcs->vc[which_vc].m_w/2 || dist <= cur_cand->m_h/2 + vcs->vc[which_vc].m_h/2/* || vcs->vc[which_vc].m_w/2 || vcs->vc[which_vc].m_h/2*/) {
+                //if (dist <= cur_cand->m_w/2 || dist <= cur_cand->m_h/2/* || vcs->vc[which_vc].m_w/2 || vcs->vc[which_vc].m_h/2*/) {
+                    nearest_cand = cur_cand;
+                    break;
+                }
+
+                cur_cand = cur_cand->m_next;
+            }
+
+            if (nearest_cand) {
+                vc_id = nearest_cand->m_id;
+                dbg("Find nearest candidate %d(%d,%d,%d,%d), (%d,%d), id %d, which_vc %d", 
+                        vc_id, 
+                        nearest_cand->m_r,
+                        nearest_cand->m_c,
+                        nearest_cand->m_w,
+                        nearest_cand->m_h,
+                        r, 
+                        c, 
+                        gsl_matrix_char_get(heatmap_id, r, c), 
+                        which_vc);
+
+                dbg("new vc %d valid %d at (%d,%d) with (%d,%d)",
+                        which_vc,
+                        vcs->vc[which_vc].m_valid,
+                        vcs->vc[which_vc].m_r,
+                        vcs->vc[which_vc].m_c,
+                        vcs->vc[which_vc].m_w,
+                        vcs->vc[which_vc].m_h);
+
+
+                heatmap_sm = gsl_matrix_submatrix(heatmap, 
+                        vcs->vc[which_vc].m_r,
+                        vcs->vc[which_vc].m_c,
+                        vcs->vc[which_vc].m_h,
+                        vcs->vc[which_vc].m_w);
+
+                heatmapid_sm = gsl_matrix_char_submatrix(heatmap_id, 
+                        vcs->vc[which_vc].m_r,
+                        vcs->vc[which_vc].m_c,
+                        vcs->vc[which_vc].m_h,
+                        vcs->vc[which_vc].m_w);
+
+                for (rr=0 ; rr<heatmap_sm.matrix.size1 ; ++rr) {
+                    for (cc=0 ; cc<heatmap_sm.matrix.size2 ; ++cc) {
+                        if (gsl_matrix_get(&heatmap_sm.matrix, rr, cc) < HeatMapAppearThreshold)
+                            continue;
+
+                        //if (gsl_matrix_char_get(&heatmapid_sm.matrix, rr, cc) != -1)
+                        //    continue;
+
+                        gsl_matrix_char_set(&heatmapid_sm.matrix, rr, cc, vc_id);
+                    }
+                }
+            } else {
+                vc_id = 0;
+                gen_new_cand = true;
+
+                // New candidate needs a new ID.
+                if (*cand_head) {
+                    max_vc_id = 0;
+                    cur_cand = *cand_head;
+                    while (cur_cand) {
+                        if (cur_cand->m_id > max_vc_id)
+                            max_vc_id = cur_cand->m_id;
+
+                        cur_cand = cur_cand->m_next;
+                    }
+
+                    vc_id = max_vc_id + 1;
+                }
+
+                dbg("Create a new candidate at (%d,%d) id %d, which_vc %d", r, c, vc_id, which_vc);
+                //dbg("vc %d at (%d,%d) with (%d,%d)", which_vc,
+                //        vcs->vc[which_vc].m_r,
+                //        vcs->vc[which_vc].m_c,
+                //        vcs->vc[which_vc].m_w,
+                //        vcs->vc[which_vc].m_h);
+
+                heatmap_sm = gsl_matrix_submatrix(heatmap, 
+                        vcs->vc[which_vc].m_r,
+                        vcs->vc[which_vc].m_c,
+                        vcs->vc[which_vc].m_h,
+                        vcs->vc[which_vc].m_w);
+
+                heatmapid_sm = gsl_matrix_char_submatrix(heatmap_id, 
+                        vcs->vc[which_vc].m_r,
+                        vcs->vc[which_vc].m_c,
+                        vcs->vc[which_vc].m_h,
+                        vcs->vc[which_vc].m_w);
+
+                for (rr=0 ; rr<heatmap_sm.matrix.size1 ; ++rr) {
+                    for (cc=0 ; cc<heatmap_sm.matrix.size2 ; ++cc) {
+                        //dbg("(%d,%d) = %lf, id %d", 
+                        //        vcs->vc[which_vc].m_r+rr,
+                        //        vcs->vc[which_vc].m_c+cc,
+                        //        gsl_matrix_get(&heatmap_sm.matrix, rr, cc), 
+                        //        gsl_matrix_char_get(&heatmapid_sm.matrix, rr, cc));
+                        if (gsl_matrix_get(&heatmap_sm.matrix, rr, cc) < HeatMapAppearThreshold)
+                            continue;
+
+                        gsl_matrix_char_set(&heatmapid_sm.matrix, rr, cc, vc_id);
+                        //dbg("vc id : %d", vc_id);
+                        //dbg("(%d,%d) = %lf, id %d", 
+                        //        vcs->vc[which_vc].m_r+rr,
+                        //        vcs->vc[which_vc].m_c+cc,
+                        //        gsl_matrix_get(&heatmap_sm.matrix, rr, cc), 
+                        //        gsl_matrix_char_get(&heatmapid_sm.matrix, rr, cc));
+                    }
+                }
+            }
+
+            // Generate/Update existed candidate.
+            if (gen_new_cand) {
+                new_cand = (Candidate*)malloc(sizeof(Candidate));
+                if (!new_cand) {
+                    dbg();
+                    return false;
+                }
+
+                memset(new_cand, 0x0, sizeof(Candidate));
+                new_cand->m_next = NULL;
+            }
+
+            if (gen_new_cand == false && nearest_cand &&
+                    r > nearest_cand->m_r &&
+                    c > nearest_cand->m_c ) {
+                //r > nearest_cand->m_r && r < nearest_cand->m_r + nearest_cand->m_h &&
+                //c > nearest_cand->m_c && c < nearest_cand->m_c + nearest_cand->m_w) {
+                // if start point is inside nearest vc.
+               // dbg("(%d,%d) is inside vc[%d]:(%d,%d) (%d,%d)",
+               //         r,
+               //         c,
+               //         nearest_cand->m_id,
+               //         nearest_cand->m_r,
+               //         nearest_cand->m_c,
+               //         nearest_cand->m_w,
+               //         nearest_cand->m_h);
+               // for (rr=nearest_cand->m_r ; rr<nearest_cand->m_r + nearest_cand->m_h ; ++rr) {
+               //     for (cc=nearest_cand->m_c ; cc<nearest_cand->m_c + nearest_cand->m_w ; ++cc) {
+               //         dbg("(%d,%d): %lf, %d",
+               //                 rr,
+               //                 cc,
+               //                 gsl_matrix_get(heatmap, rr, cc),
+               //                 gsl_matrix_char_get(heatmap_id, rr, cc)
+               //            );
+               //     }
+               // }
+
+                find_pixel = false;
+                for (rr=nearest_cand->m_r ; rr<nearest_cand->m_r + nearest_cand->m_h ; ++rr) {
+                    for (cc=nearest_cand->m_c ; cc<nearest_cand->m_c + nearest_cand->m_w ; ++cc) {
+                        if (gsl_matrix_char_get(heatmap_id, rr, cc) != -1 && gsl_matrix_get(heatmap, rr, cc) >= HeatMapAppearThreshold) {
+                            find_pixel = true;
+                            break;
+                        }
+                    }
+
+                    if (find_pixel)
                         break;
-                    }
                 }
 
-                if (vcs->vc[which_vc].m_valid == false)
-                    continue;
+                //dbg("rr %d cc %d", rr, cc);
+                startr  = 
+                rr      = 
+                up      = 
+                down    = rr;
 
-                dbg("(%d,%d), %lf, id %d", r, c, gsl_matrix_get(heatmap, r, c), gsl_matrix_char_get(heatmap_id, r, c));
-                gen_new_cand = false;
-
-                // Find the nearest existed candidate.
-                nearest_cand = NULL;
-                cur_cand = *cand_head;
-
-                while (cur_cand) {
-                    midpoint_newcand.r = vcs->vc[which_vc].m_r + vcs->vc[which_vc].m_h/2;
-                    midpoint_newcand.c = vcs->vc[which_vc].m_c + vcs->vc[which_vc].m_w/2;
-
-                    midpoint_existedcand.r = cur_cand->m_r + cur_cand->m_h/2;
-                    midpoint_existedcand.c = cur_cand->m_c + cur_cand->m_w/2;
-
-                    dist = sqrt(pow(midpoint_existedcand.r - midpoint_newcand.r, 2.0) + pow(midpoint_existedcand.c - midpoint_newcand.c, 2.0));
-                    dbg("dist %lf between %d and %d", dist, cur_cand->m_id, which_vc);
-                    if (dist <= cur_cand->m_w/2 || dist <= cur_cand->m_h/2) {
-                        nearest_cand = cur_cand;
-                        break;
-                    }
-
-                    cur_cand = cur_cand->m_next;
+                startc  = 
+                cc      = 
+                left    = 
+                right   = cc;
+            } else {
+                if (cur_cand) {
+                    dbg("(%d,%d) is outside vc[%d]:(%d,%d) (%d,%d)",
+                            r,
+                            c,
+                            cur_cand->m_id,
+                            cur_cand->m_r,
+                            cur_cand->m_c,
+                            cur_cand->m_w,
+                            cur_cand->m_h);
                 }
-                
-                if (nearest_cand) {
-                    vc_id = nearest_cand->m_id;
-                    dbg("Find nearest candidate %d, (%d,%d), id %d, which_vc %d", vc_id, r, c, gsl_matrix_char_get(heatmap_id, r, c), which_vc);
-
-                    dbg("new vc %d valid %d at (%d,%d) with (%d,%d)",
-                            which_vc,
-                            vcs->vc[which_vc].m_valid,
-                            vcs->vc[which_vc].m_r,
-                            vcs->vc[which_vc].m_c,
-                            vcs->vc[which_vc].m_h,
-                            vcs->vc[which_vc].m_w);
-                            
-
-                    heatmap_sm = gsl_matrix_submatrix(heatmap, 
-                            vcs->vc[which_vc].m_r,
-                            vcs->vc[which_vc].m_c,
-                            vcs->vc[which_vc].m_h,
-                            vcs->vc[which_vc].m_w);
-
-                    heatmapid_sm = gsl_matrix_char_submatrix(heatmap_id, 
-                            vcs->vc[which_vc].m_r,
-                            vcs->vc[which_vc].m_c,
-                            vcs->vc[which_vc].m_h,
-                            vcs->vc[which_vc].m_w);
-
-                    for (rr=0 ; rr<heatmap_sm.matrix.size1 ; ++rr) {
-                        for (cc=0 ; cc<heatmap_sm.matrix.size2 ; ++cc) {
-                            if (gsl_matrix_get(&heatmap_sm.matrix, rr, cc) < HeatMapAppearThreshold)
-                                continue;
-
-                            if (gsl_matrix_char_get(&heatmapid_sm.matrix, rr, cc) != -1)
-                                continue;
-
-                            gsl_matrix_char_set(&heatmapid_sm.matrix, rr, cc, vc_id);
-                        }
-                    }
-                } else {
-                    vc_id = 0;
-                    gen_new_cand = true;
-
-                    // New candidate needs a new ID.
-                    if (*cand_head) {
-                        max_vc_id = 0;
-                        cur_cand = *cand_head;
-                        while (cur_cand) {
-                            if (cur_cand->m_id > max_vc_id)
-                                max_vc_id = cur_cand->m_id;
-
-                            cur_cand = cur_cand->m_next;
-                        }
-
-                        vc_id = max_vc_id + 1;
-                    }
-
-                    dbg("Create a new candidate at (%d,%d) id %d, which_vc %d", r, c, vc_id, which_vc);
-                    //dbg("vc %d at (%d,%d) with (%d,%d)", which_vc,
-                    //        vcs->vc[which_vc].m_r,
-                    //        vcs->vc[which_vc].m_c,
-                    //        vcs->vc[which_vc].m_w,
-                    //        vcs->vc[which_vc].m_h);
-
-                    heatmap_sm = gsl_matrix_submatrix(heatmap, 
-                            vcs->vc[which_vc].m_r,
-                            vcs->vc[which_vc].m_c,
-                            vcs->vc[which_vc].m_h,
-                            vcs->vc[which_vc].m_w);
-
-                    heatmapid_sm = gsl_matrix_char_submatrix(heatmap_id, 
-                            vcs->vc[which_vc].m_r,
-                            vcs->vc[which_vc].m_c,
-                            vcs->vc[which_vc].m_h,
-                            vcs->vc[which_vc].m_w);
-
-                    //dbg("size1 %d, size2 %d of heatmap sm", heatmap_sm.matrix.size1, heatmap_sm.matrix.size2);
-                    //dbg("size1 %d, size2 %d of heatmap_id sm", heatmapid_sm.matrix.size1, heatmapid_sm.matrix.size2);
-                    for (rr=0 ; rr<heatmap_sm.matrix.size1 ; ++rr) {
-                        for (cc=0 ; cc<heatmap_sm.matrix.size2 ; ++cc) {
-                            //dbg("(%d,%d) = %lf, id %d", 
-                            //        vcs->vc[which_vc].m_r+rr,
-                            //        vcs->vc[which_vc].m_c+cc,
-                            //        gsl_matrix_get(&heatmap_sm.matrix, rr, cc), 
-                            //        gsl_matrix_char_get(&heatmapid_sm.matrix, rr, cc));
-                            if (gsl_matrix_get(&heatmap_sm.matrix, rr, cc) < HeatMapAppearThreshold)
-                                continue;
-
-                            gsl_matrix_char_set(&heatmapid_sm.matrix, rr, cc, vc_id);
-                            //dbg("vc id : %d", vc_id);
-                            //dbg("(%d,%d) = %lf, id %d", 
-                            //        vcs->vc[which_vc].m_r+rr,
-                            //        vcs->vc[which_vc].m_c+cc,
-                            //        gsl_matrix_get(&heatmap_sm.matrix, rr, cc), 
-                            //        gsl_matrix_char_get(&heatmapid_sm.matrix, rr, cc));
-                        }
-                    }
-                }
-
-                // Generate/Update existed candidate.
-                if (gen_new_cand) {
-                    new_cand = (Candidate*)malloc(sizeof(Candidate));
-                    if (!new_cand) {
-                        dbg();
-                        return false;
-                    }
-
-                    memset(new_cand, 0x0, sizeof(Candidate));
-                    new_cand->m_next = NULL;
-                }
-
                 startr  = 
                 rr      = 
                 up      = 
@@ -1980,211 +2103,234 @@ bool FCW_GetContourOfHeatMap(
                 cc      = 
                 left    = 
                 right   = c;
+            }
 
-                nextdir = DIR_RIGHTUP;
-                find_pixel = false;
+            nextdir = DIR_RIGHTUP;
+            find_pixel = false;
+            find_fail_cnt = 0;
 
-                while (1) {// Get contour of VC. (start point is equal to end point)
-                    while (1) {// Scan different direction to get neighbour.
-                        switch (nextdir) {
-                            case DIR_RIGHTUP:
-                                if (gsl_matrix_char_get(heatmap_id, rr-1 , cc+1) == vc_id) {
-                                    --rr;
-                                    ++cc;
-                                    find_pixel = true;
-                                    nextdir = DIR_LEFTUP;
-                                    if (up > rr)
-                                        up = rr;
+            while (1) {// Get contour of VC. (start point is equal to end point)
+                while (1) {// Scan different direction to get neighbour.
+                    switch (nextdir) {
+                        case DIR_RIGHTUP:
+                            if (gsl_matrix_char_get(heatmap_id, rr-1 , cc+1) == vc_id) {
+                                --rr;
+                                ++cc;
+                                find_pixel = true;
+                                nextdir = DIR_LEFTUP;
+                                if (up > rr)
+                                    up = rr;
 
-                                    if (right < cc)
-                                        right = cc;
-                                } else 
-                                    nextdir = DIR_RIGHT;
-                                break;
-                            case DIR_RIGHT:
-                                if (gsl_matrix_char_get(heatmap_id, rr, cc+1) == vc_id) {
-                                    ++cc;
-                                    find_pixel = true;
-                                    nextdir = DIR_RIGHTUP;
-
-                                    if (right < cc)
-                                        right = cc;
-                                } else
-                                    nextdir = DIR_RIGHTDOWN;
-                                break;
-                            case DIR_RIGHTDOWN:
-                                if (gsl_matrix_char_get(heatmap_id, rr+1, cc+1) == vc_id) {
-                                    ++rr;
-                                    ++cc;
-                                    find_pixel = true;
-                                    nextdir = DIR_RIGHTUP;
-
-                                    if (down < rr)
-                                        down = rr;
-
-                                    if (right < cc)
-                                        right = cc;
-                                } else
-                                    nextdir = DIR_DOWN;
-                                break;
-                            case DIR_DOWN:
-                                if (gsl_matrix_char_get(heatmap_id, rr+1, cc) == vc_id) {
-                                    ++rr;
-                                    find_pixel = true;
-                                    nextdir = DIR_RIGHTDOWN;
-
-                                    if (down < rr)
-                                        down = rr;
-                                } else
-                                    nextdir = DIR_LEFTDOWN;
-                                break;
-                            case DIR_LEFTDOWN:
-                                if (gsl_matrix_char_get(heatmap_id, rr+1, cc-1) == vc_id) {
-                                    ++rr;
-                                    --cc;
-                                    find_pixel = true;
-                                    nextdir = DIR_RIGHTDOWN;
-
-                                    if (down < rr)
-                                        down = rr;
-
-                                    if (left > cc)
-                                        left = cc;
-                                } else
-                                    nextdir = DIR_LEFT;
-                                break;
-                            case DIR_LEFT:
-                                if (gsl_matrix_char_get(heatmap_id, rr, cc-1) == vc_id) {
-                                    --cc;
-                                    find_pixel = true;
-                                    nextdir = DIR_LEFTDOWN;
-
-                                    if (left > cc)
-                                        left = cc;
-                                } else
-                                    nextdir = DIR_LEFTUP;
-                                break;
-                            case DIR_LEFTUP:
-                                if (gsl_matrix_char_get(heatmap_id, rr-1, cc-1) == vc_id) {
-                                    --rr;
-                                    --cc;
-                                    find_pixel = true;
-                                    nextdir = DIR_LEFTDOWN;
-
-                                    if (up > rr)
-                                        up = rr;
-
-                                    if (left > cc)
-                                        left = cc;
-                                } else
-                                    nextdir = DIR_UP;
-                                break;
-                            case DIR_UP:
-                                if (gsl_matrix_char_get(heatmap_id, rr-1, cc) == vc_id) {
-                                    --rr;
-                                    find_pixel = true;
-                                    nextdir = DIR_LEFTUP;
-
-                                    if (up > rr)
-                                        up = rr;
-                                } else
-                                    nextdir = DIR_RIGHTUP;
-                                break;
-                        }
-
-                        if (find_pixel) {
-                            find_pixel = false;
+                                if (right < cc)
+                                    right = cc;
+                            } else {
+                                find_fail_cnt++;
+                                nextdir = DIR_RIGHT;
+                            }
                             break;
-                        }
+                        case DIR_RIGHT:
+                            if (gsl_matrix_char_get(heatmap_id, rr, cc+1) == vc_id) {
+                                ++cc;
+                                find_pixel = true;
+                                nextdir = DIR_RIGHTUP;
 
-                        dbg("(%d,%d) dir %d",
-                                rr, 
-                                cc,
-                                nextdir);
-                    }//Scan different direction to get neighbour.
-
-                    if (startr == rr && startc == cc) {
-                        if (gen_new_cand) {
-                            if (new_cand) {
-                                new_cand->m_updated     = true;
-                                new_cand->m_valid       = true;
-                                new_cand->m_id          = vc_id;
-                                new_cand->m_r           = up;
-                                new_cand->m_c           = left;
-                                new_cand->m_w           = right - left + 1;
-                                new_cand->m_h           = down - up + 1;
-                                new_cand->m_dist        = FCW_GetObjDist(new_cand->m_w);
-
-                                // Add new candidate to candidate list.
-                                if (!*cand_head) {
-                                    *cand_head = cur_cand = new_cand;
-                                } else {
-                                    cur_cand = *cand_head;
-                                    while (cur_cand) {
-                                        if (!cur_cand->m_next) {
-                                            cur_cand->m_next = new_cand;
-                                            new_cand->m_next = NULL;
-                                            cur_cand = new_cand;
-                                            break;
-                                        }
-
-                                        cur_cand = cur_cand->m_next;
-                                    }
-                                }
+                                if (right < cc)
+                                    right = cc;
+                            } else {
+                                find_fail_cnt++;
+                                nextdir = DIR_RIGHTDOWN;
                             }
-                            else
-                                dbg();
-                        } else {
-                            if (nearest_cand) {
-                                nearest_cand->m_updated     = true;
-                                nearest_cand->m_valid       = true;
-                                nearest_cand->m_id          = vc_id;
-                                nearest_cand->m_r           = up;
-                                nearest_cand->m_c           = left;
-                                nearest_cand->m_w           = right - left + 1;
-                                nearest_cand->m_h           = down - up + 1;
-                                nearest_cand->m_dist        = FCW_GetObjDist(nearest_cand->m_w);
+                            break;
+                        case DIR_RIGHTDOWN:
+                            if (gsl_matrix_char_get(heatmap_id, rr+1, cc+1) == vc_id) {
+                                ++rr;
+                                ++cc;
+                                find_pixel = true;
+                                nextdir = DIR_RIGHTUP;
 
-                                cur_cand = nearest_cand;
+                                if (down < rr)
+                                    down = rr;
+
+                                if (right < cc)
+                                    right = cc;
+                            } else {
+                                find_fail_cnt++;
+                                nextdir = DIR_DOWN;
                             }
-                            else
-                                dbg();
-                        }
+                            break;
+                        case DIR_DOWN:
+                            if (gsl_matrix_char_get(heatmap_id, rr+1, cc) == vc_id) {
+                                ++rr;
+                                find_pixel = true;
+                                nextdir = DIR_RIGHTDOWN;
 
-                        if (cur_cand) {
-                            dbg("vc %d is at (%d,%d) with (%d,%d)",
-                                    cur_cand->m_id,
-                                    cur_cand->m_r,
-                                    cur_cand->m_c,
-                                    cur_cand->m_w,
-                                    cur_cand->m_h
-                               );
+                                if (down < rr)
+                                    down = rr;
+                            } else {
+                                find_fail_cnt++;
+                                nextdir = DIR_LEFTDOWN;
+                            }
+                            break;
+                        case DIR_LEFTDOWN:
+                            if (gsl_matrix_char_get(heatmap_id, rr+1, cc-1) == vc_id) {
+                                ++rr;
+                                --cc;
+                                find_pixel = true;
+                                nextdir = DIR_RIGHTDOWN;
 
-                            heatmapid_sm = gsl_matrix_char_submatrix(heatmap_id,
-                                                                     cur_cand->m_r,
-                                                                     cur_cand->m_c,
-                                                                     cur_cand->m_h,
-                                                                     cur_cand->m_w);
+                                if (down < rr)
+                                    down = rr;
 
-                            gsl_matrix_char_set_all(&heatmapid_sm.matrix, cur_cand->m_id);
-                        }
+                                if (left > cc)
+                                    left = cc;
+                            } else { 
+                                find_fail_cnt++;
+                                nextdir = DIR_LEFT;
+                            }
+                            break;
+                        case DIR_LEFT:
+                            if (gsl_matrix_char_get(heatmap_id, rr, cc-1) == vc_id) {
+                                --cc;
+                                find_pixel = true;
+                                nextdir = DIR_LEFTDOWN;
 
+                                if (left > cc)
+                                    left = cc;
+                            } else {
+                                find_fail_cnt++;
+                                nextdir = DIR_LEFTUP;
+                            }
+                            break;
+                        case DIR_LEFTUP:
+                            if (gsl_matrix_char_get(heatmap_id, rr-1, cc-1) == vc_id) {
+                                --rr;
+                                --cc;
+                                find_pixel = true;
+                                nextdir = DIR_LEFTDOWN;
+
+                                if (up > rr)
+                                    up = rr;
+
+                                if (left > cc)
+                                    left = cc;
+                            } else {
+                                find_fail_cnt++;
+                                nextdir = DIR_UP;
+                            }
+                            break;
+                        case DIR_UP:
+                            if (gsl_matrix_char_get(heatmap_id, rr-1, cc) == vc_id) {
+                                --rr;
+                                find_pixel = true;
+                                nextdir = DIR_LEFTUP;
+
+                                if (up > rr)
+                                    up = rr;
+                            } else {
+                                find_fail_cnt++;
+                                nextdir = DIR_RIGHTUP;
+                            }
+                            break;
+                    }
+
+                    if (find_pixel) {
+                        find_pixel = false;
+                        find_fail_cnt = 0;
                         break;
                     }
-                }//Get contour of VC. (start point is equal to end point)
-                dbg();
-            }
+
+//                    dbg("(%d,%d) dir %d",
+//                            rr, 
+//                            cc,
+//                            nextdir);
+
+                    if (find_fail_cnt >= DIR_TOTAL)
+                        break;
+
+                }//Scan different direction to get neighbour.
+
+                if (startr == rr && startc == cc) {
+                    if (gen_new_cand) {
+                        if (new_cand) {
+                            new_cand->m_updated     = true;
+                            new_cand->m_valid       = true;
+                            new_cand->m_id          = vc_id;
+                            new_cand->m_r           = up;
+                            new_cand->m_c           = left;
+                            new_cand->m_w           = right - left + 1;
+                            new_cand->m_h           = down - up + 1;
+                            new_cand->m_dist        = FCW_GetObjDist(new_cand->m_w);
+
+                            // Add new candidate to candidate list.
+                            if (!*cand_head) {
+                                *cand_head = cur_cand = new_cand;
+                            } else {
+                                cur_cand = *cand_head;
+                                while (cur_cand) {
+                                    if (!cur_cand->m_next) {
+                                        cur_cand->m_next = new_cand;
+                                        new_cand->m_next = NULL;
+                                        cur_cand = new_cand;
+                                        break;
+                                    }
+
+                                    cur_cand = cur_cand->m_next;
+                                }
+                            }
+                        }
+                        else
+                            dbg();
+                    } else {
+                        if (nearest_cand) {
+                            nearest_cand->m_updated     = true;
+                            nearest_cand->m_valid       = true;
+                            nearest_cand->m_id          = vc_id;
+                            nearest_cand->m_r           = up;
+                            nearest_cand->m_c           = left;
+                            nearest_cand->m_w           = right - left + 1;
+                            nearest_cand->m_h           = down - up + 1;
+                            nearest_cand->m_dist        = FCW_GetObjDist(nearest_cand->m_w);
+
+                            cur_cand = nearest_cand;
+                        }
+                        else
+                            dbg();
+                    }
+
+                    if (cur_cand) {
+                        dbg("vc %d is at (%d,%d) with (%d,%d)",
+                                cur_cand->m_id,
+                                cur_cand->m_r,
+                                cur_cand->m_c,
+                                cur_cand->m_w,
+                                cur_cand->m_h
+                           );
+
+                        heatmapid_sm = gsl_matrix_char_submatrix(heatmap_id,
+                                cur_cand->m_r,
+                                cur_cand->m_c,
+                                cur_cand->m_h,
+                                cur_cand->m_w);
+
+                        gsl_matrix_char_set_all(&heatmapid_sm.matrix, cur_cand->m_id);
+                    }
+
+                    break;
+                }
+            }//Get contour of VC. (start point is equal to end point)
         }
-    } 
-
-    dbg();
-
+    }
+     
     // Update existed candidate that has not been updated yet.
     cur_cand = *cand_head;
     while (cur_cand) {
-    dbg();
         if (cur_cand->m_updated == false) {
-    dbg();
+            dbg("vc %d is at (%d,%d) with (%d,%d) but has not updated.",
+                    cur_cand->m_id,
+                    cur_cand->m_r,
+                    cur_cand->m_c,
+                    cur_cand->m_w,
+                    cur_cand->m_h);
 
             for (r=cur_cand->m_r ; r<cur_cand->m_r+cur_cand->m_h ; ++r) {
                 for (c=cur_cand->m_c ; c<cur_cand->m_c+cur_cand->m_w ; ++c) {
@@ -2203,6 +2349,7 @@ bool FCW_GetContourOfHeatMap(
                         vc_id   = cur_cand->m_id;
                         nextdir = DIR_RIGHTUP;
                         find_pixel = false;
+                        find_fail_cnt = 0;
 
                         while (1) {// Get contour of VC. (start point is equal to end point)
                             while (1) {// Scan different direction to get neighbour.
@@ -2218,8 +2365,10 @@ bool FCW_GetContourOfHeatMap(
 
                                             if (right < cc)
                                                 right = cc;
-                                        } else 
+                                        } else {
+                                            find_fail_cnt++;
                                             nextdir = DIR_RIGHT;
+                                        }
                                         break;
                                     case DIR_RIGHT:
                                         if (gsl_matrix_char_get(heatmap_id, rr, cc+1) == vc_id) {
@@ -2229,8 +2378,10 @@ bool FCW_GetContourOfHeatMap(
 
                                             if (right < cc)
                                                 right = cc;
-                                        } else
+                                        } else {
+                                            find_fail_cnt++;
                                             nextdir = DIR_RIGHTDOWN;
+                                        }
                                         break;
                                     case DIR_RIGHTDOWN:
                                         if (gsl_matrix_char_get(heatmap_id, rr+1, cc+1) == vc_id) {
@@ -2244,8 +2395,10 @@ bool FCW_GetContourOfHeatMap(
 
                                             if (right < cc)
                                                 right = cc;
-                                        } else
+                                        } else {
+                                            find_fail_cnt++;
                                             nextdir = DIR_DOWN;
+                                        }
                                         break;
                                     case DIR_DOWN:
                                         if (gsl_matrix_char_get(heatmap_id, rr+1, cc) == vc_id) {
@@ -2255,8 +2408,10 @@ bool FCW_GetContourOfHeatMap(
 
                                             if (down < rr)
                                                 down = rr;
-                                        } else
+                                        } else {
+                                            find_fail_cnt++;
                                             nextdir = DIR_LEFTDOWN;
+                                        }
                                         break;
                                     case DIR_LEFTDOWN:
                                         if (gsl_matrix_char_get(heatmap_id, rr+1, cc-1) == vc_id) {
@@ -2270,8 +2425,10 @@ bool FCW_GetContourOfHeatMap(
 
                                             if (left > cc)
                                                 left = cc;
-                                        } else
+                                        } else {
+                                            find_fail_cnt++;
                                             nextdir = DIR_LEFT;
+                                        }
                                         break;
                                     case DIR_LEFT:
                                         if (gsl_matrix_char_get(heatmap_id, rr, cc-1) == vc_id) {
@@ -2281,8 +2438,10 @@ bool FCW_GetContourOfHeatMap(
 
                                             if (left > cc)
                                                 left = cc;
-                                        } else
+                                        } else {
+                                            find_fail_cnt++;
                                             nextdir = DIR_LEFTUP;
+                                        }
                                         break;
                                     case DIR_LEFTUP:
                                         if (gsl_matrix_char_get(heatmap_id, rr-1, cc-1) == vc_id) {
@@ -2296,8 +2455,10 @@ bool FCW_GetContourOfHeatMap(
 
                                             if (left > cc)
                                                 left = cc;
-                                        } else
+                                        } else {
+                                            find_fail_cnt++;
                                             nextdir = DIR_UP;
+                                        }
                                         break;
                                     case DIR_UP:
                                         if (gsl_matrix_char_get(heatmap_id, rr-1, cc) == vc_id) {
@@ -2307,15 +2468,26 @@ bool FCW_GetContourOfHeatMap(
 
                                             if (up > rr)
                                                 up = rr;
-                                        } else
+                                        } else {
+                                            find_fail_cnt++;
                                             nextdir = DIR_RIGHTUP;
+                                        }
                                         break;
                                 }
 
                                 if (find_pixel) {
                                     find_pixel = false;
+                                    find_fail_cnt = 0;
                                     break;
                                 }
+
+                                if (find_fail_cnt >= DIR_TOTAL)
+                                    break;
+
+                    //dbg("(%d,%d) dir %d",
+                    //        rr, 
+                    //        cc,
+                    //        nextdir);
                             }//Scan different direction to get neighbour.
 
                             if (startr == rr && startc == cc) {
@@ -2328,6 +2500,10 @@ bool FCW_GetContourOfHeatMap(
                                 cur_cand->m_dist        = FCW_GetObjDist(cur_cand->m_w);
                                 break;
                             }
+
+                            if (find_fail_cnt >= DIR_TOTAL)
+                                break;
+
                         }// Get contour of VC. (start point is equal to end point)
                     }
 
@@ -2339,9 +2515,17 @@ bool FCW_GetContourOfHeatMap(
                     break;
             }
 
-            if (cur_cand->m_updated == true)
+            if (cur_cand->m_updated == true) {
+                dbg("vc %d is self-updated.", cur_cand->m_id);
+                dbg("vc %d (%d,%d) with (%d,%d).",
+                        cur_cand->m_id,
+                        cur_cand->m_r,
+                        cur_cand->m_c,
+                        cur_cand->m_w,
+                        cur_cand->m_h);
                 cur_cand = cur_cand->m_next;
-            else {
+            } else {
+                dbg("vc %d is removed.", cur_cand->m_id);
                 // This existed candidate does not been updated anymore. Remove it from the list.
                 if (cur_cand == *cand_head) {
                     *cand_head = cur_cand->m_next;
@@ -2363,31 +2547,31 @@ bool FCW_GetContourOfHeatMap(
                     }
                 }
             }
-    dbg();
+        } else {
+            dbg();
+            cur_cand = cur_cand->m_next;
         }
-
-    dbg();
-        cur_cand = cur_cand->m_next;
     }
-    dbg();
-    memset(vcs, 0x0, sizeof(VehicleCandidates));
-    dbg();
+    
+    memset(vcs2, 0x0, sizeof(VehicleCandidates));
+    
     cur_cand = *cand_head;
+
     while (cur_cand) {
-        vcs->vc[vcs->vc_count].m_updated    = true;
-        vcs->vc[vcs->vc_count].m_valid      = true;
-        vcs->vc[vcs->vc_count].m_id         = cur_cand->m_id;
-        vcs->vc[vcs->vc_count].m_r          = cur_cand->m_r;
-        vcs->vc[vcs->vc_count].m_c          = cur_cand->m_c;
-        vcs->vc[vcs->vc_count].m_w          = cur_cand->m_w;
-        vcs->vc[vcs->vc_count].m_h          = cur_cand->m_h;
-        vcs->vc[vcs->vc_count].m_dist       = cur_cand->m_dist;
-        vcs->vc[vcs->vc_count].m_next       = NULL;
-        vcs->vc_count++;
+        vcs2->vc[vcs2->vc_count].m_updated    = true;
+        vcs2->vc[vcs2->vc_count].m_valid      = true;
+        vcs2->vc[vcs2->vc_count].m_id         = cur_cand->m_id;
+        vcs2->vc[vcs2->vc_count].m_r          = cur_cand->m_r;
+        vcs2->vc[vcs2->vc_count].m_c          = cur_cand->m_c;
+        vcs2->vc[vcs2->vc_count].m_w          = cur_cand->m_w;
+        vcs2->vc[vcs2->vc_count].m_h          = cur_cand->m_h;
+        vcs2->vc[vcs2->vc_count].m_dist       = cur_cand->m_dist;
+        vcs2->vc[vcs2->vc_count].m_next       = NULL;
+        vcs2->vc_count++;
 
         cur_cand = cur_cand->m_next;
     }
-    dbg();
+    
     return true;
 }
 

@@ -68,7 +68,7 @@ static uint8_t* vedge = NULL;
 static uint8_t* shadow = NULL;
 static uint8_t* heatmap = NULL;
 
-static VehicleCandidates vcs;
+static VehicleCandidates vcs, vcs2;
 static gsl_vector* vertical_hist = NULL;
 static gsl_vector* hori_hist = NULL;
 static gsl_vector* grayscale_hist = NULL;
@@ -79,16 +79,16 @@ enum {
     FCW_WINDOW_EDGE,
     FCW_WINDOW_VEHICLE,
     FCW_WINDOW_HEATMAP,
-    FCW_WINDOW_TOTAL,
     FCW_WINDOW_RESULT,
+    FCW_WINDOW_TOTAL,
 };
 
 static const char *fcw_window_title[FCW_WINDOW_TOTAL] = {
     [FCW_WINDOW_SHADOW]     = "Shadow",
     [FCW_WINDOW_EDGE]       = "Vertical Edge",
     [FCW_WINDOW_VEHICLE]    = "Candidates",
+    [FCW_WINDOW_RESULT]     = "Result",
     [FCW_WINDOW_HEATMAP]    = "Heatmap",
-    //[FCW_WINDOW_RESULT]     = "Result",
 };
 static SDL_Window *fcw_window[FCW_WINDOW_TOTAL] = {NULL};
 static SDL_Renderer *fcw_renderer[FCW_WINDOW_TOTAL] = {NULL};
@@ -1042,6 +1042,7 @@ static int upload_texture(SDL_Texture **tex, AVFrame *frame, struct SwsContext *
                                 hori_hist,
                                 grayscale_hist,
                                 &vcs,
+                                &vcs2,
                                 vedge,
                                 shadow,
                                 heatmap,
@@ -1066,9 +1067,9 @@ static int upload_texture(SDL_Texture **tex, AVFrame *frame, struct SwsContext *
                                            frame->data[1], frame->linesize[1],
                                            frame->data[2], frame->linesize[2]);
 
-                //ret = SDL_UpdateYUVTexture(fcw_texture[FCW_WINDOW_RESULT], NULL, frame->data[0], frame->linesize[0],
-                //                           frame->data[1], frame->linesize[1],
-                //                           frame->data[2], frame->linesize[2]);
+                ret = SDL_UpdateYUVTexture(fcw_texture[FCW_WINDOW_RESULT], NULL, frame->data[0], frame->linesize[0],
+                                           frame->data[1], frame->linesize[1],
+                                           frame->data[2], frame->linesize[2]);
 
                 //---------------------FCW------------------
 #endif
@@ -1279,6 +1280,21 @@ static void video_image_display(VideoState *is)
                 SDL_RenderDrawRect(fcw_renderer[FCW_WINDOW_SHADOW], &vrect);
                 SDL_RenderDrawRect(fcw_renderer[FCW_WINDOW_VEHICLE], &vrect);
                 SDL_RenderDrawRect(fcw_renderer[FCW_WINDOW_EDGE], &vrect);
+            }
+        }
+
+        for (i=0 ; i<vcs2.vc_count ; i++) {
+            if (vcs2.vc[i].m_valid == true) {
+                color = &COLOR[i%COLOR_TOTAL];
+
+                SDL_SetRenderDrawColor(fcw_renderer[FCW_WINDOW_RESULT], color->r, color->g, color->b, color->a);
+
+                vrect.x = rect.x + vcs2.vc[i].m_c;
+                vrect.y = rect.y + vcs2.vc[i].m_r;
+                vrect.w = vcs2.vc[i].m_w;
+                vrect.h = vcs2.vc[i].m_h;
+
+                SDL_RenderDrawRect(fcw_renderer[FCW_WINDOW_RESULT], &vrect);
             }
         }
     }

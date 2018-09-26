@@ -38,6 +38,13 @@ enum {
     ROI_TOTAL,
 };
 
+typedef struct rect_s {
+    int r;
+    int c;
+    int w;
+    int h;
+}rect;
+
 typedef struct point_s {
     int r;
     int c;
@@ -63,6 +70,7 @@ bool FCW_DoDetection(
         gsl_vector* hori_hist, 
         gsl_vector* grayscale_hist, 
         VehicleCandidates *vcs,
+        VehicleCandidates *vcs2,
         uint8_t* vedge,
         uint8_t* shadow,
         uint8_t* heatmap,
@@ -115,11 +123,17 @@ bool FCW_CheckBlobValid(const gsl_matrix* imgy, const gsl_matrix* edged_imgy, bl
 
 bool FCW_UpdateVehicleHeatMap(gsl_matrix* heatmap, gsl_matrix_char* heatmap_id, VehicleCandidates* vcs); 
 
+bool FCW_GetMaxValidRectOfHeapMapID(
+    const gsl_matrix_char* m,
+    rect* rect
+     );
+
 bool FCW_GetContourOfHeatMap(
     gsl_matrix* heatmap, 
     gsl_matrix_char* heatmap_id, 
     Candidate** cand_head,
-    VehicleCandidates* vcs
+    VehicleCandidates* vcs,
+    VehicleCandidates* vcs2
     );
 
 bool FCW_UpdateVCStatus(gsl_matrix* heatmap, gsl_matrix_char* heatmap_id, VehicleCandidates* vcs);
