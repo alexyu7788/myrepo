@@ -64,6 +64,7 @@
 #include "fcws/candidate.h"
 #include "fcws/fcws.h"
 
+static uint8_t* roi_img = NULL;
 static uint8_t* vedge = NULL;
 static uint8_t* shadow = NULL;
 static uint8_t* heatmap = NULL;
@@ -74,8 +75,13 @@ static gsl_vector* hori_hist = NULL;
 static gsl_vector* grayscale_hist = NULL;
 static roi_t roi;
 
+static uint8_t hist_peak;
+static uint8_t otsu_th;
+static uint8_t final_th;
+
 enum {
-    FCW_WINDOW_SHADOW = 0,
+    FCW_WINDOW_ROI = 0,
+    FCW_WINDOW_SHADOW,
     FCW_WINDOW_EDGE,
     FCW_WINDOW_VEHICLE,
     FCW_WINDOW_HEATMAP,
@@ -84,6 +90,7 @@ enum {
 };
 
 static const char *fcw_window_title[FCW_WINDOW_TOTAL] = {
+    [FCW_WINDOW_ROI]        = "ROI",
     [FCW_WINDOW_SHADOW]     = "Shadow",
     [FCW_WINDOW_EDGE]       = "Vertical Edge",
     [FCW_WINDOW_VEHICLE]    = "Candidates",
@@ -1008,6 +1015,10 @@ static int upload_texture(SDL_Texture **tex, AVFrame *frame, struct SwsContext *
                 CheckOrReallocVector(&hori_hist, frame->height, true);
                 CheckOrReallocVector(&grayscale_hist, 256, true);
 
+                if (!roi_img) {
+                    roi_img = av_malloc(frame->linesize[0] * frame->height + 16 + 16/*STRIDE_ALIGN*/ - 1);
+                }
+
                 if (!vedge) {
                     vedge = av_malloc(frame->linesize[0] * frame->height + 16 + 16/*STRIDE_ALIGN*/ - 1);
                 }
@@ -1043,13 +1054,22 @@ static int upload_texture(SDL_Texture **tex, AVFrame *frame, struct SwsContext *
                                 grayscale_hist,
                                 &vcs,
                                 &vcs2,
+                                roi_img,
                                 vedge,
                                 shadow,
                                 heatmap,
-                                &roi); 
+                                &roi,
+                                &hist_peak,
+                                &otsu_th,
+                                &final_th
+                                ); 
 
-//                memset(frame->data[1], 128, sizeof(uint8_t)*frame->linesize[1]*frame->height/2);
-//                memset(frame->data[2], 128, sizeof(uint8_t)*frame->linesize[2]*frame->height/2);
+                memset(frame->data[1], 128, sizeof(uint8_t)*frame->linesize[1]*frame->height/2);
+                memset(frame->data[2], 128, sizeof(uint8_t)*frame->linesize[2]*frame->height/2);
+
+                ret = SDL_UpdateYUVTexture(fcw_texture[FCW_WINDOW_ROI], NULL, roi_img, frame->linesize[0],
+                                           frame->data[1], frame->linesize[1],
+                                           frame->data[2], frame->linesize[2]);
 
                 ret = SDL_UpdateYUVTexture(fcw_texture[FCW_WINDOW_EDGE], NULL, vedge, frame->linesize[0],
                                            frame->data[1], frame->linesize[1],
@@ -1208,17 +1228,38 @@ static void video_image_display(VideoState *is)
         SDL_Color *color;
 
         // Draw grayscale histogram
-        SDL_SetRenderDrawColor(renderer, 0xff, 0, 0, 0xff);
+        SDL_SetRenderDrawColor(fcw_renderer[FCW_WINDOW_ROI], 0xff, 0, 0, 0xff);
 
         max_val = gsl_vector_max(grayscale_hist);
         for (i=0 ; i<grayscale_hist->size - 1; ++i) {
-            SDL_RenderDrawLine(renderer, 
+            SDL_RenderDrawLine(fcw_renderer[FCW_WINDOW_ROI], 
                                 rect.x + i * rect.w / 256.0,
                                 rect.y + rect.h - (gsl_vector_get(grayscale_hist, i) * (rect.h / 2.0) / max_val),
                                 rect.x + (i+1) * rect.w / 256.0,
                                 rect.y + rect.h - (gsl_vector_get(grayscale_hist, i+1) * (rect.h / 2.0) / max_val));
 
         }
+
+        //SDL_SetRenderDrawColor(fcw_renderer[FCW_WINDOW_ROI], 0xff, 0xff, 0, 0xff);
+        //SDL_RenderDrawLine(fcw_renderer[FCW_WINDOW_ROI], 
+        //        rect.x + otsu_th * rect.w / 256.0,
+        //        0, 
+        //        rect.x + otsu_th * rect.w / 256.0,
+        //        rect.y + rect.h);
+
+        //SDL_SetRenderDrawColor(fcw_renderer[FCW_WINDOW_ROI], 0xff, 0, 0, 0xff);
+        //SDL_RenderDrawLine(fcw_renderer[FCW_WINDOW_ROI], 
+        //        rect.x + final_th * rect.w / 256.0,
+        //        0, 
+        //        rect.x + final_th * rect.w / 256.0,
+        //        rect.y + rect.h);
+
+        //SDL_SetRenderDrawColor(fcw_renderer[FCW_WINDOW_ROI], 0xff, 0, 0xff, 0xff);
+        //SDL_RenderDrawLine(fcw_renderer[FCW_WINDOW_ROI], 
+        //        rect.x + hist_peak * rect.w / 256.0,
+        //        0, 
+        //        rect.x + hist_peak * rect.w / 256.0,
+        //        rect.y + rect.h);
 
         SDL_SetRenderDrawColor(renderer, 0xff, 0xff, 0, 0xff);
         for (int i=0 ; i<ROI_TOTAL ; i++)
@@ -1268,18 +1309,18 @@ static void video_image_display(VideoState *is)
             if (vcs.vc[i].m_valid == true) {
                 color = &COLOR[i%COLOR_TOTAL];
 
-                SDL_SetRenderDrawColor(fcw_renderer[FCW_WINDOW_SHADOW], color->r, color->g, color->b, color->a);
+                //SDL_SetRenderDrawColor(fcw_renderer[FCW_WINDOW_SHADOW], color->r, color->g, color->b, color->a);
                 SDL_SetRenderDrawColor(fcw_renderer[FCW_WINDOW_VEHICLE], color->r, color->g, color->b, color->a);
-                SDL_SetRenderDrawColor(fcw_renderer[FCW_WINDOW_EDGE], color->r, color->g, color->b, color->a);
+                //SDL_SetRenderDrawColor(fcw_renderer[FCW_WINDOW_EDGE], color->r, color->g, color->b, color->a);
 
                 vrect.x = rect.x + vcs.vc[i].m_c;
                 vrect.y = rect.y + vcs.vc[i].m_r;
                 vrect.w = vcs.vc[i].m_w;
                 vrect.h = vcs.vc[i].m_h;
 
-                SDL_RenderDrawRect(fcw_renderer[FCW_WINDOW_SHADOW], &vrect);
+                //SDL_RenderDrawRect(fcw_renderer[FCW_WINDOW_SHADOW], &vrect);
                 SDL_RenderDrawRect(fcw_renderer[FCW_WINDOW_VEHICLE], &vrect);
-                SDL_RenderDrawRect(fcw_renderer[FCW_WINDOW_EDGE], &vrect);
+                //SDL_RenderDrawRect(fcw_renderer[FCW_WINDOW_EDGE], &vrect);
             }
         }
 
@@ -1576,6 +1617,9 @@ static void do_exit(VideoState *is)
         if (fcw_window[i])
             SDL_DestroyWindow(fcw_window[i]);
     }
+
+    if (roi_img)
+        av_freep(&roi_img);
 
     if (vedge)
         av_freep(&vedge);

@@ -133,9 +133,16 @@ bool FCW_PixelInROI(uint32_t r, uint32_t c, const roi_t* roi)
     return true;
 }
 
-bool FCW_Thresholding(gsl_matrix* src, gsl_matrix* dst, gsl_vector* grayscale_hist)
+bool FCW_Thresholding(
+        gsl_matrix* src, 
+        gsl_matrix* dst, 
+        gsl_vector* grayscale_hist,
+        uint8_t* hist_peak,
+        uint8_t* otsu_th,
+        uint8_t* final_th
+        )
 {
-    uint8_t pixel_val, peak_idx, th;
+    uint8_t pixel_val, peak_idx, th, th2;
     uint32_t r, c, i;
     double val;
 
@@ -167,18 +174,22 @@ bool FCW_Thresholding(gsl_matrix* src, gsl_matrix* dst, gsl_vector* grayscale_hi
     peak_idx = gsl_vector_max_index(grayscale_hist);
 
     if (peak_idx > 100)
-        th = (th * 0.7 + peak_idx * 0.3);
+        th2 = (th * 0.7 + peak_idx * 0.3);
     else if (peak_idx > 80 && peak_idx <= 100)
-        th = (th * 0.5 + peak_idx * 0.5);
+        th2 = (th * 0.5 + peak_idx * 0.5);
     else
-        th = (th * 0.3 + peak_idx * 0.7);
+        th2 = (th * 0.3 + peak_idx * 0.7);
 
     for (r=0 ; r<src->size1 ; ++r) {
         for (c=0 ; c<src->size2 ; ++c) {
-            if (gsl_matrix_get(dst, r, c) > th)
+            if (gsl_matrix_get(dst, r, c) > th2)
                 gsl_matrix_set(dst, r, c, NOT_SHADOW);
         }
     }
+
+    *hist_peak = peak_idx;
+    *otsu_th = th;
+    *final_th = th2;
 
     return true;
 }
@@ -193,10 +204,15 @@ bool FCW_DoDetection(
         gsl_vector* grayscale_hist, 
         VehicleCandidates *vcs,
         VehicleCandidates *vcs2,
+        uint8_t* roi_img,
         uint8_t* vedge,
         uint8_t* shadow,
         uint8_t* heatmap,
-        const roi_t* roi)
+        const roi_t* roi,
+        uint8_t* hist_peak,
+        uint8_t* otsu_th,
+        uint8_t* final_th
+        )
 {
     uint32_t i, r, c;
 
@@ -228,7 +244,7 @@ bool FCW_DoDetection(
     }
 
     // Get thresholding image
-    FCW_Thresholding(m_temp_imgy, m_shadow, grayscale_hist);
+    FCW_Thresholding(m_temp_imgy, m_shadow, grayscale_hist, hist_peak, otsu_th, final_th);
 
     // Get horizontal histogram
     FCW_CalHorizontalHist(m_shadow, hori_hist);
@@ -265,6 +281,7 @@ bool FCW_DoDetection(
         for (c=0 ; c<m_imgy->size2 ; c++) {
             img     [r * linesize + c] = (uint8_t)gsl_matrix_get(m_imgy, r,c); 
             shadow  [r * linesize + c] = (uint8_t)gsl_matrix_get(m_shadow, r,c); 
+            roi_img [r * linesize + c] = (uint8_t)gsl_matrix_get(m_temp_imgy, r,c); 
             vedge   [r * linesize + c] = (uint8_t)gsl_matrix_get(m_vedge_imgy, r,c); 
             heatmap [r * linesize + c] = (uint8_t)gsl_matrix_get(m_heatmap, r,c); 
         }

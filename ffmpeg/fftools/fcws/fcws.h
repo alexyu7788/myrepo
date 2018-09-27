@@ -71,12 +71,24 @@ bool FCW_DoDetection(
         gsl_vector* grayscale_hist, 
         VehicleCandidates *vcs,
         VehicleCandidates *vcs2,
+        uint8_t* roi_img,
         uint8_t* vedge,
         uint8_t* shadow,
         uint8_t* heatmap,
-        const roi_t* roi);
+        const roi_t* roi,
+        uint8_t* hist_peak,
+        uint8_t* otsu_th,
+        uint8_t* final_th
+        );
 
-bool FCW_Thresholding(gsl_matrix* src, gsl_matrix* dst, gsl_vector* grayscale_hist);
+bool FCW_Thresholding(
+        gsl_matrix* src, 
+        gsl_matrix* dst, 
+        gsl_vector* grayscale_hist,
+        uint8_t* hist_peak,
+        uint8_t* otsu_th,
+        uint8_t* final_th
+        );
 
 int  FCW_GetRounded_Direction(int gx, int gy);
 
