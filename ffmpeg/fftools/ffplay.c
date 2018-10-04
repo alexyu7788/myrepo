@@ -67,6 +67,7 @@
 static uint8_t* roi_img = NULL;
 static uint8_t* vedge = NULL;
 static uint8_t* shadow = NULL;
+static uint8_t* shadow2 = NULL;
 static uint8_t* heatmap = NULL;
 
 static VehicleCandidates vcs, vcs2;
@@ -82,6 +83,7 @@ static uint8_t final_th;
 enum {
     FCW_WINDOW_ROI = 0,
     FCW_WINDOW_SHADOW,
+    FCW_WINDOW_SHADOW2,
     FCW_WINDOW_EDGE,
     FCW_WINDOW_VEHICLE,
     FCW_WINDOW_HEATMAP,
@@ -92,6 +94,7 @@ enum {
 static const char *fcw_window_title[FCW_WINDOW_TOTAL] = {
     [FCW_WINDOW_ROI]        = "ROI",
     [FCW_WINDOW_SHADOW]     = "Shadow",
+    [FCW_WINDOW_SHADOW2]    = "Shadow2",
     [FCW_WINDOW_EDGE]       = "Vertical Edge",
     [FCW_WINDOW_VEHICLE]    = "Candidates",
     [FCW_WINDOW_RESULT]     = "Result",
@@ -1027,6 +1030,10 @@ static int upload_texture(SDL_Texture **tex, AVFrame *frame, struct SwsContext *
                     shadow = av_malloc(frame->linesize[0] * frame->height + 16 + 16/*STRIDE_ALIGN*/ - 1);
                 }
 
+                if (!shadow2) {
+                    shadow2 = av_malloc(frame->linesize[0] * frame->height + 16 + 16/*STRIDE_ALIGN*/ - 1);
+                }
+
                 if (!heatmap) {
                     heatmap = av_malloc(frame->linesize[0] * frame->height + 16 + 16/*STRIDE_ALIGN*/ - 1);
                 }
@@ -1057,6 +1064,7 @@ static int upload_texture(SDL_Texture **tex, AVFrame *frame, struct SwsContext *
                                 roi_img,
                                 vedge,
                                 shadow,
+                                shadow2,
                                 heatmap,
                                 &roi,
                                 &hist_peak,
@@ -1076,6 +1084,10 @@ static int upload_texture(SDL_Texture **tex, AVFrame *frame, struct SwsContext *
                                            frame->data[2], frame->linesize[2]);
 
                 ret = SDL_UpdateYUVTexture(fcw_texture[FCW_WINDOW_SHADOW], NULL, shadow, frame->linesize[0],
+                                           frame->data[1], frame->linesize[1],
+                                           frame->data[2], frame->linesize[2]);
+
+                ret = SDL_UpdateYUVTexture(fcw_texture[FCW_WINDOW_SHADOW2], NULL, shadow2, frame->linesize[0],
                                            frame->data[1], frame->linesize[1],
                                            frame->data[2], frame->linesize[2]);
 
@@ -1296,8 +1308,10 @@ static void video_image_display(VideoState *is)
         //SDL_RenderDrawLine(fcw_renderer[FCW_WINDOW_SHADOW], rect.w / 2, 0, rect.w / 2, rect.h);
         //SDL_RenderDrawLine(fcw_renderer[FCW_WINDOW_SHADOW], 0, rect.h / 2, rect.w, rect.h / 2);
 
-        for (int i=0 ; i<ROI_TOTAL ; i++)
+        for (int i=0 ; i<ROI_TOTAL ; i++) {
             SDL_RenderDrawLine(fcw_renderer[FCW_WINDOW_SHADOW], roi.point[i%ROI_TOTAL].c, roi.point[i%ROI_TOTAL].r, roi.point[(i+1)%ROI_TOTAL].c, roi.point[(i+1)%ROI_TOTAL].r);
+            SDL_RenderDrawLine(fcw_renderer[FCW_WINDOW_SHADOW2], roi.point[i%ROI_TOTAL].c, roi.point[i%ROI_TOTAL].r, roi.point[(i+1)%ROI_TOTAL].c, roi.point[(i+1)%ROI_TOTAL].r);
+        }
 
         // Draw rectangle of candidate
         SDL_SetRenderDrawColor(fcw_renderer[FCW_WINDOW_VEHICLE], 0, 0xff, 0, 0xff);
@@ -1626,6 +1640,9 @@ static void do_exit(VideoState *is)
 
     if (shadow)
         av_freep(&shadow);
+
+    if (shadow2)
+        av_freep(&shadow2);
 
     if (heatmap)
         av_freep(&heatmap);

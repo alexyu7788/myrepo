@@ -74,6 +74,7 @@ bool FCW_DoDetection(
         uint8_t* roi_img,
         uint8_t* vedge,
         uint8_t* shadow,
+        uint8_t* shadow2,
         uint8_t* heatmap,
         const roi_t* roi,
         uint8_t* hist_peak,
@@ -88,6 +89,14 @@ bool FCW_Thresholding(
         uint8_t* hist_peak,
         uint8_t* otsu_th,
         uint8_t* final_th
+        );
+
+bool FCW_ThresholdingByIntegralImage(
+        gsl_matrix* src,
+        gsl_matrix* intimg,
+        gsl_matrix* dst,
+        uint32_t s,
+        float p
         );
 
 int  FCW_GetRounded_Direction(int gx, int gy);
@@ -135,22 +144,20 @@ bool FCW_CheckBlobValid(const gsl_matrix* imgy, const gsl_matrix* edged_imgy, bl
 
 bool FCW_UpdateVehicleHeatMap(gsl_matrix* heatmap, gsl_matrix_char* heatmap_id, VehicleCandidates* vcs); 
 
-bool FCW_GetMaxValidRectOfHeapMapID(
-    const gsl_matrix_char* m,
+bool FCW_GetContour(
+    const gsl_matrix_char* heatmap_id,
+    char id,
+    const point* start,
     rect* rect
-     );
+    );
 
-bool FCW_GetContourOfHeatMap(
+bool FCW_UpdateVCStatus(
     gsl_matrix* heatmap, 
     gsl_matrix_char* heatmap_id, 
     Candidate** cand_head,
     VehicleCandidates* vcs,
     VehicleCandidates* vcs2
     );
-
-bool FCW_UpdateVCStatus(gsl_matrix* heatmap, gsl_matrix_char* heatmap_id, VehicleCandidates* vcs);
-
-bool FCW_ResetVCID(VehicleCandidates* vcs);
 
 bool FCW_EdgeDetection(gsl_matrix* src, gsl_matrix* dst, gsl_matrix_ushort* gradient, gsl_matrix_char* dir, int direction);
 
