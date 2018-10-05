@@ -360,6 +360,19 @@ bool FCW_DoDetection(
         vcs->vc[i].m_h      = m_vcs.vc[i].m_h;
     }
 
+    for (i=0 ; i<vcs2->vc_count ; ++i) {
+        if (vcs2->vc[i].m_valid) {
+        dbg("\033[1;33mVehicle %d at (%d,%d) with (%d,%d), dist %.02lfm\033[m\n\n",
+                vcs2->vc[i].m_id,
+                vcs2->vc[i].m_r,
+                vcs2->vc[i].m_c,
+                vcs2->vc[i].m_w,
+                vcs2->vc[i].m_h,
+                vcs2->vc[i].m_dist);
+        }
+        
+    }
+
     // Copy matrix to data buffer for showing.
     for (r=0 ; r<m_imgy->size1 ; r++) {
         for (c=0 ; c<m_imgy->size2 ; c++) {
@@ -1320,13 +1333,13 @@ bool FCW_VehicleCandidateGenerate(
 
                 vcs->vc[vcs->vc_count].m_st     = Disappear;
 
-                dbg("\033[1;33mVehicle %d at (%d,%d) with (%d,%d), dist %.02lfm\033[m\n\n",
-                        vcs->vc[vcs->vc_count].m_id,
-                        vcs->vc[vcs->vc_count].m_r,
-                        vcs->vc[vcs->vc_count].m_c,
-                        vcs->vc[vcs->vc_count].m_w,
-                        vcs->vc[vcs->vc_count].m_h,
-                        vcs->vc[vcs->vc_count].m_dist);
+//                dbg("\033[1;33mVehicle %d at (%d,%d) with (%d,%d), dist %.02lfm\033[m\n\n",
+//                        vcs->vc[vcs->vc_count].m_id,
+//                        vcs->vc[vcs->vc_count].m_r,
+//                        vcs->vc[vcs->vc_count].m_c,
+//                        vcs->vc[vcs->vc_count].m_w,
+//                        vcs->vc[vcs->vc_count].m_h,
+//                        vcs->vc[vcs->vc_count].m_dist);
 
                 vcs->vc_count++;
             }
@@ -1775,7 +1788,7 @@ bool FCW_CheckBlobValid(const gsl_matrix* imgy, const gsl_matrix* vedge_imgy, bl
     if (cur && cur->valid == false)
         return false;
 
-    FCW_CheckBlobByArea(imgy, cur);
+    //FCW_CheckBlobByArea(imgy, cur);
 
     FCW_CheckBlobByVerticalEdge(vedge_imgy, cur);
 
@@ -1862,7 +1875,10 @@ bool FCW_GetContour(
     uint32_t r, c;
     uint32_t left, right, top, bottom;
     uint32_t find_fail_cnt;
+    uint32_t count;
     DIR nextdir;
+    float aspect_ratio;
+    point tp; // test point
 
     if (!heatmap_id || id < 0 || !start || !rect) {
         dbg();
@@ -1876,6 +1892,9 @@ bool FCW_GetContour(
     r = top = bottom = start->r;
     c = left = right = start->c;
 
+    memset(&tp, 0, sizeof(tp));
+
+    count = 0;
     while (1) {// Get contour of VC. (start point is equal to end point)
         while (1) {// Scan different direction to get neighbour.
             switch (nextdir) {
@@ -2003,8 +2022,45 @@ bool FCW_GetContour(
            rect->w  = right - left + 1;
            rect->h  = bottom - top + 1;
 
-           ret = true;
+           // aspect ratio checking (2 * 3/4 < ar < 2 * 5/4)
+           aspect_ratio = (rect->w / (float)rect->h);
+
+           //dbg("ratio of aspect is %.02f", rect->w / (float)rect->h);
+           if (1.5 < aspect_ratio && aspect_ratio < 2.5)
+               ret = true;
+
            break;
+        } else {
+            if (r != start->r && c != start->c) {
+                if (tp.r == 0 && tp.c == 0) {
+                    tp.r = r;
+                    tp.c = c;
+                } else {
+                    if (r == tp.r && c == tp.c) {
+                        //dbg("start(%d,%d), tp(%d,%d) <->(%d,%d)",
+                        //        start->r,
+                        //        start->c,
+                        //        tp.r,
+                        //        tp.c,
+                        //        r,
+                        //        c);
+                        dbg("Get incorrect contour.");
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (++count >= 1000) {
+            dbg("id %d (%d,%d) <-> id %d (%d,%d), next dir %d",
+                id,
+                start->r,
+                start->c,
+                gsl_matrix_char_get(heatmap_id, r, c),
+                r, 
+                c,
+                nextdir
+               );
         }
     }// Get contour of VC. (start point is equal to end point)
 
@@ -2090,6 +2146,22 @@ bool FCW_UpdateVCStatus(
 
             // Find the nearest existed candidate.
             nearest_cand = NULL;
+#if 1
+            midpoint_newcand.r = vcs->vc[which_vc].m_r + vcs->vc[which_vc].m_h/2;
+            midpoint_newcand.c = vcs->vc[which_vc].m_c + vcs->vc[which_vc].m_w/2;
+
+            cur_cand = *cand_head;
+
+            while (cur_cand) {
+                if (midpoint_newcand.r > cur_cand->m_r && midpoint_newcand.r < cur_cand->m_r + cur_cand->m_h &&
+                    midpoint_newcand.c > cur_cand->m_c && midpoint_newcand.c < cur_cand->m_c + cur_cand->m_w) {
+                    nearest_cand = cur_cand;
+                    break;
+                }
+
+                cur_cand = cur_cand->m_next;
+            }
+#else
             cur_cand = *cand_head;
 
             while (cur_cand) {
@@ -2101,14 +2173,17 @@ bool FCW_UpdateVCStatus(
 
                 dist = sqrt(pow(midpoint_existedcand.r - midpoint_newcand.r, 2.0) + pow(midpoint_existedcand.c - midpoint_newcand.c, 2.0));
                 dbg("dist %lf between cur_cand[%d] and which_vc[%d]", dist, cur_cand->m_id, which_vc);
-                //if (dist <= cur_cand->m_w/2 + vcs->vc[which_vc].m_w/2 || dist <= cur_cand->m_h/2 + vcs->vc[which_vc].m_h/2/* || vcs->vc[which_vc].m_w/2 || vcs->vc[which_vc].m_h/2*/) {
-                if (dist <= cur_cand->m_w || dist <= cur_cand->m_h/* || vcs->vc[which_vc].m_w/2 || vcs->vc[which_vc].m_h/2*/) {
+                //if (dist <= cur_cand->m_w/2/* || dist <= cur_cand->m_h/2*//* || vcs->vc[which_vc].m_w/2 || vcs->vc[which_vc].m_h/2*/) {
+                if (midpoint_newcand.r > cur_cand->m_r && midpoint_newcand.r < cur_cand->m_r + cur_cand->m_h &&
+                       midpoint_newcand.c > cur_cand->m_c && midpoint_newcand.c < cur_cand->m_c + cur_cand->m_w
+                        ) {
                     nearest_cand = cur_cand;
                     break;
                 }
 
                 cur_cand = cur_cand->m_next;
             }
+#endif
 
             if (nearest_cand) {
                 vc_id = nearest_cand->m_id;
@@ -2195,37 +2270,15 @@ bool FCW_UpdateVCStatus(
 
                 for (rr=0 ; rr<heatmap_sm.matrix.size1 ; ++rr) {
                     for (cc=0 ; cc<heatmap_sm.matrix.size2 ; ++cc) {
-                        //dbg("(%d,%d) = %lf, id %d", 
-                        //        vcs->vc[which_vc].m_r+rr,
-                        //        vcs->vc[which_vc].m_c+cc,
-                        //        gsl_matrix_get(&heatmap_sm.matrix, rr, cc), 
-                        //        gsl_matrix_char_get(&heatmapid_sm.matrix, rr, cc));
                         if (gsl_matrix_get(&heatmap_sm.matrix, rr, cc) < HeatMapAppearThreshold)
                             continue;
 
                         gsl_matrix_char_set(&heatmapid_sm.matrix, rr, cc, vc_id);
-                        //dbg("vc id : %d", vc_id);
-                        //dbg("(%d,%d) = %lf, id %d", 
-                        //        vcs->vc[which_vc].m_r+rr,
-                        //        vcs->vc[which_vc].m_c+cc,
-                        //        gsl_matrix_get(&heatmap_sm.matrix, rr, cc), 
-                        //        gsl_matrix_char_get(&heatmapid_sm.matrix, rr, cc));
                     }
                 }
             }
 
             // Generate/Update existed candidate.
-            if (gen_new_cand) {
-                new_cand = (Candidate*)malloc(sizeof(Candidate));
-                if (!new_cand) {
-                    dbg();
-                    return false;
-                }
-
-                memset(new_cand, 0x0, sizeof(Candidate));
-                new_cand->m_next = NULL;
-            }
-
             if (gen_new_cand == false && nearest_cand) {
                 //r > nearest_cand->m_r && r < nearest_cand->m_r + nearest_cand->m_h &&
                 //c > nearest_cand->m_c && c < nearest_cand->m_c + nearest_cand->m_w) {
@@ -2250,7 +2303,6 @@ bool FCW_UpdateVCStatus(
                // }
 
                 if (r > nearest_cand->m_r && c > nearest_cand->m_c) {
-                    dbg("new top_left is inside cur top_left");
                     find_pixel = false;
                     for (rr=nearest_cand->m_r ; rr<nearest_cand->m_r + nearest_cand->m_h ; ++rr) {
                         for (cc=nearest_cand->m_c ; cc<nearest_cand->m_c + nearest_cand->m_w ; ++cc) {
@@ -2267,9 +2319,11 @@ bool FCW_UpdateVCStatus(
                     //dbg("rr %d cc %d", rr, cc);
                     contour_sp.r = rr;
                     contour_sp.c = cc;
+                    dbg("new top_left is inside cur top_left, using (%d,%d) instead of (%d,%d)", rr, cc, r, c);
                 } else {
                     contour_sp.r = r;
                     contour_sp.c = c;
+                    dbg("new top_left is outside cur top_left, using (%d,%d)", r, c);
                 }
             } else {
                 contour_sp.r = r;
@@ -2278,34 +2332,40 @@ bool FCW_UpdateVCStatus(
 
             if (FCW_GetContour(heatmap_id, vc_id, &contour_sp, &contour_rect) == true) {
                 if (gen_new_cand) {
-                    if (new_cand) {
-                        new_cand->m_updated     = true;
-                        new_cand->m_valid       = true;
-                        new_cand->m_id          = vc_id;
-                        new_cand->m_r           = contour_rect.r;
-                        new_cand->m_c           = contour_rect.c;
-                        new_cand->m_w           = contour_rect.w;
-                        new_cand->m_h           = contour_rect.h;
-                        new_cand->m_dist        = FCW_GetObjDist(new_cand->m_w);
-                        
-                        // Add new candidate to candidate list.
-                        if (!*cand_head) {
-                            *cand_head = cur_cand = new_cand;
-                        } else {
-                            cur_cand = *cand_head;
-                            while (cur_cand) {
-                                if (!cur_cand->m_next) {
-                                    cur_cand->m_next = new_cand;
-                                    new_cand->m_next = NULL;
-                                    cur_cand = new_cand;
-                                    break;
-                                }
-
-                                cur_cand = cur_cand->m_next;
-                            }
-                        }
-                    } else
+                    new_cand = (Candidate*)malloc(sizeof(Candidate));
+                    if (!new_cand) {
                         dbg();
+                        return false;
+                    }
+
+                    memset(new_cand, 0x0, sizeof(Candidate));
+                    new_cand->m_next = NULL;
+
+                    new_cand->m_updated     = true;
+                    new_cand->m_valid       = true;
+                    new_cand->m_id          = vc_id;
+                    new_cand->m_r           = contour_rect.r;
+                    new_cand->m_c           = contour_rect.c;
+                    new_cand->m_w           = contour_rect.w;
+                    new_cand->m_h           = contour_rect.h;
+                    new_cand->m_dist        = FCW_GetObjDist(new_cand->m_w);
+
+                    // Add new candidate to candidate list.
+                    if (!*cand_head) {
+                        *cand_head = cur_cand = new_cand;
+                    } else {
+                        cur_cand = *cand_head;
+                        while (cur_cand) {
+                            if (!cur_cand->m_next) {
+                                cur_cand->m_next = new_cand;
+                                new_cand->m_next = NULL;
+                                cur_cand = new_cand;
+                                break;
+                            }
+
+                            cur_cand = cur_cand->m_next;
+                        }
+                    }
                 } else {
                     if (nearest_cand) {
                         nearest_cand->m_updated     = true;
@@ -2339,6 +2399,10 @@ bool FCW_UpdateVCStatus(
 
                     gsl_matrix_char_set_all(&heatmapid_sm.matrix, cur_cand->m_id);
                 }
+            } else {
+                if (gen_new_cand) {
+                    dbg("Fail to generate new vc.");
+                }
             }
         }
     }
@@ -2347,13 +2411,14 @@ bool FCW_UpdateVCStatus(
     cur_cand = *cand_head;
     while (cur_cand) {
         if (cur_cand->m_updated == false) {
-            dbg("vc %d is at (%d,%d) with (%d,%d) but has not updated.",
-                    cur_cand->m_id,
-                    cur_cand->m_r,
-                    cur_cand->m_c,
-                    cur_cand->m_w,
-                    cur_cand->m_h);
+            //dbg("vc %d is at (%d,%d) with (%d,%d) but has not updated.",
+            //        cur_cand->m_id,
+            //        cur_cand->m_r,
+            //        cur_cand->m_c,
+            //        cur_cand->m_w,
+            //        cur_cand->m_h);
 
+            // Find a pixel inside existed vc which still has an id.
             find_pixel = false;
             for (r=cur_cand->m_r ; r<cur_cand->m_r+cur_cand->m_h ; ++r) {
                 for (c=cur_cand->m_c ; c<cur_cand->m_c+cur_cand->m_w ; ++c) {
@@ -2381,8 +2446,7 @@ bool FCW_UpdateVCStatus(
             }
 
             if (cur_cand->m_updated == true) {
-                dbg("vc %d is self-updated.", cur_cand->m_id);
-                dbg("vc %d (%d,%d) with (%d,%d).",
+                dbg("vc %d (%d,%d) with (%d,%d) is self-updated.",
                         cur_cand->m_id,
                         cur_cand->m_r,
                         cur_cand->m_c,
@@ -2413,7 +2477,6 @@ bool FCW_UpdateVCStatus(
                 }
             }
         } else {
-            dbg();
             cur_cand = cur_cand->m_next;
         }
     }
