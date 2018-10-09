@@ -1039,10 +1039,10 @@ static int upload_texture(SDL_Texture **tex, AVFrame *frame, struct SwsContext *
                 }
 
                 roi.point[ROI_LEFTTOP].r = frame->height / 6;
-                roi.point[ROI_LEFTTOP].c = frame->width * 4 / 10 ;
+                roi.point[ROI_LEFTTOP].c = frame->width * 3 / 10 ;
 
                 roi.point[ROI_RIGHTTOP].r = frame->height / 6;
-                roi.point[ROI_RIGHTTOP].c = frame->width * 6 / 10;
+                roi.point[ROI_RIGHTTOP].c = frame->width * 7 / 10;
 
                 roi.point[ROI_LEFTBOTTOM].r = frame->height * 18 / 20;
                 roi.point[ROI_LEFTBOTTOM].c = frame->width / 20;

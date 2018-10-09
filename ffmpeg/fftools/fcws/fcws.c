@@ -342,6 +342,9 @@ bool FCW_DoDetection(
                                 hori_hist,
                                 &m_vcs);
 
+    // Check symmetry property.
+    FCW_CheckSymmProperty(m_imgy, &m_vcs, 0.1, 0.25);
+
     // Update HeatMap
     FCW_UpdateVehicleHeatMap(m_heatmap, m_heatmap_id, &m_vcs);
 
@@ -352,7 +355,7 @@ bool FCW_DoDetection(
     vcs->vc_count = m_vcs.vc_count;
     for (i=0 ; i<m_vcs.vc_count ; i++) {
         vcs->vc[i].m_valid  = m_vcs.vc[i].m_valid;
-        vcs->vc[i].m_id     = m_vcs.vc[i].m_id;
+        vcs->vc[i].m_id     = m_vcs.vc[i].m_id; 
         vcs->vc[i].m_dist   = m_vcs.vc[i].m_dist;
         vcs->vc[i].m_r      = m_vcs.vc[i].m_r;
         vcs->vc[i].m_c      = m_vcs.vc[i].m_c;
@@ -1795,6 +1798,70 @@ bool FCW_CheckBlobValid(const gsl_matrix* imgy, const gsl_matrix* vedge_imgy, bl
     return true;
 }
 
+bool FCW_CheckSymmProperty(const gsl_matrix* imgy, VehicleCandidates* vcs, float th_pairwise, float th_symm)
+{
+    bool ret = false; 
+    uint32_t i, r, c;
+    double grade;
+    gsl_matrix_view imgy_sm, grademap_sm;
+    gsl_matrix* grademap = NULL;
+
+    if (!imgy || !vcs || th_pairwise <= 0 || th_symm <= 0) {
+        dbg();
+        return ret;
+    }
+
+    CheckOrReallocMatrix(&grademap, imgy->size1, imgy->size2, true);
+
+    if (!grademap) {
+        dbg();
+        return ret;
+    }
+
+    for (i=0 ; i<vcs->vc_count ; ++i) {
+
+        gsl_matrix_set_all(grademap, 0);
+
+        if (vcs->vc[i].m_valid == true) {
+
+            imgy_sm     = gsl_matrix_submatrix((gsl_matrix*)imgy, vcs->vc[i].m_r, vcs->vc[i].m_c, vcs->vc[i].m_h, vcs->vc[i].m_w);
+            grademap_sm = gsl_matrix_submatrix(grademap, vcs->vc[i].m_r, vcs->vc[i].m_c, vcs->vc[i].m_h, vcs->vc[i].m_w);
+
+            for (r=0 ; r<grademap_sm.matrix.size1 ; ++r) {
+                for (c=0 ; c<grademap_sm.matrix.size2/2 ; ++c) {
+                    //dbg("[%d,%d][%d,%d][%d,%d]", r, c, r, imgy_sm.matrix.size2 - 1 - c, grademap_sm.matrix.size1, grademap_sm.matrix.size2);
+                    //dbg("%lf", gsl_matrix_get(&imgy_sm.matrix, r, c));
+                    //dbg("%lf", gsl_matrix_get(&imgy_sm.matrix, r, imgy_sm.matrix.size2 - 1 - c));
+                    grade = fabs(((gsl_matrix_get(&imgy_sm.matrix, r, c) - gsl_matrix_get(&imgy_sm.matrix, r, imgy_sm.matrix.size2 - 1 - c)) / gsl_matrix_get(&imgy_sm.matrix, r, c))); 
+
+                    //dbg("[%d,%d] grade %.04lf", r, c, grade);
+                    if (grade < th_pairwise)
+                        gsl_matrix_set(&grademap_sm.matrix, r, c, 1);
+                }
+            }
+
+            grade = 0;
+
+            for (r=0 ; r<grademap_sm.matrix.size1 ; ++r) {
+                for (c=0 ; c<grademap_sm.matrix.size2/2 ; ++c) {
+                    grade += gsl_matrix_get(&grademap_sm.matrix, r, c);
+                }
+            }
+
+            grade = (grade / (grademap_sm.matrix.size1 * grademap_sm.matrix.size2 / 2));
+            dbg("grade[%d] %.02lf", i, grade);
+
+            if (grade < th_symm)
+                vcs->vc[i].m_valid = false;
+        }
+    }
+
+
+    FreeMatrix(&grademap);
+
+    return ret;
+}
+
 #define HeatMapIncrease 10.0
 #define HeatMapDecrease 10.0
 #define HeatMapAppearThreshold   100 
@@ -1821,6 +1888,9 @@ bool FCW_UpdateVehicleHeatMap(gsl_matrix* heatmap, gsl_matrix_char* heatmap_id, 
 
             // this pixel belongs to certain vehicle candidate.
             for (i=0 ; i<vcs->vc_count ; ++i) {
+                if (vcs->vc[i].m_valid == false)
+                    continue;
+
                 if (r >= vcs->vc[i].m_r && r< vcs->vc[i].m_r + vcs->vc[i].m_h && c >= vcs->vc[i].m_c && c < vcs->vc[i].m_c + vcs->vc[i].m_w) {
                     pixel_hit = true;
                     break;

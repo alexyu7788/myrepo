@@ -141,6 +141,7 @@ bool FCW_CheckBlobByVerticalEdge(const gsl_matrix* edged_imgy, blob* cur);
 
 bool FCW_CheckBlobValid(const gsl_matrix* imgy, const gsl_matrix* edged_imgy, blob* cur);
 
+bool FCW_CheckSymmProperty(const gsl_matrix* imgy, VehicleCandidates* vcs, float th_pairwise, float th_symm);
 
 bool FCW_UpdateVehicleHeatMap(gsl_matrix* heatmap, gsl_matrix_char* heatmap_id, VehicleCandidates* vcs); 
 
