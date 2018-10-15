@@ -343,7 +343,7 @@ bool FCW_DoDetection(
                                 &m_vcs);
 
     // Check symmetry property.
-    FCW_CheckSymmProperty(m_imgy, &m_vcs, 0.1, 0.25);
+    //FCW_CheckSymmProperty(m_imgy, &m_vcs, 0.1, 0.25);
 
     // Update HeatMap
     FCW_UpdateVehicleHeatMap(m_heatmap, m_heatmap_id, &m_vcs);
@@ -1224,7 +1224,7 @@ bool FCW_VehicleCandidateGenerate(
         cur_peak = gsl_vector_max(m_temp_hori_hist);
         cur_peak_idx = gsl_vector_max_index(m_temp_hori_hist);
 
-        if (cur_peak < (max_peak * 0.6))
+        if (cur_peak < (max_peak * 0.5))
             break;
 
         //printf("\n");
@@ -1848,7 +1848,7 @@ bool FCW_CheckSymmProperty(const gsl_matrix* imgy, VehicleCandidates* vcs, float
                 }
             }
 
-            grade = (grade / (grademap_sm.matrix.size1 * grademap_sm.matrix.size2 / 2));
+            grade = (grade / (grademap_sm.matrix.size1 * grademap_sm.matrix.size2 / 2.0));
             dbg("grade[%d] %.02lf", i, grade);
 
             if (grade < th_symm)
@@ -1865,7 +1865,6 @@ bool FCW_CheckSymmProperty(const gsl_matrix* imgy, VehicleCandidates* vcs, float
 #define HeatMapIncrease 10.0
 #define HeatMapDecrease 10.0
 #define HeatMapAppearThreshold   100 
-
 
 bool FCW_UpdateVehicleHeatMap(gsl_matrix* heatmap, gsl_matrix_char* heatmap_id, VehicleCandidates* vcs)
 {
@@ -1948,7 +1947,7 @@ bool FCW_GetContour(
     uint32_t count;
     DIR nextdir;
     float aspect_ratio;
-    point tp; // test point
+    point tp; // test point to avoid infinite loop.
 
     if (!heatmap_id || id < 0 || !start || !rect) {
         dbg();
@@ -2092,6 +2091,7 @@ bool FCW_GetContour(
            rect->w  = right - left + 1;
            rect->h  = bottom - top + 1;
 
+           // *** Assume previously height is half of weight. *** 
            // aspect ratio checking (2 * 3/4 < ar < 2 * 5/4)
            aspect_ratio = (rect->w / (float)rect->h);
 
@@ -2151,9 +2151,8 @@ bool FCW_UpdateVCStatus(
     uint32_t r, c, rr, cc; 
     bool find_pixel;
     bool gen_new_cand;
-    double dist;
     Candidate *cur_cand, *nearest_cand, *new_cand;
-    point midpoint_newcand, midpoint_existedcand;
+    point midpoint_newcand;
     point contour_sp;
     rect contour_rect;
     gsl_matrix_view heatmap_sm;
@@ -2389,11 +2388,11 @@ bool FCW_UpdateVCStatus(
                     //dbg("rr %d cc %d", rr, cc);
                     contour_sp.r = rr;
                     contour_sp.c = cc;
-                    dbg("new top_left is inside cur top_left, using (%d,%d) instead of (%d,%d)", rr, cc, r, c);
+                    dbg("new top_left is inside cur top_left, using (%d,%d) instead of (%d,%d) as start point of contour.", rr, cc, r, c);
                 } else {
                     contour_sp.r = r;
                     contour_sp.c = c;
-                    dbg("new top_left is outside cur top_left, using (%d,%d)", r, c);
+                    dbg("new top_left is outside cur top_left, using (%d,%d) as start point of contour.", r, c);
                 }
             } else {
                 contour_sp.r = r;
@@ -2462,10 +2461,10 @@ bool FCW_UpdateVCStatus(
                        );
 
                     heatmapid_sm = gsl_matrix_char_submatrix(heatmap_id,
-                            cur_cand->m_r,
-                            cur_cand->m_c,
-                            cur_cand->m_h,
-                            cur_cand->m_w);
+                                                                cur_cand->m_r,
+                                                                cur_cand->m_c,
+                                                                cur_cand->m_h,
+                                                                cur_cand->m_w);
 
                     gsl_matrix_char_set_all(&heatmapid_sm.matrix, cur_cand->m_id);
                 }
