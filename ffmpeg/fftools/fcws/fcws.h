@@ -171,6 +171,7 @@ void FCW_ConvertYUVToRGB(int y, int u, int v, uint8_t* r, uint8_t* g, uint8_t* b
 
 bool FCW_ConvertIYUVToHSV(uint8_t* y, int width, int height, int pitch_y, uint8_t* u, int pitch_u, uint8_t* v, int pitch_v, gsl_matrix* hsv[3]);
 
+bool FCW_GenHSVImg(const gsl_matrix* src, gsl_matrix* dst, const gsl_matrix* hsv[3], const VehicleCandidates* vcs, double hue_th1, double hue_th2, double intensity_th);
 //class CFCWS {
 //    protected:
 //        gsl_matrix*         m_imgy;

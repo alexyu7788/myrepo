@@ -304,8 +304,6 @@ bool FCW_DoDetection(
     CheckOrReallocMatrix(&m_hsv[2], h, w, true); // V
     CheckOrReallocMatrix(&m_hsv_img, h, w, true); // hsv image
     
-    FCW_ConvertIYUVToHSV(img, w, h, linesize, imgu, linesize_u, imgv, linesize_v, m_hsv);
-
     // Copy image array to image matrix
     for (r=0 ; r<m_imgy->size1 ; r++) {
         for (c=0 ; c<m_imgy->size2 ; c++) {
@@ -343,6 +341,10 @@ bool FCW_DoDetection(
 
     // Check symmetry property.
     //FCW_CheckSymmProperty(m_imgy, &m_vcs, 0.1, 0.25);
+
+    FCW_ConvertIYUVToHSV(img, w, h, linesize, imgu, linesize_u, imgv, linesize_v, m_hsv);
+
+    FCW_GenHSVImg(m_imgy, m_hsv_img, (const gsl_matrix**)m_hsv, &m_vcs, 52.0, 342.0, 0.16);
 
     // Update HeatMap
     FCW_UpdateVehicleHeatMap(m_heatmap, m_heatmap_id, &m_vcs);
@@ -2713,4 +2715,41 @@ bool FCW_ConvertIYUVToHSV(uint8_t* y, int width, int height, int pitch_y, uint8_
 //    free (dst);
 
     return ret;
+}
+
+bool FCW_GenHSVImg(const gsl_matrix* src, gsl_matrix* dst, const gsl_matrix* hsv[3], const VehicleCandidates* vcs, double hue_th1, double hue_th2, double intensity_th)
+{
+    int i;
+    uint32_t r, c;
+    const gsl_matrix *hue = NULL, *intensity = NULL;
+
+    hue = hsv[0];
+    intensity = hsv[2];
+
+    if (!src || !dst || !hsv || !hue || !intensity || !vcs) {
+        dbg();
+        return false;
+    }
+
+    for (i=0 ; i<vcs->vc_count ; ++i) {
+        if (vcs->vc[i].m_valid == true) {
+            for (r=vcs->vc[i].m_r ; r<vcs->vc[i].m_r + vcs->vc[i].m_h ; ++r) {
+                for (c=vcs->vc[i].m_c ; c<vcs->vc[i].m_c + vcs->vc[i].m_w ; ++c) {
+//                    dbg("[%d,%d], %lf, %lf",
+//                            r, c,
+//                            gsl_matrix_get(hue, r, c),
+//                            gsl_matrix_get(intensity, r, c));
+
+                    if (gsl_matrix_get(intensity, r, c) > intensity_th && 
+                            (gsl_matrix_get(hue, r, c) < hue_th1 || gsl_matrix_get(hue, r, c) > hue_th2)) {
+                        gsl_matrix_set(dst, r, c, gsl_matrix_get(src, r, c));
+                    } else {
+                        gsl_matrix_set(dst, r, c, 0);
+                    }
+                }
+            }
+        }
+    }
+
+    return true;
 }
