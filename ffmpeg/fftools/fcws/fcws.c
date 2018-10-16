@@ -33,12 +33,11 @@ static double dy_ary[] = {
 
 // Global variables
 gsl_matrix*         m_imgy = NULL;
-gsl_matrix*         m_shadow = NULL;
 gsl_matrix*         m_vedge_imgy = NULL;
 gsl_matrix*         m_heatmap = NULL;
 gsl_matrix*         m_temp_imgy = NULL;
 gsl_matrix*         m_intimg = NULL;    // integral image
-gsl_matrix*         m_shadow2 = NULL;   // shadow by integral image
+gsl_matrix*         m_shadow = NULL;   // shadow by integral image
 
 gsl_matrix_ushort*  m_gradient = NULL;
 gsl_matrix_char*    m_direction = NULL;
@@ -58,6 +57,9 @@ gsl_vector*         m_temp_hori_hist= NULL;
 blob*               m_blob_head = NULL;
 gsl_matrix_char*    m_heatmap_id = NULL;
 Candidate*          m_cand_head = NULL;
+
+gsl_matrix*         m_hsv_img = NULL;
+gsl_matrix*         m_hsv[3] = {NULL};
 
 uint64_t frame_count = 0;
 
@@ -96,7 +98,10 @@ bool FCW_DeInit()
     FreeMatrix(&m_vedge_imgy);
     FreeMatrix(&m_temp_imgy);
     FreeMatrix(&m_intimg);
-    FreeMatrix(&m_shadow2);
+    FreeMatrix(&m_hsv[0]);
+    FreeMatrix(&m_hsv[1]);
+    FreeMatrix(&m_hsv[2]);
+    FreeMatrix(&m_hsv_img);
     FreeMatrixUshort(&m_gradient);
     FreeMatrixChar(&m_direction);
     FreeMatrixChar(&m_heatmap_id);
@@ -258,6 +263,10 @@ bool FCW_ThresholdingByIntegralImage(
 bool FCW_DoDetection(
         uint8_t* img, 
         int linesize, 
+        uint8_t* imgu, 
+        int linesize_u, 
+        uint8_t* imgv, 
+        int linesize_v, 
         int w, 
         int h, 
         gsl_vector* vertical_hist, 
@@ -268,12 +277,9 @@ bool FCW_DoDetection(
         uint8_t* roi_img,
         uint8_t* vedge,
         uint8_t* shadow,
-        uint8_t* shadow2,
         uint8_t* heatmap,
-        const roi_t* roi,
-        uint8_t* hist_peak,
-        uint8_t* otsu_th,
-        uint8_t* final_th
+        uint8_t* hsv,
+        const roi_t* roi
         )
 {
     uint32_t i, r, c;
@@ -289,37 +295,21 @@ bool FCW_DoDetection(
     CheckOrReallocMatrix(&m_temp_imgy, h, w, true);
     CheckOrReallocMatrix(&m_heatmap, h, w, false);
     CheckOrReallocMatrix(&m_intimg, h, w, true);
-    CheckOrReallocMatrix(&m_shadow2, h, w, true);
     CheckOrReallocMatrixChar(&m_heatmap_id, h, w, false);
     CheckOrReallocMatrixUshort(&m_gradient, h, w, true);
     CheckOrReallocMatrixChar(&m_direction, h, w, true);
 
-    // Integral Image-based thresholding-----------------------------------------------
+    CheckOrReallocMatrix(&m_hsv[0], h, w, true); // H
+    CheckOrReallocMatrix(&m_hsv[1], h, w, true); // S
+    CheckOrReallocMatrix(&m_hsv[2], h, w, true); // V
+    CheckOrReallocMatrix(&m_hsv_img, h, w, true); // hsv image
+    
+    FCW_ConvertIYUVToHSV(img, w, h, linesize, imgu, linesize_u, imgv, linesize_v, m_hsv);
+
     // Copy image array to image matrix
     for (r=0 ; r<m_imgy->size1 ; r++) {
         for (c=0 ; c<m_imgy->size2 ; c++) {
             gsl_matrix_set(m_imgy, r, c, img[r * linesize + c]); 
-        }
-    }
-
-    // Get thresholding image
-    FCW_ThresholdingByIntegralImage(m_imgy, m_intimg, m_temp_imgy, 50, 0.7);
-
-    // Get horizontal histogram
-    for (r=0 ; r<m_temp_imgy->size1 ; r++) {
-        for(c=0 ; c<m_temp_imgy->size2 ; c++) {
-            if (FCW_PixelInROI(r, c, roi) == true)
-                gsl_matrix_set(m_shadow2, r, c, gsl_matrix_get(m_temp_imgy, r, c));
-            else
-                gsl_matrix_set(m_shadow2, r, c, NOT_SHADOW);
-        }
-    }
-    FCW_CalHorizontalHist(m_shadow2, hori_hist);
-    // Integral Image-based thresholding-----------------------------------------------
-
-    // Otus-based threshold------------------------------------------------------------
-    for (r=0 ; r<m_imgy->size1 ; r++) {
-        for (c=0 ; c<m_imgy->size2 ; c++) {
             // Generate ROI image based roi
             if (FCW_PixelInROI(r, c, roi) == true)
                 gsl_matrix_set(m_temp_imgy, r, c, img[r * linesize + c]);
@@ -328,16 +318,25 @@ bool FCW_DoDetection(
         }
     }
 
+    // Integral Image-based thresholding-----------------------------------------------
     // Get thresholding image
-    FCW_Thresholding(m_temp_imgy, m_shadow, grayscale_hist, hist_peak, otsu_th, final_th);
+    FCW_ThresholdingByIntegralImage(m_imgy, m_intimg, m_shadow, 50, 0.7);
 
-    // Otus-based threshold------------------------------------------------------------
+    for (r=0 ; r<m_temp_imgy->size1 ; r++) {
+        for(c=0 ; c<m_temp_imgy->size2 ; c++) {
+            if (FCW_PixelInROI(r, c, roi) == false)
+                gsl_matrix_set(m_shadow, r, c, NOT_SHADOW);
+        }
+    }
+
+    // Get horizontal histogram
+    FCW_CalHorizontalHist(m_shadow, hori_hist);
 
     // Get vertical edge.
     FCW_EdgeDetection(m_imgy, m_vedge_imgy, m_gradient, m_direction, 1);
 
     // Get VC
-    FCW_VehicleCandidateGenerate(m_shadow2,
+    FCW_VehicleCandidateGenerate(m_shadow,
                                 m_vedge_imgy,
                                 hori_hist,
                                 &m_vcs);
@@ -381,10 +380,10 @@ bool FCW_DoDetection(
         for (c=0 ; c<m_imgy->size2 ; c++) {
             img     [r * linesize + c] = (uint8_t)gsl_matrix_get(m_imgy, r,c); 
             shadow  [r * linesize + c] = (uint8_t)gsl_matrix_get(m_shadow, r,c); 
-            shadow2 [r * linesize + c] = (uint8_t)gsl_matrix_get(m_shadow2, r,c); 
             roi_img [r * linesize + c] = (uint8_t)gsl_matrix_get(m_temp_imgy, r,c); 
             vedge   [r * linesize + c] = (uint8_t)gsl_matrix_get(m_vedge_imgy, r,c); 
             heatmap [r * linesize + c] = (uint8_t)gsl_matrix_get(m_heatmap, r,c); 
+            hsv     [r * linesize + c] = (uint8_t)gsl_matrix_get(m_hsv_img, r,c); 
         }
     }
 
@@ -2590,4 +2589,128 @@ double FCW_GetObjDist(double pixel)
 {
     // d = W * f / w 
     return (VehicleWidth * (EFL / 2.0)) / (pixel * PixelSize);
+}
+
+inline uint8_t clip_uint8(int a)
+{
+    if (a&(~0xFF)) return (~a)>>31;
+    else           return a;
+}
+
+inline double max2(double a, double b)
+{
+    return a > b ? a : b;
+}
+
+inline double max3(double a, double b, double c)
+{
+    return max2(a, b) > c ? max2(a, b) : c;
+}
+
+inline double min2(double a, double b)
+{
+    return a > b ? b : a;
+}
+
+inline double min3(double a, double b, double c)
+{
+    return min2(a, b) > c ? c : min2(a, b);
+}
+
+void FCW_ConvertYUVToRGB(int y, int u, int v, uint8_t* r, uint8_t* g, uint8_t* b)
+{
+    *r = clip_uint8(1.164 * (y - 16) + 1.596 * (v - 128));
+    *g = clip_uint8(1.164 * (y - 16) - 0.813 * (v - 128) - 0.391 * (u - 128));
+    *b = clip_uint8(1.164 * (y - 16) + 2.018 * (u - 128));
+}
+
+bool FCW_ConvertIYUVToHSV(uint8_t* y, int width, int height, int pitch_y, uint8_t* u, int pitch_u, uint8_t* v, int pitch_v, gsl_matrix* hsv[3])
+{
+    bool ret = false;
+    int yy, uu, vv;
+    uint32_t rr, cc;
+    uint8_t r, g, b;
+    double hsv_h, hsv_s, hsv_v;
+    double nr, ng, nb; // normalized to 0 ~ 1
+    double max, min;
+
+//    uint8_t *dst = NULL, *rgb = NULL;
+//    FILE *fp = NULL;
+//    char fn[512];
+//    static int cnt = 0;
+
+    if (!y || !u || !v || !hsv) {
+        dbg();
+        return ret;
+    }
+
+//    dst = (uint8_t*)malloc(sizeof(uint8_t)* w * h * 3);
+//
+//    if (!dst) {
+//        dbg();
+//        return ret;
+//    }
+
+//    rgb = dst;
+    ret = true;
+
+    for (rr=0 ; rr<height ; ++rr) {
+        for (cc=0 ; cc<width ; ++cc) {
+            yy = *(y + rr * pitch_y     + cc);
+            uu = *(u + rr * pitch_u / 2 + cc / 2);
+            vv = *(v + rr * pitch_v / 2 + cc / 2);
+
+            FCW_ConvertYUVToRGB(yy, uu, vv, &r, &g, &b);
+
+            nr = r / (double)(r + g + b);
+            ng = g / (double)(r + g + b);
+            nb = b / (double)(r + g + b);
+
+            max = max3(nr, ng, nb);
+            min = min3(nr, ng, nb);
+
+            hsv_v = max;
+
+            if (max == 0)
+                hsv_s = 0;
+            else
+                hsv_s = (1.0 - min/max);
+
+            if (max == min)
+                hsv_h = 0;
+            else if (max == nr && ng >= nb)
+                hsv_h = (60 * ((ng - nb) / (max - min))) + 0;
+            else if (max == nr && ng < nb)
+                hsv_h = (60 * ((ng - nb) / (max - min))) + 360;
+            else if (max == ng)
+                hsv_h = (60 * ((nb - nr) / (max - min))) + 120;
+            else if (max == nb)
+                hsv_h = (60 * ((nr - ng) / (max - min))) + 240;
+
+//            dbg("[%d,%d] (%.03lf, %.03lf, %.03lf),(%.03lf, %.03lf, %.03lf), max:%.03lf, min:%.03lf",
+//                    rr, cc,
+//                    nr, ng, nb,
+//                    hsv_h, hsv_s, hsv_v,
+//                    max, min);
+
+//            *rgb++ = r;
+//            *rgb++ = g;
+//            *rgb++ = b;
+
+            gsl_matrix_set(hsv[0], rr, cc, hsv_h);
+            gsl_matrix_set(hsv[1], rr, cc, hsv_s);
+            gsl_matrix_set(hsv[2], rr, cc, hsv_v);
+        }
+    }
+
+//    snprintf(fn, sizeof(fn), "rgb/rgb%03d.rgb", cnt++);
+//    fp = fopen(fn, "w");
+//    if (fp) {
+//        fwrite(dst, 1, w * h * 3, fp);
+//        fclose(fp);
+//    }
+//
+//    free (dst);
+
+    return ret;
 }

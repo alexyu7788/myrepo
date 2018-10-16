@@ -67,7 +67,7 @@
 static uint8_t* roi_img = NULL;
 static uint8_t* vedge = NULL;
 static uint8_t* shadow = NULL;
-static uint8_t* shadow2 = NULL;
+static uint8_t* hsv = NULL;
 static uint8_t* heatmap = NULL;
 
 static VehicleCandidates vcs, vcs2;
@@ -76,16 +76,12 @@ static gsl_vector* hori_hist = NULL;
 static gsl_vector* grayscale_hist = NULL;
 static roi_t roi;
 
-static uint8_t hist_peak;
-static uint8_t otsu_th;
-static uint8_t final_th;
-
 enum {
     FCW_WINDOW_ROI = 0,
     FCW_WINDOW_SHADOW,
-    FCW_WINDOW_SHADOW2,
     FCW_WINDOW_EDGE,
     FCW_WINDOW_VEHICLE,
+    FCW_WINDOW_HSV,
     FCW_WINDOW_HEATMAP,
     FCW_WINDOW_RESULT,
     FCW_WINDOW_TOTAL,
@@ -93,22 +89,17 @@ enum {
 
 static const char *fcw_window_title[FCW_WINDOW_TOTAL] = {
     [FCW_WINDOW_ROI]        = "ROI",
-    [FCW_WINDOW_SHADOW]     = "Shadow based Otsu",
-    [FCW_WINDOW_SHADOW2]    = "Shadow based IntegralImage",
+    [FCW_WINDOW_SHADOW]     = "Shadow based IntegralImage",
     [FCW_WINDOW_EDGE]       = "Vertical Edge",
     [FCW_WINDOW_VEHICLE]    = "Candidates",
-    [FCW_WINDOW_RESULT]     = "Result",
+    [FCW_WINDOW_HSV]        = "HSV",
     [FCW_WINDOW_HEATMAP]    = "Heatmap",
+    [FCW_WINDOW_RESULT]     = "Result",
 };
 static SDL_Window *fcw_window[FCW_WINDOW_TOTAL] = {NULL};
 static SDL_Renderer *fcw_renderer[FCW_WINDOW_TOTAL] = {NULL};
 static SDL_Texture *fcw_texture[FCW_WINDOW_TOTAL] = {NULL};
 static SDL_RendererInfo fcw_renderer_info[FCW_WINDOW_TOTAL] = {{0}};
-
-static SDL_Window *fcw_windowRGB = NULL;
-static SDL_Renderer *fcw_rendererRGB = NULL;
-static SDL_Texture *fcw_textureRGB = NULL;
-static SDL_RendererInfo fcw_rendererRGB_info;
 // -----------------------------------FCWS---------------------------------------------
 
 const char program_name[] = "ffplay";
@@ -884,7 +875,6 @@ static inline void fill_rectangle(int x, int y, int w, int h)
         if (w && h)
             SDL_RenderFillRect(fcw_renderer[i], &rect);
     }
-    SDL_RenderFillRect(fcw_rendererRGB, &rect);
     //---------------------FCW------------------
 }
 
@@ -998,8 +988,6 @@ static int upload_texture(SDL_Texture **tex, AVFrame *frame, struct SwsContext *
         if (realloc_texture2(&fcw_texture[i], fcw_renderer[i], sdl_pix_fmt == SDL_PIXELFORMAT_UNKNOWN ? SDL_PIXELFORMAT_ARGB8888 : sdl_pix_fmt, frame->width, frame->height, sdl_blendmode, 0) < 0)
             return -1;
     }
-    if (realloc_texture2(&fcw_textureRGB, fcw_rendererRGB, SDL_PIXELFORMAT_RGB24, frame->width, frame->height, sdl_blendmode, 0) < 0)
-        return -1;
     //---------------------FCW------------------
     switch (sdl_pix_fmt) {
         case SDL_PIXELFORMAT_UNKNOWN:
@@ -1022,21 +1010,6 @@ static int upload_texture(SDL_Texture **tex, AVFrame *frame, struct SwsContext *
         case SDL_PIXELFORMAT_IYUV:
             if (frame->linesize[0] > 0 && frame->linesize[1] > 0 && frame->linesize[2] > 0) {
 #if 1
-                uint8_t *pixels[4];
-                int pitch[4];
-                *img_convert_ctx = sws_getCachedContext(*img_convert_ctx,
-                        frame->width, frame->height, frame->format, frame->width, frame->height,
-                        AV_PIX_FMT_RGB24, sws_flags, NULL, NULL, NULL);
-                if (*img_convert_ctx != NULL) {
-                    if (!SDL_LockTexture(*tex, NULL, (void **)pixels, pitch)) {
-                        sws_scale(*img_convert_ctx, (const uint8_t * const *)frame->data, frame->linesize,
-                                0, frame->height, pixels, pitch);
-                        ret = SDL_UpdateTexture(fcw_textureRGB, NULL, pixels[0], pitch[0]);
-                        SDL_UnlockTexture(*tex);
-                    }
-                } else {
-                    ret = -1;
-                }
                 //---------------------FCW------------------
                 CheckOrReallocVector(&vertical_hist, frame->width, true);
                 CheckOrReallocVector(&hori_hist, frame->height, true);
@@ -1054,8 +1027,8 @@ static int upload_texture(SDL_Texture **tex, AVFrame *frame, struct SwsContext *
                     shadow = av_malloc(frame->linesize[0] * frame->height + 16 + 16/*STRIDE_ALIGN*/ - 1);
                 }
 
-                if (!shadow2) {
-                    shadow2 = av_malloc(frame->linesize[0] * frame->height + 16 + 16/*STRIDE_ALIGN*/ - 1);
+                if (!hsv) {
+                    hsv = av_malloc(frame->linesize[0] * frame->height + 16 + 16/*STRIDE_ALIGN*/ - 1);
                 }
 
                 if (!heatmap) {
@@ -1078,6 +1051,10 @@ static int upload_texture(SDL_Texture **tex, AVFrame *frame, struct SwsContext *
 
                 FCW_DoDetection(frame->data[0],
                                 frame->linesize[0],
+                                frame->data[1],
+                                frame->linesize[1],
+                                frame->data[2],
+                                frame->linesize[2],
                                 frame->width,
                                 frame->height,
                                 vertical_hist,
@@ -1088,12 +1065,9 @@ static int upload_texture(SDL_Texture **tex, AVFrame *frame, struct SwsContext *
                                 roi_img,
                                 vedge,
                                 shadow,
-                                shadow2,
                                 heatmap,
-                                &roi,
-                                &hist_peak,
-                                &otsu_th,
-                                &final_th
+                                hsv,
+                                &roi
                                 ); 
 
 //                memset(frame->data[1], 128, sizeof(uint8_t)*frame->linesize[1]*frame->height/2);
@@ -1111,15 +1085,15 @@ static int upload_texture(SDL_Texture **tex, AVFrame *frame, struct SwsContext *
                                            frame->data[1], frame->linesize[1],
                                            frame->data[2], frame->linesize[2]);
 
-                ret = SDL_UpdateYUVTexture(fcw_texture[FCW_WINDOW_SHADOW2], NULL, shadow2, frame->linesize[0],
-                                           frame->data[1], frame->linesize[1],
-                                           frame->data[2], frame->linesize[2]);
-
                 ret = SDL_UpdateYUVTexture(fcw_texture[FCW_WINDOW_HEATMAP], NULL, heatmap, frame->linesize[0],
                                            frame->data[1], frame->linesize[1],
                                            frame->data[2], frame->linesize[2]);
 
                 ret = SDL_UpdateYUVTexture(fcw_texture[FCW_WINDOW_VEHICLE], NULL, frame->data[0], frame->linesize[0],
+                                           frame->data[1], frame->linesize[1],
+                                           frame->data[2], frame->linesize[2]);
+
+                ret = SDL_UpdateYUVTexture(fcw_texture[FCW_WINDOW_HSV], NULL, hsv, frame->linesize[0],
                                            frame->data[1], frame->linesize[1],
                                            frame->data[2], frame->linesize[2]);
 
@@ -1235,7 +1209,6 @@ static void video_image_display(VideoState *is)
     for (int i=0 ; i<FCW_WINDOW_TOTAL ; ++i) {
         SDL_RenderCopyEx(fcw_renderer[i], fcw_texture[i], NULL, &rect, 0, NULL, vp->flip_v ? SDL_FLIP_VERTICAL : 0);
     }
-    SDL_RenderCopyEx(fcw_rendererRGB, fcw_textureRGB, NULL, &rect, 0, NULL, vp->flip_v ? SDL_FLIP_VERTICAL : 0);
     //----------------------FCW------------------------------------
     set_sdl_yuv_conversion_mode(NULL);
     if (sp) {
@@ -1335,7 +1308,6 @@ static void video_image_display(VideoState *is)
 
         for (int i=0 ; i<ROI_TOTAL ; i++) {
             SDL_RenderDrawLine(fcw_renderer[FCW_WINDOW_SHADOW], roi.point[i%ROI_TOTAL].c, roi.point[i%ROI_TOTAL].r, roi.point[(i+1)%ROI_TOTAL].c, roi.point[(i+1)%ROI_TOTAL].r);
-            SDL_RenderDrawLine(fcw_renderer[FCW_WINDOW_SHADOW2], roi.point[i%ROI_TOTAL].c, roi.point[i%ROI_TOTAL].r, roi.point[(i+1)%ROI_TOTAL].c, roi.point[(i+1)%ROI_TOTAL].r);
         }
 
         // Draw rectangle of candidate
@@ -1624,9 +1596,6 @@ static void stream_close(VideoState *is)
         if (fcw_texture[i])
             SDL_DestroyTexture(fcw_texture[i]);
     }
-
-    if (fcw_textureRGB)
-        SDL_DestroyTexture(fcw_textureRGB);
     // ---------------FCW-------------------------
     av_free(is);
 }
@@ -1660,9 +1629,6 @@ static void do_exit(VideoState *is)
             SDL_DestroyWindow(fcw_window[i]);
     }
 
-    SDL_DestroyRenderer(fcw_rendererRGB);
-    SDL_DestroyWindow(fcw_windowRGB);
-
     if (roi_img)
         av_freep(&roi_img);
 
@@ -1672,8 +1638,8 @@ static void do_exit(VideoState *is)
     if (shadow)
         av_freep(&shadow);
 
-    if (shadow2)
-        av_freep(&shadow2);
+    if (hsv)
+        av_freep(&hsv);
 
     if (heatmap)
         av_freep(&heatmap);
@@ -1728,13 +1694,6 @@ static int video_open(VideoState *is)
             SDL_SetWindowFullscreen(fcw_window[i], SDL_WINDOW_FULLSCREEN_DESKTOP);
         SDL_ShowWindow(fcw_window[i]);
     }
-    SDL_SetWindowTitle(fcw_windowRGB, "RGB");
-
-    SDL_SetWindowSize(fcw_windowRGB, w, h);
-    SDL_SetWindowPosition(fcw_windowRGB, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED + h);
-    if (is_full_screen)
-        SDL_SetWindowFullscreen(fcw_windowRGB, SDL_WINDOW_FULLSCREEN_DESKTOP);
-    SDL_ShowWindow(fcw_windowRGB);
     // ---------------FCW-------------------------
     is->width  = w;
     is->height = h;
@@ -1755,9 +1714,6 @@ static void video_display(VideoState *is)
         SDL_SetRenderDrawColor(fcw_renderer[i], 0, 0, 0, 255);
         SDL_RenderClear(fcw_renderer[i]);
     }
-
-    SDL_SetRenderDrawColor(fcw_rendererRGB, 0, 0, 0, 255);
-    SDL_RenderClear(fcw_rendererRGB);
     // ---------------FCW-------------------------
     
     if (is->audio_st && is->show_mode != SHOW_MODE_VIDEO)
@@ -1769,7 +1725,6 @@ static void video_display(VideoState *is)
     for (int i=0 ; i<FCW_WINDOW_TOTAL ; ++i) {
         SDL_RenderPresent(fcw_renderer[i]);
     }
-    SDL_RenderPresent(fcw_rendererRGB);
     // ---------------FCW-------------------------
 }
 
@@ -2261,24 +2216,16 @@ static int configure_video_filters(AVFilterGraph *graph, VideoState *is, const c
         }
     }
     //------------FCW--------------
-    for (int k=0 ; k<FCW_WINDOW_TOTAL ; ++k) {
-        for (i = 0; i < fcw_renderer_info[k].num_texture_formats; i++) {
-            for (j = 0; j < FF_ARRAY_ELEMS(sdl_texture_format_map) - 1; j++) {
-                if (fcw_renderer_info[k].texture_formats[i] == sdl_texture_format_map[j].texture_fmt) {
-                    pix_fmts[nb_pix_fmts++] = sdl_texture_format_map[j].format;
-                    break;
-                }
-            }
-        }
-    }
-    for (i = 0; i < fcw_rendererRGB_info.num_texture_formats; i++) {
-        for (j = 0; j < FF_ARRAY_ELEMS(sdl_texture_format_map) - 1; j++) {
-            if (fcw_rendererRGB_info.texture_formats[i] == sdl_texture_format_map[j].texture_fmt) {
-                pix_fmts[nb_pix_fmts++] = sdl_texture_format_map[j].format;
-                break;
-            }
-        }
-    }
+//    for (int k=0 ; k<FCW_WINDOW_TOTAL ; ++k) {
+//        for (i = 0; i < fcw_renderer_info[k].num_texture_formats; i++) {
+//            for (j = 0; j < FF_ARRAY_ELEMS(sdl_texture_format_map) - 1; j++) {
+//                if (fcw_renderer_info[k].texture_formats[i] == sdl_texture_format_map[j].texture_fmt) {
+//                    pix_fmts[nb_pix_fmts++] = sdl_texture_format_map[j].format;
+//                    break;
+//                }
+//            }
+//        }
+//    }
     //------------FCW--------------
     pix_fmts[nb_pix_fmts] = AV_PIX_FMT_NONE;
 
@@ -4182,23 +4129,6 @@ int main(int argc, char **argv)
                 av_log(NULL, AV_LOG_FATAL, "Failed to create window or renderer: %s", SDL_GetError());
                 do_exit(NULL);
             }
-        }
-        fcw_windowRGB = SDL_CreateWindow(program_name, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, default_width, default_height, flags);
-        SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
-        if (fcw_windowRGB) {
-            fcw_rendererRGB = SDL_CreateRenderer(fcw_windowRGB, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
-            if (!fcw_rendererRGB) {
-                av_log(NULL, AV_LOG_WARNING, "Failed to initialize a hardware accelerated renderer: %s\n", SDL_GetError());
-                fcw_rendererRGB = SDL_CreateRenderer(fcw_windowRGB, -1, 0);
-            }
-            if (fcw_rendererRGB) {
-                if (!SDL_GetRendererInfo(fcw_rendererRGB, &fcw_rendererRGB_info))
-                    av_log(NULL, AV_LOG_VERBOSE, "Initialized %s renderer.\n", fcw_rendererRGB_info.name);
-            }
-        }
-        if (!fcw_windowRGB || !fcw_rendererRGB || !fcw_rendererRGB_info.num_texture_formats) {
-            av_log(NULL, AV_LOG_FATAL, "Failed to create window or renderer: %s", SDL_GetError());
-            do_exit(NULL);
         }
         //------------FCW--------------
     }

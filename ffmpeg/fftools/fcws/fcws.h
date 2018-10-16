@@ -64,6 +64,10 @@ bool FCW_PixelInROI(uint32_t r, uint32_t c, const roi_t* roi);
 bool FCW_DoDetection(
         uint8_t* img, 
         int linesize, 
+        uint8_t* imgu, 
+        int linesize_u, 
+        uint8_t* imgv, 
+        int linesize_v, 
         int w, 
         int h, 
         gsl_vector* vertical_hist, 
@@ -74,12 +78,9 @@ bool FCW_DoDetection(
         uint8_t* roi_img,
         uint8_t* vedge,
         uint8_t* shadow,
-        uint8_t* shadow2,
         uint8_t* heatmap,
-        const roi_t* roi,
-        uint8_t* hist_peak,
-        uint8_t* otsu_th,
-        uint8_t* final_th
+        uint8_t* hsv,
+        const roi_t* roi
         );
 
 bool FCW_Thresholding(
@@ -165,6 +166,11 @@ bool FCW_EdgeDetection(gsl_matrix* src, gsl_matrix* dst, gsl_matrix_ushort* grad
 double FCW_GetObjDist(double pixel);
 
 double FCW_GetObjWidth(double objdist);
+
+void FCW_ConvertYUVToRGB(int y, int u, int v, uint8_t* r, uint8_t* g, uint8_t* b);
+
+bool FCW_ConvertIYUVToHSV(uint8_t* y, int width, int height, int pitch_y, uint8_t* u, int pitch_u, uint8_t* v, int pitch_v, gsl_matrix* hsv[3]);
+
 //class CFCWS {
 //    protected:
 //        gsl_matrix*         m_imgy;
