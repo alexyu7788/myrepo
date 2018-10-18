@@ -4,7 +4,11 @@
 #include "common.h"
 #include "candidate.h"
 
-#define NOT_SHADOW   255
+#define NOT_SHADOW      255
+
+#define VHW_RATIO       0.6                         // ratio of height / width
+#define AR_LB           (3.0 / (4.0 * VHW_RATIO))   // low bound of aspect ratio
+#define AR_HB           (5.0 / (4.0 * VHW_RATIO))   // high bound of aspect ratio
 
 #define MAX_PEAK_COUNT  16
 
@@ -185,7 +189,7 @@ bool FCW_GenHSVImg(
         double hue_th1, 
         double hue_th2, 
         double sat_th,
-        double intensity_th);
+        double val_th);
 //class CFCWS {
 //    protected:
 //        gsl_matrix*         m_imgy;

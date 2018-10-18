@@ -372,10 +372,10 @@ bool FCW_DoDetection(
             m_hsv_imgv, 
             (const gsl_matrix**)m_hsv, 
             &m_vcs, 
-            20.0, 
-            340.0, 
+            15.0, 
+            345.0, 
             0.2, 
-            0.7);
+            0.3);
 
     // Update HeatMap
     FCW_UpdateVehicleHeatMap(m_heatmap, m_heatmap_id, &m_vcs);
@@ -1317,9 +1317,9 @@ bool FCW_VehicleCandidateGenerate(
             right_idx       = (right_idx >= vedge_imgy->size2 ? vedge_imgy->size2 - 1 : right_idx);
 
             vehicle_width   = (right_idx - left_idx + 1);
-            vehicle_height  = vehicle_width * 0.5;
+            vehicle_height  = vehicle_width * VHW_RATIO;
 
-            //dbg("Scale up left %d right %d at bottom %d", left_idx, right_idx, bottom_idx);
+            //dbg("Scale up left %d right %d at bottom %d, (%d,%d)", left_idx, right_idx, bottom_idx, vehicle_width, vehicle_height);
 
             vehicle_startr  = (bottom_idx - vehicle_height < 0 ? 0 : bottom_idx - vehicle_height);
             vehicle_startc  = left_idx;
@@ -1334,6 +1334,11 @@ bool FCW_VehicleCandidateGenerate(
             //            vehicle_startc,
             //            vehicle_width,
             //            vehicle_height);
+
+            //if (vehicle_width >= vedge_imgy->size1 || vehicle_height >= vedge_imgy->size2) {
+            //    cur = cur->next;
+            //    continue;
+            //}
 
             cur->r = vehicle_startr;
             cur->c = vehicle_startc;
@@ -1523,7 +1528,7 @@ bool FCW_VehicleCandidateGenerate(
             vcs->vc[vcs->vc_count].m_c = left_idx;
             vcs->vc[vcs->vc_count].m_w = (right_idx - left_idx + 1);
 
-            temp_h = vcs->vc[vcs->vc_count].m_w * 0.5;
+            temp_h = vcs->vc[vcs->vc_count].m_w * VHW_RATIO;
             vcs->vc[vcs->vc_count].m_r = (bottom_idx - temp_h < 0 ? 0 : bottom_idx - temp_h);
             vcs->vc[vcs->vc_count].m_h = (bottom_idx - temp_h < 0 ? bottom_idx : temp_h);
 
@@ -1735,7 +1740,7 @@ bool FCW_UpdateBlobByEdge(const gsl_matrix* imgy, blob*  blob)
     right_idx = left_idx +  max_vedge_c;
 
     blob->w = right_idx - blob->c + 1;
-    blob->h = blob->w * 0.5;
+    blob->h = blob->w * VHW_RATIO;
     blob->r = bottom_idx - blob->h;
     blob->valid = true;
 
@@ -2131,11 +2136,11 @@ bool FCW_GetContour(
            rect->h  = bottom - top + 1;
 
            // *** Assume previously height is half of weight. *** 
-           // aspect ratio checking (2 * 3/4 < ar < 2 * 5/4)
+           // aspect ratio checking (VHW_RATIO * 3/4 < ar < VHW_RATIO * 5/4)
            aspect_ratio = (rect->w / (float)rect->h);
 
            //dbg("ratio of aspect is %.02f", rect->w / (float)rect->h);
-           if (1.5 < aspect_ratio && aspect_ratio < 2.5)
+           if (AR_LB < aspect_ratio && aspect_ratio < AR_HB)
                ret = true;
 
            break;
@@ -2787,17 +2792,17 @@ bool FCW_GenHSVImg(
         double hue_th1, 
         double hue_th2, 
         double sat_th,
-        double intensity_th)
+        double val_th)
 {
     int i;
     uint32_t r, c;
-    const gsl_matrix *hue = NULL, *sat = NULL, *intensity = NULL;
+    const gsl_matrix *hue = NULL, *sat = NULL, *val = NULL;
 
     hue = hsv[0];
     sat = hsv[1];
-    intensity = hsv[2];
+    val = hsv[2];
 
-    if (!src_y || !dst_y || !hsv || !hue || !intensity || !vcs) {
+    if (!src_y || !dst_y || !hsv || !hue || !sat || !val || !vcs) {
         dbg();
         return false;
     }
@@ -2842,10 +2847,11 @@ bool FCW_GenHSVImg(
                     gsl_matrix_set(dst_u, r/2, c/2, gsl_matrix_get(src_u, r/2, c/2));
                     gsl_matrix_set(dst_v, r/2, c/2, gsl_matrix_get(src_v, r/2, c/2));
 
-                    if (gsl_matrix_get(intensity, r, c) > intensity_th && 
+                    if (gsl_matrix_get(val, r, c) > val_th && 
                         gsl_matrix_get(sat, r, c) > sat_th &&
                         (gsl_matrix_get(hue, r, c) <  hue_th1 || gsl_matrix_get(hue, r, c) > hue_th2)) {
-                        gsl_matrix_set(dst_y, r, c, gsl_matrix_get(src_y, r, c));
+                        //gsl_matrix_set(dst_y, r, c, gsl_matrix_get(src_y, r, c));
+                        gsl_matrix_set(dst_y, r, c, 255);
                     } else {
                         gsl_matrix_set(dst_y, r, c, 0);
                     }
