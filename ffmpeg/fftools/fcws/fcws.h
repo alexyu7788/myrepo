@@ -79,7 +79,9 @@ bool FCW_DoDetection(
         uint8_t* vedge,
         uint8_t* shadow,
         uint8_t* heatmap,
-        uint8_t* hsv,
+        uint8_t* hsv_imgy,
+        uint8_t* hsv_imgu,
+        uint8_t* hsv_imgv,
         const roi_t* roi
         );
 
@@ -171,7 +173,19 @@ void FCW_ConvertYUVToRGB(int y, int u, int v, uint8_t* r, uint8_t* g, uint8_t* b
 
 bool FCW_ConvertIYUVToHSV(uint8_t* y, int width, int height, int pitch_y, uint8_t* u, int pitch_u, uint8_t* v, int pitch_v, gsl_matrix* hsv[3]);
 
-bool FCW_GenHSVImg(const gsl_matrix* src, gsl_matrix* dst, const gsl_matrix* hsv[3], const VehicleCandidates* vcs, double hue_th1, double hue_th2, double intensity_th);
+bool FCW_GenHSVImg(
+        const gsl_matrix* src_y, 
+        const gsl_matrix* src_u, 
+        const gsl_matrix* src_v, 
+        gsl_matrix* dst_y, 
+        gsl_matrix* dst_u, 
+        gsl_matrix* dst_v, 
+        const gsl_matrix* hsv[3], 
+        const VehicleCandidates* vcs, 
+        double hue_th1, 
+        double hue_th2, 
+        double sat_th,
+        double intensity_th);
 //class CFCWS {
 //    protected:
 //        gsl_matrix*         m_imgy;

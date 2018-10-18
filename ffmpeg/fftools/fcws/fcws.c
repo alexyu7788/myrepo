@@ -33,6 +33,8 @@ static double dy_ary[] = {
 
 // Global variables
 gsl_matrix*         m_imgy = NULL;
+gsl_matrix*         m_imgu = NULL;
+gsl_matrix*         m_imgv = NULL;
 gsl_matrix*         m_vedge_imgy = NULL;
 gsl_matrix*         m_heatmap = NULL;
 gsl_matrix*         m_temp_imgy = NULL;
@@ -58,7 +60,9 @@ blob*               m_blob_head = NULL;
 gsl_matrix_char*    m_heatmap_id = NULL;
 Candidate*          m_cand_head = NULL;
 
-gsl_matrix*         m_hsv_img = NULL;
+gsl_matrix*         m_hsv_imgy = NULL;
+gsl_matrix*         m_hsv_imgu = NULL;
+gsl_matrix*         m_hsv_imgv = NULL;
 gsl_matrix*         m_hsv[3] = {NULL};
 
 uint64_t frame_count = 0;
@@ -94,6 +98,8 @@ bool FCW_DeInit()
     FreeVector(&m_temp_hori_hist);
 
     FreeMatrix(&m_imgy);
+    FreeMatrix(&m_imgu);
+    FreeMatrix(&m_imgv);
     FreeMatrix(&m_shadow);
     FreeMatrix(&m_vedge_imgy);
     FreeMatrix(&m_temp_imgy);
@@ -101,7 +107,9 @@ bool FCW_DeInit()
     FreeMatrix(&m_hsv[0]);
     FreeMatrix(&m_hsv[1]);
     FreeMatrix(&m_hsv[2]);
-    FreeMatrix(&m_hsv_img);
+    FreeMatrix(&m_hsv_imgy);
+    FreeMatrix(&m_hsv_imgu);
+    FreeMatrix(&m_hsv_imgv);
     FreeMatrixUshort(&m_gradient);
     FreeMatrixChar(&m_direction);
     FreeMatrixChar(&m_heatmap_id);
@@ -278,7 +286,9 @@ bool FCW_DoDetection(
         uint8_t* vedge,
         uint8_t* shadow,
         uint8_t* heatmap,
-        uint8_t* hsv,
+        uint8_t* hsv_imgy,
+        uint8_t* hsv_imgu,
+        uint8_t* hsv_imgv,
         const roi_t* roi
         )
 {
@@ -290,6 +300,8 @@ bool FCW_DoDetection(
     }
 
     CheckOrReallocMatrix(&m_imgy, h, w, true);
+    CheckOrReallocMatrix(&m_imgu, h/2, w/2, true);
+    CheckOrReallocMatrix(&m_imgv, h/2, w/2, true);
     CheckOrReallocMatrix(&m_shadow, h, w, true);
     CheckOrReallocMatrix(&m_vedge_imgy, h, w, true);
     CheckOrReallocMatrix(&m_temp_imgy, h, w, true);
@@ -302,7 +314,9 @@ bool FCW_DoDetection(
     CheckOrReallocMatrix(&m_hsv[0], h, w, true); // H
     CheckOrReallocMatrix(&m_hsv[1], h, w, true); // S
     CheckOrReallocMatrix(&m_hsv[2], h, w, true); // V
-    CheckOrReallocMatrix(&m_hsv_img, h, w, true); // hsv image
+    CheckOrReallocMatrix(&m_hsv_imgy, h, w, true); // hsv image y
+    CheckOrReallocMatrix(&m_hsv_imgu, h/2, w/2, true); // hsv image u
+    CheckOrReallocMatrix(&m_hsv_imgv, h/2, w/2, true); // hsv image v
     
     // Copy image array to image matrix
     for (r=0 ; r<m_imgy->size1 ; r++) {
@@ -316,6 +330,12 @@ bool FCW_DoDetection(
         }
     }
 
+    for (r=0 ; r<m_imgu->size1 ; r++) {
+        for (c=0 ; c<m_imgu->size2 ; c++) {
+            gsl_matrix_set(m_imgu, r, c, imgu[r * linesize_u + c]);
+            gsl_matrix_set(m_imgv, r, c, imgv[r * linesize_u + c]);
+        }
+    }
     // Integral Image-based thresholding-----------------------------------------------
     // Get thresholding image
     FCW_ThresholdingByIntegralImage(m_imgy, m_intimg, m_shadow, 50, 0.7);
@@ -344,7 +364,18 @@ bool FCW_DoDetection(
 
     FCW_ConvertIYUVToHSV(img, w, h, linesize, imgu, linesize_u, imgv, linesize_v, m_hsv);
 
-    FCW_GenHSVImg(m_imgy, m_hsv_img, (const gsl_matrix**)m_hsv, &m_vcs, 52.0, 342.0, 0.16);
+    FCW_GenHSVImg(m_imgy, 
+            m_imgu, 
+            m_imgv, 
+            m_hsv_imgy, 
+            m_hsv_imgu, 
+            m_hsv_imgv, 
+            (const gsl_matrix**)m_hsv, 
+            &m_vcs, 
+            20.0, 
+            340.0, 
+            0.2, 
+            0.7);
 
     // Update HeatMap
     FCW_UpdateVehicleHeatMap(m_heatmap, m_heatmap_id, &m_vcs);
@@ -385,7 +416,14 @@ bool FCW_DoDetection(
             roi_img [r * linesize + c] = (uint8_t)gsl_matrix_get(m_temp_imgy, r,c); 
             vedge   [r * linesize + c] = (uint8_t)gsl_matrix_get(m_vedge_imgy, r,c); 
             heatmap [r * linesize + c] = (uint8_t)gsl_matrix_get(m_heatmap, r,c); 
-            hsv     [r * linesize + c] = (uint8_t)gsl_matrix_get(m_hsv_img, r,c); 
+            hsv_imgy[r * linesize + c] = (uint8_t)gsl_matrix_get(m_hsv_imgy, r,c); 
+        }
+    }
+
+    for (r=0 ; r<m_imgu->size1 ; r++) {
+        for (c=0 ; c<m_imgu->size2 ; c++) {
+            hsv_imgu[r * linesize_u + c] = gsl_matrix_get(m_hsv_imgu, r, c);
+            hsv_imgv[r * linesize_v + c] = gsl_matrix_get(m_hsv_imgv, r, c);
         }
     }
 
@@ -2626,6 +2664,8 @@ void FCW_ConvertYUVToRGB(int y, int u, int v, uint8_t* r, uint8_t* g, uint8_t* b
     *b = clip_uint8(1.164 * (y - 16) + 2.018 * (u - 128));
 }
 
+#define DUMP_RAW 
+
 bool FCW_ConvertIYUVToHSV(uint8_t* y, int width, int height, int pitch_y, uint8_t* u, int pitch_u, uint8_t* v, int pitch_v, gsl_matrix* hsv[3])
 {
     bool ret = false;
@@ -2635,69 +2675,85 @@ bool FCW_ConvertIYUVToHSV(uint8_t* y, int width, int height, int pitch_y, uint8_
     double hsv_h, hsv_s, hsv_v;
     double nr, ng, nb; // normalized to 0 ~ 1
     double max, min;
+    double delta;
 
-//    uint8_t *dst = NULL, *rgb = NULL;
-//    FILE *fp = NULL;
-//    char fn[512];
-//    static int cnt = 0;
+#ifdef DUMP_RAW
+    uint8_t *dst = NULL, *rgb = NULL;
+    FILE *fp = NULL;
+    char fn[512];
+    static int cnt = 0;
+#endif
 
     if (!y || !u || !v || !hsv) {
         dbg();
         return ret;
     }
 
-//    dst = (uint8_t*)malloc(sizeof(uint8_t)* w * h * 3);
-//
-//    if (!dst) {
-//        dbg();
-//        return ret;
-//    }
+#ifdef DUMP_RAW
+    dst = (uint8_t*)malloc(sizeof(uint8_t)* width * height * 3);
 
-//    rgb = dst;
+    if (!dst) {
+        dbg();
+        return ret;
+    }
+
+    rgb = dst;
+#endif
+
     ret = true;
 
     for (rr=0 ; rr<height ; ++rr) {
         for (cc=0 ; cc<width ; ++cc) {
-            yy = *(y + rr * pitch_y     + cc);
-            uu = *(u + rr * pitch_u / 2 + cc / 2);
-            vv = *(v + rr * pitch_v / 2 + cc / 2);
+            yy = *(y + (rr     ) * pitch_y + (cc    ));
+            uu = *(u + (rr / 2 ) * pitch_u + (cc / 2));
+            vv = *(v + (rr / 2 ) * pitch_v + (cc / 2));
 
             FCW_ConvertYUVToRGB(yy, uu, vv, &r, &g, &b);
 
-            nr = r / (double)(r + g + b);
-            ng = g / (double)(r + g + b);
-            nb = b / (double)(r + g + b);
+            // refer to https://www.rapidtables.com/convert/color/rgb-to-hsv.html
+            nr = r / 255.0;
+            ng = g / 255.0;
+            nb = b / 255.0;
 
             max = max3(nr, ng, nb);
             min = min3(nr, ng, nb);
 
+            delta = max - min;
             hsv_v = max;
 
-            if (max == 0)
-                hsv_s = 0;
-            else
-                hsv_s = (1.0 - min/max);
+            if (delta > 0) {
+                if (max)
+                    hsv_s = delta / max;
+                else
+                    hsv_s = 0;
 
-            if (max == min)
-                hsv_h = 0;
-            else if (max == nr && ng >= nb)
-                hsv_h = (60 * ((ng - nb) / (max - min))) + 0;
-            else if (max == nr && ng < nb)
-                hsv_h = (60 * ((ng - nb) / (max - min))) + 360;
-            else if (max == ng)
-                hsv_h = (60 * ((nb - nr) / (max - min))) + 120;
-            else if (max == nb)
-                hsv_h = (60 * ((nr - ng) / (max - min))) + 240;
+                if (max == nr)
+                    hsv_h = 60 * (fmod(((ng - nb) / delta), 6));
+                else if (max == ng)
+                    hsv_h = 60 * (((nb - nr) / delta) + 2);
+                else if (max == nb)
+                    hsv_h = 60 * (((nr - ng) / delta) + 4);
 
-//            dbg("[%d,%d] (%.03lf, %.03lf, %.03lf),(%.03lf, %.03lf, %.03lf), max:%.03lf, min:%.03lf",
+                if (hsv_h < 0.0)
+                    hsv_h += 360.0;
+            } else {
+                hsv_h = hsv_s = 0.0;
+            }
+
+//            if (rr == 50 && cc == 200) {
+//            dbg("[%d,%d] (%u, %u, %u), (%.03lf, %.03lf, %.03lf),(%.03lf, %.03lf, %.03lf), max:%.03lf, min:%.03lf",
 //                    rr, cc,
+//                    r, g, b,
 //                    nr, ng, nb,
 //                    hsv_h, hsv_s, hsv_v,
 //                    max, min);
+//            }
 
-//            *rgb++ = r;
-//            *rgb++ = g;
-//            *rgb++ = b;
+#ifdef DUMP_RAW
+            *rgb++ = r;
+            *rgb++ = g;
+            *rgb++ = b;
+#endif
 
             gsl_matrix_set(hsv[0], rr, cc, hsv_h);
             gsl_matrix_set(hsv[1], rr, cc, hsv_s);
@@ -2705,30 +2761,73 @@ bool FCW_ConvertIYUVToHSV(uint8_t* y, int width, int height, int pitch_y, uint8_
         }
     }
 
-//    snprintf(fn, sizeof(fn), "rgb/rgb%03d.rgb", cnt++);
-//    fp = fopen(fn, "w");
-//    if (fp) {
-//        fwrite(dst, 1, w * h * 3, fp);
-//        fclose(fp);
-//    }
-//
-//    free (dst);
+#ifdef DUMP_RAW
+    snprintf(fn, sizeof(fn), "rgb/rgb%03d.rgb", cnt++);
+    fp = fopen(fn, "w");
+    if (fp) {
+        fwrite(dst, 1, width * height * 3, fp);
+        fclose(fp);
+    }
+
+    free (dst);
+#endif
 
     return ret;
 }
 
-bool FCW_GenHSVImg(const gsl_matrix* src, gsl_matrix* dst, const gsl_matrix* hsv[3], const VehicleCandidates* vcs, double hue_th1, double hue_th2, double intensity_th)
+bool FCW_GenHSVImg(
+        const gsl_matrix* src_y, 
+        const gsl_matrix* src_u, 
+        const gsl_matrix* src_v, 
+        gsl_matrix* dst_y, 
+        gsl_matrix* dst_u, 
+        gsl_matrix* dst_v, 
+        const gsl_matrix* hsv[3], 
+        const VehicleCandidates* vcs, 
+        double hue_th1, 
+        double hue_th2, 
+        double sat_th,
+        double intensity_th)
 {
     int i;
     uint32_t r, c;
-    const gsl_matrix *hue = NULL, *intensity = NULL;
+    const gsl_matrix *hue = NULL, *sat = NULL, *intensity = NULL;
 
     hue = hsv[0];
+    sat = hsv[1];
     intensity = hsv[2];
 
-    if (!src || !dst || !hsv || !hue || !intensity || !vcs) {
+    if (!src_y || !dst_y || !hsv || !hue || !intensity || !vcs) {
         dbg();
         return false;
+    }
+
+#if 0// Test
+    for (r=0 ; r<src_y->size1 ; ++r) {
+        for (c=0 ; c<src_y->size2 ; ++c) {
+            gsl_matrix_set(dst_y, r, c, gsl_matrix_get(src_y, r, c));
+            gsl_matrix_set(dst_u, r/2, c/2, gsl_matrix_get(src_u, r/2, c/2));
+            gsl_matrix_set(dst_v, r/2, c/2, gsl_matrix_get(src_v, r/2, c/2));
+        }
+    }
+#else
+    // Clear yuv of region which is outside of vcs.
+    for (r=0 ; r<src_y->size1 ; ++r) {
+        for (c=0 ; c<src_y->size2 ; ++c) {
+            if (vcs->vc_count) {
+                for (i=0 ; i<vcs->vc_count ; ++i) {
+                    if (r < vcs->vc[i].m_r || r > vcs->vc[i].m_r + vcs->vc[i].m_h || c < vcs->vc[i].m_c || c > vcs->vc[i].m_c + vcs->vc[i].m_w) {
+                        gsl_matrix_set(dst_y, r, c, 0);
+                        gsl_matrix_set(dst_u, r/2, c/2, 128);
+                        gsl_matrix_set(dst_v, r/2, c/2, 128);
+                    }
+                }
+            } else {
+                gsl_matrix_set(dst_y, r, c, 0);
+                gsl_matrix_set(dst_u, r/2, c/2, 128);
+                gsl_matrix_set(dst_v, r/2, c/2, 128);
+            }
+        }
     }
 
     for (i=0 ; i<vcs->vc_count ; ++i) {
@@ -2740,16 +2839,20 @@ bool FCW_GenHSVImg(const gsl_matrix* src, gsl_matrix* dst, const gsl_matrix* hsv
 //                            gsl_matrix_get(hue, r, c),
 //                            gsl_matrix_get(intensity, r, c));
 
+                    gsl_matrix_set(dst_u, r/2, c/2, gsl_matrix_get(src_u, r/2, c/2));
+                    gsl_matrix_set(dst_v, r/2, c/2, gsl_matrix_get(src_v, r/2, c/2));
+
                     if (gsl_matrix_get(intensity, r, c) > intensity_th && 
-                            (gsl_matrix_get(hue, r, c) < hue_th1 || gsl_matrix_get(hue, r, c) > hue_th2)) {
-                        gsl_matrix_set(dst, r, c, gsl_matrix_get(src, r, c));
+                        gsl_matrix_get(sat, r, c) > sat_th &&
+                        (gsl_matrix_get(hue, r, c) <  hue_th1 || gsl_matrix_get(hue, r, c) > hue_th2)) {
+                        gsl_matrix_set(dst_y, r, c, gsl_matrix_get(src_y, r, c));
                     } else {
-                        gsl_matrix_set(dst, r, c, 0);
+                        gsl_matrix_set(dst_y, r, c, 0);
                     }
                 }
             }
         }
     }
-
+#endif
     return true;
 }
