@@ -77,8 +77,8 @@ bool FCW_DoDetection(
         gsl_vector* vertical_hist, 
         gsl_vector* hori_hist, 
         gsl_vector* grayscale_hist, 
-        VehicleCandidates *vcs,
-        VehicleCandidates *vcs2,
+        VehicleCandidates *vcs,     // result of each frame
+        VehicleCandidates *vcs2,    // result of heatmap
         uint8_t* roi_img,
         uint8_t* vedge,
         uint8_t* shadow,
@@ -159,12 +159,13 @@ bool FCW_GetContour(
     rect* rect
     );
 
+Candidate* FCW_NewCandidate();
+
 bool FCW_UpdateVCStatus(
     gsl_matrix* heatmap, 
     gsl_matrix_char* heatmap_id, 
-    Candidate** cand_head,
-    VehicleCandidates* vcs,
-    VehicleCandidates* vcs2
+    Candidate** vc_tracker,
+    VehicleCandidates* vcs
     );
 
 bool FCW_EdgeDetection(gsl_matrix* src, gsl_matrix* dst, gsl_matrix_ushort* gradient, gsl_matrix_char* dir, int direction);
@@ -175,9 +176,17 @@ double FCW_GetObjWidth(double objdist);
 
 void FCW_ConvertYUVToRGB(int y, int u, int v, uint8_t* r, uint8_t* g, uint8_t* b);
 
-bool FCW_ConvertIYUVToHSV(uint8_t* y, int width, int height, int pitch_y, uint8_t* u, int pitch_u, uint8_t* v, int pitch_v, gsl_matrix* hsv[3]);
+void FCW_ConvertRGBToHSV(uint8_t r, uint8_t g, uint8_t b, double* h, double* s, double* v);
 
-bool FCW_GenHSVImg(
+bool FCW_ConvertIYUVToHSV(
+        bool night_mode,
+        const gsl_matrix* imgy,
+        const gsl_matrix* imgu,
+        const gsl_matrix* imgv,
+        const Candidate* vc_tracker,
+        gsl_matrix* hsv[3]);
+
+bool FCW_SegmentPossibleTaillight(
         const gsl_matrix* src_y, 
         const gsl_matrix* src_u, 
         const gsl_matrix* src_v, 
@@ -185,11 +194,12 @@ bool FCW_GenHSVImg(
         gsl_matrix* dst_u, 
         gsl_matrix* dst_v, 
         const gsl_matrix* hsv[3], 
-        const VehicleCandidates* vcs, 
+        const Candidate* vc_tracker, 
         double hue_th1, 
         double hue_th2, 
         double sat_th,
         double val_th);
+
 //class CFCWS {
 //    protected:
 //        gsl_matrix*         m_imgy;

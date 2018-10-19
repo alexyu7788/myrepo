@@ -84,8 +84,8 @@ enum {
     FCW_WINDOW_SHADOW,
     FCW_WINDOW_EDGE,
     FCW_WINDOW_VEHICLE,
-    FCW_WINDOW_HSV,
     FCW_WINDOW_HEATMAP,
+    FCW_WINDOW_TAILLIGHT,
     FCW_WINDOW_RESULT,
     FCW_WINDOW_TOTAL,
 };
@@ -95,7 +95,7 @@ static const char *fcw_window_title[FCW_WINDOW_TOTAL] = {
     [FCW_WINDOW_SHADOW]     = "Shadow based IntegralImage",
     [FCW_WINDOW_EDGE]       = "Vertical Edge",
     [FCW_WINDOW_VEHICLE]    = "Candidates",
-    [FCW_WINDOW_HSV]        = "HSV",
+    [FCW_WINDOW_TAILLIGHT]  = "Tail-light",
     [FCW_WINDOW_HEATMAP]    = "Heatmap",
     [FCW_WINDOW_RESULT]     = "Result",
 };
@@ -1110,7 +1110,7 @@ static int upload_texture(SDL_Texture **tex, AVFrame *frame, struct SwsContext *
                                            frame->data[1], frame->linesize[1],
                                            frame->data[2], frame->linesize[2]);
 
-                ret = SDL_UpdateYUVTexture(fcw_texture[FCW_WINDOW_HSV], NULL, hsv_imgy, frame->linesize[0],
+                ret = SDL_UpdateYUVTexture(fcw_texture[FCW_WINDOW_TAILLIGHT], NULL, hsv_imgy, frame->linesize[0],
                                            hsv_imgu, frame->linesize[1],
                                            hsv_imgv, frame->linesize[2]);
 
@@ -1336,7 +1336,7 @@ static void video_image_display(VideoState *is)
 
                 //SDL_SetRenderDrawColor(fcw_renderer[FCW_WINDOW_SHADOW], color->r, color->g, color->b, color->a);
                 SDL_SetRenderDrawColor(fcw_renderer[FCW_WINDOW_VEHICLE], color->r, color->g, color->b, color->a);
-                SDL_SetRenderDrawColor(fcw_renderer[FCW_WINDOW_HSV], color->r, color->g, color->b, color->a);
+                //SDL_SetRenderDrawColor(fcw_renderer[FCW_WINDOW_TAILLIGHT], color->r, color->g, color->b, color->a);
 
                 vrect.x = rect.x + vcs.vc[i].m_c;
                 vrect.y = rect.y + vcs.vc[i].m_r;
@@ -1345,7 +1345,7 @@ static void video_image_display(VideoState *is)
 
                 //SDL_RenderDrawRect(fcw_renderer[FCW_WINDOW_SHADOW], &vrect);
                 SDL_RenderDrawRect(fcw_renderer[FCW_WINDOW_VEHICLE], &vrect);
-                SDL_RenderDrawRect(fcw_renderer[FCW_WINDOW_HSV], &vrect);
+                //SDL_RenderDrawRect(fcw_renderer[FCW_WINDOW_TAILLIGHT], &vrect);
             }
         }
 
@@ -1354,6 +1354,7 @@ static void video_image_display(VideoState *is)
                 color = &COLOR[i%COLOR_TOTAL];
 
                 SDL_SetRenderDrawColor(fcw_renderer[FCW_WINDOW_RESULT], color->r, color->g, color->b, color->a);
+                SDL_SetRenderDrawColor(fcw_renderer[FCW_WINDOW_TAILLIGHT], color->r, color->g, color->b, color->a);
 
                 vrect.x = rect.x + vcs2.vc[i].m_c;
                 vrect.y = rect.y + vcs2.vc[i].m_r;
@@ -1361,6 +1362,7 @@ static void video_image_display(VideoState *is)
                 vrect.h = vcs2.vc[i].m_h;
 
                 SDL_RenderDrawRect(fcw_renderer[FCW_WINDOW_RESULT], &vrect);
+                SDL_RenderDrawRect(fcw_renderer[FCW_WINDOW_TAILLIGHT], &vrect);
             }
         }
     }
