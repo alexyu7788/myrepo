@@ -419,14 +419,14 @@ bool FCW_DoDetection(
         vcs2->vc[vcs2->vc_count].m_next       = NULL;
         vcs2->vc_count++;
 
-        if (vcs2->vc[i].m_valid) {
+        if (cur_vc->m_valid) {
             dbg("\033[1;33mVehicle %d at (%d,%d) with (%d,%d), dist %.02lfm\033[m\n\n",
-                    vcs2->vc[i].m_id,
-                    vcs2->vc[i].m_r,
-                    vcs2->vc[i].m_c,
-                    vcs2->vc[i].m_w,
-                    vcs2->vc[i].m_h,
-                    vcs2->vc[i].m_dist);
+                    cur_vc->m_id,
+                    cur_vc->m_r,
+                    cur_vc->m_c,
+                    cur_vc->m_w,
+                    cur_vc->m_h,
+                    cur_vc->m_dist);
         }
 
         cur_vc = cur_vc->m_next;
@@ -1698,6 +1698,7 @@ bool FCW_UpdateBlobByEdge(const gsl_matrix* imgy, blob*  blob)
     max_vedge_strength = 0;
 
     for (c=0 ; c<((imgy->size2 / 4) - 2) ; ++c) {
+    //for (c=((imgy->size2 / 4) - 2) ; c>2 ; --c) {
         imgy_block = gsl_matrix_submatrix((gsl_matrix*)imgy, 
                                                         0, 
                                                         c, 
@@ -1735,6 +1736,7 @@ bool FCW_UpdateBlobByEdge(const gsl_matrix* imgy, blob*  blob)
     max_vedge_strength = 0;
 
     for (c=imgy->size2 - 2 ; c>((imgy->size2 * 3 / 4) - 2) ; --c) {
+    //for (c=((imgy->size2 * 3 / 4) - 2) ; c<(imgy->size2 - 2) ; ++c) {
         imgy_block = gsl_matrix_submatrix((gsl_matrix*)imgy, 
                                                         0, 
                                                         c, 
