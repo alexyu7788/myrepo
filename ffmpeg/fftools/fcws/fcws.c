@@ -2211,7 +2211,7 @@ bool FCW_GetContour(
     return ret;
 }
 
-Candidate* FCW_NewCandidate()
+Candidate* FCW_NewCandidate(void)
 {
     Candidate* vc = NULL;
 

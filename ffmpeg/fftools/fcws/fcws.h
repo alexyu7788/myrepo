@@ -159,7 +159,7 @@ bool FCW_GetContour(
     rect* rect
     );
 
-Candidate* FCW_NewCandidate();
+Candidate* FCW_NewCandidate(void);
 
 bool FCW_UpdateVCStatus(
     gsl_matrix* heatmap, 
