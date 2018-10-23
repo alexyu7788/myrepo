@@ -63,6 +63,11 @@ gsl_matrix*         m_hsv_imgu = NULL;
 gsl_matrix*         m_hsv_imgv = NULL;
 gsl_matrix*         m_hsv[3] = {NULL};
 
+gsl_matrix*         m_rgb_imgy = NULL;
+gsl_matrix*         m_rgb_imgu = NULL;
+gsl_matrix*         m_rgb_imgv = NULL;
+gsl_matrix*         m_rgb[3] = {NULL};
+
 uint64_t frame_count = 0;
 
 #define VehicleWidth 1650   //mm
@@ -131,6 +136,12 @@ bool FCW_DeInit()
     FreeMatrix(&m_hsv_imgy);
     FreeMatrix(&m_hsv_imgu);
     FreeMatrix(&m_hsv_imgv);
+    FreeMatrix(&m_rgb[0]);
+    FreeMatrix(&m_rgb[1]);
+    FreeMatrix(&m_rgb[2]);
+    FreeMatrix(&m_rgb_imgy);
+    FreeMatrix(&m_rgb_imgu);
+    FreeMatrix(&m_rgb_imgv);
     FreeMatrixUshort(&m_gradient);
     FreeMatrixChar(&m_direction);
     FreeMatrixChar(&m_heatmap_id);
@@ -308,6 +319,9 @@ bool FCW_DoDetection(
         uint8_t* hsv_imgy,
         uint8_t* hsv_imgu,
         uint8_t* hsv_imgv,
+        uint8_t* rgb_imgy,
+        uint8_t* rgb_imgu,
+        uint8_t* rgb_imgv,
         const roi_t* roi
         )
 {
@@ -331,12 +345,21 @@ bool FCW_DoDetection(
     CheckOrReallocMatrixUshort(&m_gradient, h, w, true);
     CheckOrReallocMatrixChar(&m_direction, h, w, true);
 
+    // HSV-based colour segmentation.
     CheckOrReallocMatrix(&m_hsv[0], h, w, true); // H
     CheckOrReallocMatrix(&m_hsv[1], h, w, true); // S
     CheckOrReallocMatrix(&m_hsv[2], h, w, true); // V
     CheckOrReallocMatrix(&m_hsv_imgy, h, w, true); // hsv image y
     CheckOrReallocMatrix(&m_hsv_imgu, h/2, w/2, true); // hsv image u
     CheckOrReallocMatrix(&m_hsv_imgv, h/2, w/2, true); // hsv image v
+
+    // RGB-based colour segmentation.
+    CheckOrReallocMatrix(&m_rgb[0], h, w, true); // R
+    CheckOrReallocMatrix(&m_rgb[1], h, w, true); // G
+    CheckOrReallocMatrix(&m_rgb[2], h, w, true); // B
+    CheckOrReallocMatrix(&m_rgb_imgy, h, w, true); // rgb image y
+    CheckOrReallocMatrix(&m_rgb_imgu, h/2, w/2, true); // rgb image u
+    CheckOrReallocMatrix(&m_rgb_imgv, h/2, w/2, true); // rgb image v
     
     // Copy image array to image matrix
     for (r=0 ; r<m_imgy->size1 ; r++) {
@@ -390,7 +413,8 @@ bool FCW_DoDetection(
     // Convert IYUV to HSV
     FCW_ConvertIYUVToHSV(false, m_imgy, m_imgu, m_imgv, m_vc_tracker, m_hsv);
 
-    FCW_SegmentPossibleTaillight(m_imgy, 
+    FCW_SegmentPossibleTaillight(
+            m_imgy, 
             m_imgu, 
             m_imgv, 
             m_hsv_imgy, 
@@ -401,7 +425,21 @@ bool FCW_DoDetection(
             15.0, 
             345.0, 
             0.2, 
-            0.3);
+            0.25);
+
+    FCW_ConvertIYUVToRGB(false, m_imgy, m_imgu, m_imgv, m_vc_tracker, m_rgb);
+
+    FCW_SegmentTaillight(
+            m_imgy,
+            m_imgu,
+            m_imgv,
+            m_rgb_imgy,
+            m_rgb_imgu,
+            m_rgb_imgv,
+            (const gsl_matrix**)m_rgb,
+            m_vc_tracker,
+            180,
+            100);
 
     memset(vcs2, 0x0, sizeof(VehicleCandidates));
     
@@ -441,6 +479,7 @@ bool FCW_DoDetection(
             vedge   [r * linesize + c] = (uint8_t)gsl_matrix_get(m_vedge_imgy, r,c); 
             heatmap [r * linesize + c] = (uint8_t)gsl_matrix_get(m_heatmap, r,c); 
             hsv_imgy[r * linesize + c] = (uint8_t)gsl_matrix_get(m_hsv_imgy, r,c); 
+            rgb_imgy[r * linesize + c] = (uint8_t)gsl_matrix_get(m_rgb_imgy, r,c); 
         }
     }
 
@@ -448,6 +487,8 @@ bool FCW_DoDetection(
         for (c=0 ; c<m_imgu->size2 ; c++) {
             hsv_imgu[r * linesize_u + c] = gsl_matrix_get(m_hsv_imgu, r, c);
             hsv_imgv[r * linesize_v + c] = gsl_matrix_get(m_hsv_imgv, r, c);
+            rgb_imgu[r * linesize_u + c] = gsl_matrix_get(m_rgb_imgu, r, c);
+            rgb_imgv[r * linesize_v + c] = gsl_matrix_get(m_rgb_imgv, r, c);
         }
     }
 
@@ -1852,6 +1893,28 @@ bool FCW_CheckBlobByVerticalEdge(const gsl_matrix* vedge_imgy, blob* cur)
     return true;
 }
 
+bool FCW_CheckBlobAR(blob* blob)
+{
+    double ar;
+
+    if (!blob) {
+        dbg();
+        return false;
+    }
+
+    if (blob->valid == true) {
+        ar = blob->w / (double)blob->h;
+
+        //dbg("ar %.03lf", ar);
+
+        if (AR_LB < ar && ar < AR_HB)
+            blob->valid = true;
+        else blob->valid = false;
+    }
+
+    return true;
+}
+
 bool FCW_CheckBlobValid(const gsl_matrix* imgy, const gsl_matrix* vedge_imgy, blob* cur)
 {
     if (!imgy || !cur) {
@@ -1865,6 +1928,8 @@ bool FCW_CheckBlobValid(const gsl_matrix* imgy, const gsl_matrix* vedge_imgy, bl
     //FCW_CheckBlobByArea(imgy, cur);
 
     FCW_CheckBlobByVerticalEdge(vedge_imgy, cur);
+
+    FCW_CheckBlobAR(cur);
 
     return true;
 }
@@ -2004,7 +2069,7 @@ typedef enum {
 }DIR;
 
 bool FCW_GetContour(
-    const gsl_matrix_char* heatmap_id,
+    const gsl_matrix_char* m,
     char id,
     const point* start,
     rect* rect
@@ -2020,13 +2085,13 @@ bool FCW_GetContour(
     float aspect_ratio;
     point tp; // test point to avoid infinite loop.
 
-    if (!heatmap_id || id < 0 || !start || !rect) {
+    if (!m || id < 0 || !start || !rect) {
         dbg();
         return ret;
     }
 
     if (start->r == 0) 
-        return false;
+        return ret;
 
     nextdir = DIR_RIGHTUP;
     find_pixel = false;
@@ -2042,7 +2107,7 @@ bool FCW_GetContour(
         while (1) {// Scan different direction to get neighbour.
             switch (nextdir) {
                 case DIR_RIGHTUP:
-                    if (gsl_matrix_char_get(heatmap_id, r-1, c+1) == id) {
+                    if (gsl_matrix_char_get(m, r-1, c+1) == id) {
                         --r;
                         ++c;
                         find_pixel = true;
@@ -2056,7 +2121,7 @@ bool FCW_GetContour(
                     }
                     break;
                 case DIR_RIGHT:
-                    if (gsl_matrix_char_get(heatmap_id, r, c+1) == id) {
+                    if (gsl_matrix_char_get(m, r, c+1) == id) {
                         ++c;
                         find_pixel = true;
                         nextdir = DIR_RIGHTUP;
@@ -2068,7 +2133,7 @@ bool FCW_GetContour(
                     }
                     break;
                 case DIR_RIGHTDOWN:
-                    if (gsl_matrix_char_get(heatmap_id, r+1, c+1) == id) {
+                    if (gsl_matrix_char_get(m, r+1, c+1) == id) {
                         ++r;
                         ++c;
                         find_pixel = true;
@@ -2082,7 +2147,7 @@ bool FCW_GetContour(
                     }
                     break;
                 case DIR_DOWN:
-                    if (gsl_matrix_char_get(heatmap_id, r+1, c) == id) {
+                    if (gsl_matrix_char_get(m, r+1, c) == id) {
                         ++r;
                         find_pixel = true;
                         nextdir = DIR_RIGHTDOWN;
@@ -2094,7 +2159,7 @@ bool FCW_GetContour(
                     }
                     break;
                 case DIR_LEFTDOWN:
-                    if (gsl_matrix_char_get(heatmap_id, r+1, c-1) == id) {
+                    if (gsl_matrix_char_get(m, r+1, c-1) == id) {
                         ++r;
                         --c;
                         find_pixel = true;
@@ -2108,7 +2173,7 @@ bool FCW_GetContour(
                     }
                     break;
                 case DIR_LEFT:
-                    if (gsl_matrix_char_get(heatmap_id, r, c-1) == id) {
+                    if (gsl_matrix_char_get(m, r, c-1) == id) {
                         --c;
                         find_pixel = true;
                         nextdir = DIR_LEFTDOWN;
@@ -2120,7 +2185,7 @@ bool FCW_GetContour(
                     }
                     break;
                 case DIR_LEFTUP:
-                    if (gsl_matrix_char_get(heatmap_id, r-1, c-1) == id) {
+                    if (gsl_matrix_char_get(m, r-1, c-1) == id) {
                         --r;
                         --c;
                         find_pixel = true;
@@ -2134,7 +2199,7 @@ bool FCW_GetContour(
                     }
                     break;
                 case DIR_UP:
-                    if (gsl_matrix_char_get(heatmap_id, r-1, c) == id) {
+                    if (gsl_matrix_char_get(m, r-1, c) == id) {
                         --r;
                         find_pixel = true;
                         nextdir = DIR_LEFTUP;
@@ -2195,16 +2260,9 @@ bool FCW_GetContour(
             }
         }
 
-        if (++count >= 1000) {
-            dbg("id %d (%d,%d) <-> id %d (%d,%d), next dir %d",
-                id,
-                start->r,
-                start->c,
-                gsl_matrix_char_get(heatmap_id, r, c),
-                r, 
-                c,
-                nextdir
-               );
+        if (++count >= (m->size1 * m->size2) >> 4) { // (w/2 * h/2)
+            dbg("Can not generate appropriate contour.");
+            break;
         }
     }// Get contour of VC. (start point is equal to end point)
 
@@ -2710,6 +2768,66 @@ void FCW_ConvertRGBToHSV(uint8_t r, uint8_t g, uint8_t b, double* h, double* s, 
     }
 }
 
+bool FCW_ConvertIYUVToRGB(
+        bool night_mode,
+        const gsl_matrix* imgy,
+        const gsl_matrix* imgu,
+        const gsl_matrix* imgv,
+        const Candidate* vc_tracker,
+        gsl_matrix* rgb[3])
+{
+    bool ret = false;
+    int y, u, v;
+    uint32_t rr, cc;
+    uint8_t r, g, b;
+    const Candidate *cur_vc = vc_tracker;
+
+    if (!imgy || !imgu || !imgv || !rgb) {
+        dbg();
+        return ret;
+    }
+
+    ret = true;
+
+    if (night_mode == true) {
+        for (rr=0 ; rr<imgy->size1 ; ++rr) {
+            for (cc=0 ; cc<imgy->size2 ; ++cc) {
+                y = gsl_matrix_get(imgy, rr, cc);
+                u = gsl_matrix_get(imgu, rr/2, cc/2);
+                v = gsl_matrix_get(imgv, rr/2, cc/2);
+
+                FCW_ConvertYUVToRGB(y, u, v, &r, &g, &b);
+
+                gsl_matrix_set(rgb[0], rr, cc, r);
+                gsl_matrix_set(rgb[1], rr, cc, g);
+                gsl_matrix_set(rgb[2], rr, cc, b);
+            }
+        }
+    } else {
+        while (cur_vc) {
+            if (cur_vc->m_valid == true) {
+                for (rr=cur_vc->m_r ; rr<cur_vc->m_r + cur_vc->m_h ; ++rr) {
+                    for (cc=cur_vc->m_c ; cc<cur_vc->m_c + cur_vc->m_w ; ++cc) {
+                        y = gsl_matrix_get(imgy, rr, cc);
+                        u = gsl_matrix_get(imgu, rr/2, cc/2);
+                        v = gsl_matrix_get(imgv, rr/2, cc/2);
+
+                        FCW_ConvertYUVToRGB(y, u, v, &r, &g, &b);
+
+                        gsl_matrix_set(rgb[0], rr, cc, r);
+                        gsl_matrix_set(rgb[1], rr, cc, g);
+                        gsl_matrix_set(rgb[2], rr, cc, b);
+                    }
+                }
+            }
+
+            cur_vc = cur_vc->m_next;
+        }
+    } 
+
+    return ret;
+}
+
 //#define DUMP_RAW 
 bool FCW_ConvertIYUVToHSV(
         bool night_mode,
@@ -2720,7 +2838,7 @@ bool FCW_ConvertIYUVToHSV(
         gsl_matrix* hsv[3])
 {
     bool ret = false;
-    int i, y, u, v;
+    int y, u, v;
     uint32_t rr, cc;
     uint8_t r, g, b;
     double hsv_h, hsv_s, hsv_v;
@@ -2751,7 +2869,7 @@ bool FCW_ConvertIYUVToHSV(
 
     ret = true;
 
-    // Depend on argument vcs to convert full image or region within specified vc.
+    // Depend on argument hight_mode to convert full image or region within specified vc.
     if (night_mode == true) {
         for (rr=0 ; rr<imgy->size1 ; ++rr) {
             for (cc=0 ; cc<imgy->size2 ; ++cc) {
@@ -2864,8 +2982,8 @@ bool FCW_SegmentPossibleTaillight(
                     if (gsl_matrix_get(val, r, c) > val_th && 
                         gsl_matrix_get(sat, r, c) > sat_th &&
                         (gsl_matrix_get(hue, r, c) <  hue_th1 || gsl_matrix_get(hue, r, c) > hue_th2)) {
-                        //gsl_matrix_set(dst_y, r, c, 255);
-                        gsl_matrix_set(dst_y, r, c, gsl_matrix_get(src_y, r, c));
+                        gsl_matrix_set(dst_y, r, c, 255);
+                        //gsl_matrix_set(dst_y, r, c, gsl_matrix_get(src_y, r, c));
                         gsl_matrix_set(dst_u, r/2, c/2, gsl_matrix_get(src_u, r/2, c/2));
                         gsl_matrix_set(dst_v, r/2, c/2, gsl_matrix_get(src_v, r/2, c/2));
                     } else {
@@ -2877,6 +2995,93 @@ bool FCW_SegmentPossibleTaillight(
 
         cur_vc = cur_vc->m_next;
     }
+
+    return true;
+}
+
+bool FCW_SegmentTaillight(
+        const gsl_matrix* src_y, 
+        const gsl_matrix* src_u, 
+        const gsl_matrix* src_v, 
+        gsl_matrix* dst_y, 
+        gsl_matrix* dst_u, 
+        gsl_matrix* dst_v, 
+        const gsl_matrix* rgb[3], 
+        const Candidate* vc_tracker, 
+        double r_th,
+        double rb_th
+        )
+{
+    uint32_t r, c;
+    const gsl_matrix *rm = NULL, *gm = NULL , *bm = NULL;   // Xmatrix
+    gsl_matrix *rb_map = NULL;
+    const Candidate* cur_vc = vc_tracker;
+    double max, min;
+    double delta;
+
+    rm = rgb[0];
+    gm = rgb[1];
+    bm = rgb[2];
+
+    if (!src_y || !src_u || !src_v ||
+        !dst_y || !dst_u || !dst_v ||
+        !rgb || !rm || !gm || !bm) {
+        dbg();
+        return false;
+    }
+
+    // Clear destnation yuv .
+    gsl_matrix_set_all(dst_y, 0);
+    gsl_matrix_set_all(dst_u, 128);
+    gsl_matrix_set_all(dst_v, 128);
+
+    while (cur_vc) {
+        if (cur_vc->m_valid == true) {
+            CheckOrReallocMatrix(&rb_map, rm->size1, rm->size2, true);
+
+            if (!rb_map) {
+                dbg();
+                return false;
+            }
+
+            // Get matrix of subtracting r with b.
+            for (r=0 ; r<rb_map->size1 ; ++r) {
+                for (c=0 ; c<rb_map->size2 ; ++c) {
+                    gsl_matrix_set(rb_map, r, c, 
+                            gsl_matrix_get(rm, r, c) - gsl_matrix_get(bm, r, c));
+                }
+            }
+
+            max = gsl_matrix_max(rb_map);
+            min = gsl_matrix_min(rb_map);
+            delta = max - min;
+
+            //dbg("%.03lf, %.03lf", max, min);
+
+            // Normalize to 0~255
+            for (r=0 ; r<rb_map->size1 ; ++r)
+                for (c=0 ; c<rb_map->size2 ; ++c)
+                    gsl_matrix_set(rb_map, r, c,
+                            (gsl_matrix_get(rb_map, r, c) * 255 / delta));
+
+            for (r=0 ; r<rb_map->size1 ; ++r) {
+                for (c=0 ; c<rb_map->size2 ; ++c) {
+                    if (gsl_matrix_get(rm, r, c) > r_th && gsl_matrix_get(rb_map, r, c) > rb_th) {
+                        //gsl_matrix_set(dst_y, r, c, gsl_matrix_get(src_y, r, c));
+                        gsl_matrix_set(dst_y, r, c, 255);
+                        gsl_matrix_set(dst_u, r/2, c/2, gsl_matrix_get(src_u, r/2, c/2));
+                        gsl_matrix_set(dst_v, r/2, c/2, gsl_matrix_get(src_v, r/2, c/2));
+                    } else {
+                        gsl_matrix_set(dst_y, r, c, 0);
+                    }
+                }
+            }
+        }
+
+        cur_vc = cur_vc->m_next;
+    }
+
+    FreeMatrix(&rb_map);
 
     return true;
 }

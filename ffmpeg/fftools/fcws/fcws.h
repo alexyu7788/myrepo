@@ -86,6 +86,9 @@ bool FCW_DoDetection(
         uint8_t* hsv_imgy,
         uint8_t* hsv_imgu,
         uint8_t* hsv_imgv,
+        uint8_t* rgb_imgy,
+        uint8_t* rgb_imgu,
+        uint8_t* rgb_imgv,
         const roi_t* roi
         );
 
@@ -146,6 +149,8 @@ bool FCW_CheckBlobByArea(const gsl_matrix* imgy, blob* cur);
 
 bool FCW_CheckBlobByVerticalEdge(const gsl_matrix* edged_imgy, blob* cur);
 
+bool FCW_CheckBlobAR(blob* blob);
+
 bool FCW_CheckBlobValid(const gsl_matrix* imgy, const gsl_matrix* edged_imgy, blob* cur);
 
 bool FCW_CheckSymmProperty(const gsl_matrix* imgy, VehicleCandidates* vcs, float th_pairwise, float th_symm);
@@ -153,7 +158,7 @@ bool FCW_CheckSymmProperty(const gsl_matrix* imgy, VehicleCandidates* vcs, float
 bool FCW_UpdateVehicleHeatMap(gsl_matrix* heatmap, gsl_matrix_char* heatmap_id, VehicleCandidates* vcs); 
 
 bool FCW_GetContour(
-    const gsl_matrix_char* heatmap_id,
+    const gsl_matrix_char* m,
     char id,
     const point* start,
     rect* rect
@@ -178,6 +183,14 @@ void FCW_ConvertYUVToRGB(int y, int u, int v, uint8_t* r, uint8_t* g, uint8_t* b
 
 void FCW_ConvertRGBToHSV(uint8_t r, uint8_t g, uint8_t b, double* h, double* s, double* v);
 
+bool FCW_ConvertIYUVToRGB(
+        bool night_mode,
+        const gsl_matrix* imgy,
+        const gsl_matrix* imgu,
+        const gsl_matrix* imgv,
+        const Candidate* vc_tracker,
+        gsl_matrix* rgb[3]);
+
 bool FCW_ConvertIYUVToHSV(
         bool night_mode,
         const gsl_matrix* imgy,
@@ -200,6 +213,18 @@ bool FCW_SegmentPossibleTaillight(
         double sat_th,
         double val_th);
 
+bool FCW_SegmentTaillight(
+        const gsl_matrix* src_y, 
+        const gsl_matrix* src_u, 
+        const gsl_matrix* src_v, 
+        gsl_matrix* dst_y, 
+        gsl_matrix* dst_u, 
+        gsl_matrix* dst_v, 
+        const gsl_matrix* rgb[3], 
+        const Candidate* vc_tracker, 
+        double r_th,
+        double rb_th
+        );
 //class CFCWS {
 //    protected:
 //        gsl_matrix*         m_imgy;

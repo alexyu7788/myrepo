@@ -73,6 +73,10 @@ static uint8_t* hsv_imgy = NULL;
 static uint8_t* hsv_imgu = NULL;
 static uint8_t* hsv_imgv = NULL;
 
+static uint8_t* rgb_imgy = NULL;
+static uint8_t* rgb_imgu = NULL;
+static uint8_t* rgb_imgv = NULL;
+
 static VehicleCandidates vcs, vcs2;
 static gsl_vector* vertical_hist = NULL;
 static gsl_vector* hori_hist = NULL;
@@ -86,6 +90,7 @@ enum {
     FCW_WINDOW_VEHICLE,
     FCW_WINDOW_HEATMAP,
     FCW_WINDOW_TAILLIGHT,
+    FCW_WINDOW_TAILLIGHT2,
     FCW_WINDOW_RESULT,
     FCW_WINDOW_TOTAL,
 };
@@ -96,6 +101,7 @@ static const char *fcw_window_title[FCW_WINDOW_TOTAL] = {
     [FCW_WINDOW_EDGE]       = "Vertical Edge",
     [FCW_WINDOW_VEHICLE]    = "Candidates",
     [FCW_WINDOW_TAILLIGHT]  = "Tail-light",
+    [FCW_WINDOW_TAILLIGHT2] = "Tail-light2",
     [FCW_WINDOW_HEATMAP]    = "Heatmap",
     [FCW_WINDOW_RESULT]     = "Result",
 };
@@ -1047,6 +1053,16 @@ static int upload_texture(SDL_Texture **tex, AVFrame *frame, struct SwsContext *
                 if (!hsv_imgv)
                     hsv_imgv = av_malloc(frame->linesize[1] * frame->height / 2 + 16 + 16 - 1);
 
+                if (!rgb_imgy) {
+                    rgb_imgy = av_malloc(frame->linesize[0] * frame->height + 16 + 16/*STRIDE_ALIGN*/ - 1);
+                }
+
+                if (!rgb_imgu)
+                    rgb_imgu = av_malloc(frame->linesize[1] * frame->height / 2 + 16 + 16 - 1);
+
+                if (!rgb_imgv)
+                    rgb_imgv = av_malloc(frame->linesize[1] * frame->height / 2 + 16 + 16 - 1);
+
                 roi.point[ROI_LEFTTOP].r = frame->height / 10;
                 roi.point[ROI_LEFTTOP].c = frame->width * 3 / 10 ;
 
@@ -1063,6 +1079,9 @@ static int upload_texture(SDL_Texture **tex, AVFrame *frame, struct SwsContext *
 
                 memcpy(hsv_imgu, frame->data[1], sizeof(uint8_t)*frame->linesize[1]*frame->height/2);
                 memcpy(hsv_imgv, frame->data[2], sizeof(uint8_t)*frame->linesize[2]*frame->height/2);
+
+                memcpy(rgb_imgu, frame->data[1], sizeof(uint8_t)*frame->linesize[1]*frame->height/2);
+                memcpy(rgb_imgv, frame->data[2], sizeof(uint8_t)*frame->linesize[2]*frame->height/2);
 
                 FCW_DoDetection(frame->data[0],
                                 frame->linesize[0],
@@ -1084,6 +1103,9 @@ static int upload_texture(SDL_Texture **tex, AVFrame *frame, struct SwsContext *
                                 hsv_imgy,
                                 hsv_imgu,
                                 hsv_imgv,
+                                rgb_imgy,
+                                rgb_imgu,
+                                rgb_imgv,
                                 &roi
                                 ); 
 
@@ -1113,6 +1135,10 @@ static int upload_texture(SDL_Texture **tex, AVFrame *frame, struct SwsContext *
                 ret = SDL_UpdateYUVTexture(fcw_texture[FCW_WINDOW_TAILLIGHT], NULL, hsv_imgy, frame->linesize[0],
                                            hsv_imgu, frame->linesize[1],
                                            hsv_imgv, frame->linesize[2]);
+
+                ret = SDL_UpdateYUVTexture(fcw_texture[FCW_WINDOW_TAILLIGHT2], NULL, rgb_imgy, frame->linesize[0],
+                                           rgb_imgu, frame->linesize[1],
+                                           rgb_imgv, frame->linesize[2]);
 
                 ret = SDL_UpdateYUVTexture(fcw_texture[FCW_WINDOW_RESULT], NULL, frame->data[0], frame->linesize[0],
                                            frame->data[1], frame->linesize[1],
@@ -1355,6 +1381,7 @@ static void video_image_display(VideoState *is)
 
                 SDL_SetRenderDrawColor(fcw_renderer[FCW_WINDOW_RESULT], color->r, color->g, color->b, color->a);
                 SDL_SetRenderDrawColor(fcw_renderer[FCW_WINDOW_TAILLIGHT], color->r, color->g, color->b, color->a);
+                SDL_SetRenderDrawColor(fcw_renderer[FCW_WINDOW_TAILLIGHT2], color->r, color->g, color->b, color->a);
 
                 vrect.x = rect.x + vcs2.vc[i].m_c;
                 vrect.y = rect.y + vcs2.vc[i].m_r;
@@ -1363,6 +1390,7 @@ static void video_image_display(VideoState *is)
 
                 SDL_RenderDrawRect(fcw_renderer[FCW_WINDOW_RESULT], &vrect);
                 SDL_RenderDrawRect(fcw_renderer[FCW_WINDOW_TAILLIGHT], &vrect);
+                SDL_RenderDrawRect(fcw_renderer[FCW_WINDOW_TAILLIGHT2], &vrect);
             }
         }
     }
@@ -1665,6 +1693,15 @@ static void do_exit(VideoState *is)
 
     if (hsv_imgv)
         av_freep(&hsv_imgv);
+
+    if (rgb_imgy)
+        av_freep(&rgb_imgy);
+
+    if (rgb_imgu)
+        av_freep(&rgb_imgu);
+
+    if (rgb_imgv)
+        av_freep(&rgb_imgv);
 
     exit(0);
 }
