@@ -68,6 +68,11 @@ gsl_matrix*         m_rgb_imgu = NULL;
 gsl_matrix*         m_rgb_imgv = NULL;
 gsl_matrix*         m_rgb[3] = {NULL};
 
+gsl_matrix*         m_lab_imgy = NULL;
+gsl_matrix*         m_lab_imgu = NULL;
+gsl_matrix*         m_lab_imgv = NULL;
+gsl_matrix*         m_lab[3] = {NULL};
+
 uint64_t frame_count = 0;
 
 #define VehicleWidth 1650   //mm
@@ -142,6 +147,12 @@ bool FCW_DeInit()
     FreeMatrix(&m_rgb_imgy);
     FreeMatrix(&m_rgb_imgu);
     FreeMatrix(&m_rgb_imgv);
+    FreeMatrix(&m_lab[0]);
+    FreeMatrix(&m_lab[1]);
+    FreeMatrix(&m_lab[2]);
+    FreeMatrix(&m_lab_imgy);
+    FreeMatrix(&m_lab_imgu);
+    FreeMatrix(&m_lab_imgv);
     FreeMatrixUshort(&m_gradient);
     FreeMatrixChar(&m_direction);
     FreeMatrixChar(&m_heatmap_id);
@@ -322,6 +333,9 @@ bool FCW_DoDetection(
         uint8_t* rgb_imgy,
         uint8_t* rgb_imgu,
         uint8_t* rgb_imgv,
+        uint8_t* lab_imgy,
+        uint8_t* lab_imgu,
+        uint8_t* lab_imgv,
         const roi_t* roi
         )
 {
@@ -360,6 +374,14 @@ bool FCW_DoDetection(
     CheckOrReallocMatrix(&m_rgb_imgy, h, w, true); // rgb image y
     CheckOrReallocMatrix(&m_rgb_imgu, h/2, w/2, true); // rgb image u
     CheckOrReallocMatrix(&m_rgb_imgv, h/2, w/2, true); // rgb image v
+
+    // L*a*b*-based colour segmentation.
+    CheckOrReallocMatrix(&m_lab[0], h, w, true); // L*
+    CheckOrReallocMatrix(&m_lab[1], h, w, true); // a*
+    CheckOrReallocMatrix(&m_lab[2], h, w, true); // b*
+    CheckOrReallocMatrix(&m_lab_imgy, h, w, true); // L*a*b* image y
+    CheckOrReallocMatrix(&m_lab_imgu, h/2, w/2, true); // L*a*b* image u
+    CheckOrReallocMatrix(&m_lab_imgv, h/2, w/2, true); // L*a*b* image v
     
     // Copy image array to image matrix
     for (r=0 ; r<m_imgy->size1 ; r++) {
@@ -410,10 +432,11 @@ bool FCW_DoDetection(
 
     FCW_UpdateVCStatus(m_heatmap, m_heatmap_id, &m_vc_tracker, vcs);
 
+#if 0
     // Convert IYUV to HSV
-    FCW_ConvertIYUVToHSV(false, m_imgy, m_imgu, m_imgv, m_vc_tracker, m_hsv);
+    FCW_ConvertIYUV2HSV(false, m_imgy, m_imgu, m_imgv, m_vc_tracker, m_hsv);
 
-    FCW_SegmentPossibleTaillight(
+    FCW_SegmentTaillightByHSV(
             m_imgy, 
             m_imgu, 
             m_imgv, 
@@ -427,9 +450,9 @@ bool FCW_DoDetection(
             0.2, 
             0.25);
 
-    FCW_ConvertIYUVToRGB(false, m_imgy, m_imgu, m_imgv, m_vc_tracker, m_rgb);
+    FCW_ConvertIYUV2RGB(false, m_imgy, m_imgu, m_imgv, m_vc_tracker, m_rgb);
 
-    FCW_SegmentTaillight(
+    FCW_SegmentTaillightByRGB(
             m_imgy,
             m_imgu,
             m_imgv,
@@ -440,6 +463,20 @@ bool FCW_DoDetection(
             m_vc_tracker,
             180,
             100);
+
+    FCW_ConvertIYUV2Lab(false, m_imgy, m_imgu, m_imgv, m_vc_tracker, m_lab);
+
+    FCW_SegmentTaillightByLab(
+            m_imgy,
+            m_imgu,
+            m_imgv,
+            m_lab_imgy,
+            m_lab_imgu,
+            m_lab_imgv,
+            (const gsl_matrix**)m_lab,
+            m_vc_tracker);
+
+#endif
 
     memset(vcs2, 0x0, sizeof(VehicleCandidates));
     
@@ -480,6 +517,7 @@ bool FCW_DoDetection(
             heatmap [r * linesize + c] = (uint8_t)gsl_matrix_get(m_heatmap, r,c); 
             hsv_imgy[r * linesize + c] = (uint8_t)gsl_matrix_get(m_hsv_imgy, r,c); 
             rgb_imgy[r * linesize + c] = (uint8_t)gsl_matrix_get(m_rgb_imgy, r,c); 
+            lab_imgy[r * linesize + c] = (uint8_t)gsl_matrix_get(m_lab_imgy, r,c); 
         }
     }
 
@@ -489,6 +527,8 @@ bool FCW_DoDetection(
             hsv_imgv[r * linesize_v + c] = gsl_matrix_get(m_hsv_imgv, r, c);
             rgb_imgu[r * linesize_u + c] = gsl_matrix_get(m_rgb_imgu, r, c);
             rgb_imgv[r * linesize_v + c] = gsl_matrix_get(m_rgb_imgv, r, c);
+            lab_imgu[r * linesize_u + c] = gsl_matrix_get(m_lab_imgu, r, c);
+            lab_imgv[r * linesize_v + c] = gsl_matrix_get(m_lab_imgv, r, c);
         }
     }
 
@@ -2602,7 +2642,7 @@ bool FCW_UpdateVCStatus(
                 }
 
                 if (cur_vc) {
-                    dbg("vc %d is at (%d,%d) with (%d,%d)",
+                    dbg("vc[%d] locates at (%d,%d) with (%d,%d)",
                             cur_vc->m_id,
                             cur_vc->m_r,
                             cur_vc->m_c,
@@ -2665,7 +2705,7 @@ bool FCW_UpdateVCStatus(
             }
 
             if (cur_vc->m_updated == true) {
-                dbg("vc %d (%d,%d) with (%d,%d) is self-updated.",
+                dbg("vc[%d] locates at (%d,%d) with (%d,%d) is self-updated.",
                         cur_vc->m_id,
                         cur_vc->m_r,
                         cur_vc->m_c,
@@ -2673,7 +2713,7 @@ bool FCW_UpdateVCStatus(
                         cur_vc->m_h);
                 cur_vc = cur_vc->m_next;
             } else {
-                dbg("vc %d is removed.", cur_vc->m_id);
+                dbg("vc[%d] is removed.", cur_vc->m_id);
                 // This existed candidate does not been updated anymore. Remove it from the list.
                 if (cur_vc == *vc_tracker) {
                     *vc_tracker = cur_vc->m_next;
@@ -2723,7 +2763,7 @@ double FCW_GetObjDist(double pixel)
     return (VehicleWidth * (EFL / 2.0)) / (pixel * PixelSize);
 }
 
-void FCW_ConvertYUVToRGB(int y, int u, int v, uint8_t* r, uint8_t* g, uint8_t* b)
+void FCW_ConvertYUV2RGB(int y, int u, int v, uint8_t* r, uint8_t* g, uint8_t* b)
 {
     *r = clip_uint8(1.164 * (y - 16) + 1.596 * (v - 128));
     *g = clip_uint8(1.164 * (y - 16) - 0.813 * (v - 128) - 0.391 * (u - 128));
@@ -2731,7 +2771,7 @@ void FCW_ConvertYUVToRGB(int y, int u, int v, uint8_t* r, uint8_t* g, uint8_t* b
 }
 
 // refer to https://www.rapidtables.com/convert/color/rgb-to-hsv.html
-void FCW_ConvertRGBToHSV(uint8_t r, uint8_t g, uint8_t b, double* h, double* s, double* v)
+void FCW_ConvertRGB2HSV(uint8_t r, uint8_t g, uint8_t b, double* h, double* s, double* v)
 {
     double nr, ng, nb; 
     double max, min;
@@ -2768,7 +2808,88 @@ void FCW_ConvertRGBToHSV(uint8_t r, uint8_t g, uint8_t b, double* h, double* s, 
     }
 }
 
-bool FCW_ConvertIYUVToRGB(
+// sRGB8 -> sRGB' -> sRGB -> XYZ
+// refer to https://en.wikipedia.org/wiki/SRGB#The_reverse_transformation &
+//          http://davengrace.com/dave/cspace/ and http://colorizer.org/ for checking conversion
+//
+void FCW_ConvertRGB2XYZ(uint8_t r, uint8_t g, uint8_t b, double* x, double* y, double* z)
+{
+    double nlr, nlg, nlb;   //sRGB', non-linear rgb.(divided by 255.0)
+    double lr, lg, lb;      //sRGB,  linear sRGB
+
+    // R
+    nlr = (double) r / (double)255;
+
+    if (nlr > 0.04045)
+        lr = pow((nlr + 0.055) / (1 + 0.055), 2.4);
+    else 
+        lr = nlr / 12.92;
+
+    // G
+    nlg = (double) g / (double)255;
+
+    if (nlg > 0.04045)
+        lg = pow((nlg + 0.055) / (1 + 0.055), 2.4);
+    else 
+        lg = nlg / 12.92;
+
+    // B
+    nlb = (double) b / (double)255;
+
+    if (nlb > 0.04045)
+        lb = pow((nlb + 0.055) / (1 + 0.055), 2.4);
+    else 
+        lb = nlb / 12.92;
+
+//    dbg("RGB(%u,%u,%u), non-linear sRGB(%lf, %lf, %lf), linear sRGB(%lf, %lf, %lf)",
+//            r, g, b,
+//            nlr, nlg, nlb,
+//            lr, lg, lb);
+
+    *x = 0.412453 * lr + 0.357580 * lg + 0.180423 * lb;
+    *y = 0.212671 * lr + 0.715160 * lg + 0.072169 * lb;
+    *z = 0.019334 * lr + 0.119193 * lg + 0.950227 * lb;
+}
+
+#define param_13    1.0 / 3.0
+#define param_16116 16.0 / 116.0
+#define Xn          0.950456
+#define Yn          1.0
+#define Zn          1.088754
+
+void FCW_ConvertXYZ2Lab(double x, double y, double z, double* l, double* a, double* b)
+{
+    double fx, fy, fz;
+
+    x /= Xn;
+    y /= Yn;
+    z /= Zn;
+
+    if (y > 0.008856) {
+        fy = pow(y, param_13); 
+        *l = 116.0 * fy - 16.0;
+    } else {
+        fy = 7.787 * y + param_16116;
+        *l = 903.3 * y;
+    }
+
+    *l = *l > 0. ? *l : 0.;
+
+    if (x > 0.008856)
+        fx = pow(x, param_13);
+    else
+        fx = 7.787 * x + param_16116;
+
+    if (z > 0.008856)
+        fz = pow(z, param_13);
+    else
+        fz = 7.787 * z + param_16116;
+
+    *a = 500 * (fx - fy);
+    *b = 200 * (fy - fz);
+}
+
+bool FCW_ConvertIYUV2RGB(
         bool night_mode,
         const gsl_matrix* imgy,
         const gsl_matrix* imgu,
@@ -2796,7 +2917,7 @@ bool FCW_ConvertIYUVToRGB(
                 u = gsl_matrix_get(imgu, rr/2, cc/2);
                 v = gsl_matrix_get(imgv, rr/2, cc/2);
 
-                FCW_ConvertYUVToRGB(y, u, v, &r, &g, &b);
+                FCW_ConvertYUV2RGB(y, u, v, &r, &g, &b);
 
                 gsl_matrix_set(rgb[0], rr, cc, r);
                 gsl_matrix_set(rgb[1], rr, cc, g);
@@ -2812,7 +2933,7 @@ bool FCW_ConvertIYUVToRGB(
                         u = gsl_matrix_get(imgu, rr/2, cc/2);
                         v = gsl_matrix_get(imgv, rr/2, cc/2);
 
-                        FCW_ConvertYUVToRGB(y, u, v, &r, &g, &b);
+                        FCW_ConvertYUV2RGB(y, u, v, &r, &g, &b);
 
                         gsl_matrix_set(rgb[0], rr, cc, r);
                         gsl_matrix_set(rgb[1], rr, cc, g);
@@ -2829,7 +2950,7 @@ bool FCW_ConvertIYUVToRGB(
 }
 
 //#define DUMP_RAW 
-bool FCW_ConvertIYUVToHSV(
+bool FCW_ConvertIYUV2HSV(
         bool night_mode,
         const gsl_matrix* imgy,
         const gsl_matrix* imgu,
@@ -2877,9 +2998,9 @@ bool FCW_ConvertIYUVToHSV(
                 u = gsl_matrix_get(imgu, rr/2, cc/2);
                 v = gsl_matrix_get(imgv, rr/2, cc/2);
 
-                FCW_ConvertYUVToRGB(y, u, v, &r, &g, &b);
+                FCW_ConvertYUV2RGB(y, u, v, &r, &g, &b);
 
-                FCW_ConvertRGBToHSV(r, g, b, &hsv_h, &hsv_s, &hsv_v);
+                FCW_ConvertRGB2HSV(r, g, b, &hsv_h, &hsv_s, &hsv_v);
 #ifdef DUMP_RAW
                 *rgb++ = r;
                 *rgb++ = g;
@@ -2900,9 +3021,9 @@ bool FCW_ConvertIYUVToHSV(
                         u = gsl_matrix_get(imgu, rr/2, cc/2);
                         v = gsl_matrix_get(imgv, rr/2, cc/2);
 
-                        FCW_ConvertYUVToRGB(y, u, v, &r, &g, &b);
+                        FCW_ConvertYUV2RGB(y, u, v, &r, &g, &b);
 
-                        FCW_ConvertRGBToHSV(r, g, b, &hsv_h, &hsv_s, &hsv_v);
+                        FCW_ConvertRGB2HSV(r, g, b, &hsv_h, &hsv_s, &hsv_v);
 
 #ifdef DUMP_RAW
                         *rgb++ = r;
@@ -2935,7 +3056,78 @@ bool FCW_ConvertIYUVToHSV(
     return ret;
 }
 
-bool FCW_SegmentPossibleTaillight(
+bool FCW_ConvertIYUV2Lab(
+        bool night_mode,
+        const gsl_matrix* imgy,
+        const gsl_matrix* imgu,
+        const gsl_matrix* imgv,
+        const Candidate* vc_tracker,
+        gsl_matrix* lab[3])
+{
+    bool ret = false;
+    int y, u, v;
+    uint32_t rr, cc;
+    uint8_t r, g, b;
+    double X, Y, Z;
+    double L, A, B;
+    const Candidate *cur_vc = vc_tracker;
+
+    if (!imgy || !imgu || !imgv || !lab) {
+        dbg();
+        return ret;
+    }
+
+    ret = true;
+    
+    if (night_mode == true) {
+        for (rr=0 ; rr<imgy->size1 ; ++rr) {
+            for (cc=0 ; cc<imgy->size2 ; ++cc) {
+                y = gsl_matrix_get(imgy, rr, cc);
+                u = gsl_matrix_get(imgu, rr/2, cc/2);
+                v = gsl_matrix_get(imgv, rr/2, cc/2);
+
+                FCW_ConvertYUV2RGB(y, u, v, &r, &g, &b);
+                FCW_ConvertRGB2XYZ(r, g, b, &X, &Y, &Z);
+                FCW_ConvertXYZ2Lab(X, Y, Z, &L, &A, &B);
+
+                gsl_matrix_set(lab[0], rr, cc, L);
+                gsl_matrix_set(lab[1], rr, cc, A);
+                gsl_matrix_set(lab[2], rr, cc, B);
+            }
+        }
+    } else {
+        while (cur_vc) {
+            if (cur_vc->m_valid == true) {
+                for (rr=cur_vc->m_r ; rr<cur_vc->m_r + cur_vc->m_h ; ++rr) {
+                    for (cc=cur_vc->m_c ; cc<cur_vc->m_c + cur_vc->m_w ; ++cc) {
+                        y = gsl_matrix_get(imgy, rr, cc);
+                        u = gsl_matrix_get(imgu, rr/2, cc/2);
+                        v = gsl_matrix_get(imgv, rr/2, cc/2);
+
+                        FCW_ConvertYUV2RGB(y, u, v, &r, &g, &b);
+                        FCW_ConvertRGB2XYZ(r, g, b, &X, &Y, &Z);
+                        FCW_ConvertXYZ2Lab(X, Y, Z, &L, &A, &B);
+
+                        //dbg("(%u, %u, %u), (%.04lf, %.04lf, %.04lf), (%.02lf, %.02lf, %.02lf)",
+                        //        r, g, b,
+                        //        X, Y, Z,
+                        //        L, A, B);
+
+                        gsl_matrix_set(lab[0], rr, cc, L);
+                        gsl_matrix_set(lab[1], rr, cc, A);
+                        gsl_matrix_set(lab[2], rr, cc, B);
+                    }
+                }
+            }
+
+            cur_vc = cur_vc->m_next;
+        }
+    }
+
+    return ret;
+}
+
+bool FCW_SegmentTaillightByHSV(
         const gsl_matrix* src_y, 
         const gsl_matrix* src_u, 
         const gsl_matrix* src_v, 
@@ -2982,8 +3174,8 @@ bool FCW_SegmentPossibleTaillight(
                     if (gsl_matrix_get(val, r, c) > val_th && 
                         gsl_matrix_get(sat, r, c) > sat_th &&
                         (gsl_matrix_get(hue, r, c) <  hue_th1 || gsl_matrix_get(hue, r, c) > hue_th2)) {
-                        gsl_matrix_set(dst_y, r, c, 255);
-                        //gsl_matrix_set(dst_y, r, c, gsl_matrix_get(src_y, r, c));
+                        //gsl_matrix_set(dst_y, r, c, 255);
+                        gsl_matrix_set(dst_y, r, c, gsl_matrix_get(src_y, r, c));
                         gsl_matrix_set(dst_u, r/2, c/2, gsl_matrix_get(src_u, r/2, c/2));
                         gsl_matrix_set(dst_v, r/2, c/2, gsl_matrix_get(src_v, r/2, c/2));
                     } else {
@@ -2999,7 +3191,7 @@ bool FCW_SegmentPossibleTaillight(
     return true;
 }
 
-bool FCW_SegmentTaillight(
+bool FCW_SegmentTaillightByRGB(
         const gsl_matrix* src_y, 
         const gsl_matrix* src_u, 
         const gsl_matrix* src_v, 
@@ -3014,10 +3206,11 @@ bool FCW_SegmentTaillight(
 {
     uint32_t r, c;
     const gsl_matrix *rm = NULL, *gm = NULL , *bm = NULL;   // Xmatrix
-    gsl_matrix *rb_map = NULL;
+    gsl_matrix *rb_map = NULL, *rg_map = NULL;
     const Candidate* cur_vc = vc_tracker;
     double max, min;
     double delta;
+    uint32_t pix_cnt = 0;
 
     rm = rgb[0];
     gm = rgb[1];
@@ -3035,9 +3228,10 @@ bool FCW_SegmentTaillight(
     gsl_matrix_set_all(dst_u, 128);
     gsl_matrix_set_all(dst_v, 128);
 
-    while (cur_vc) {
-        if (cur_vc->m_valid == true) {
-            CheckOrReallocMatrix(&rb_map, rm->size1, rm->size2, true);
+    while (cur_vc) { 
+        if (cur_vc->m_valid == true) { 
+            CheckOrReallocMatrix(&rb_map, rm->size1, rm->size2, true); 
+            CheckOrReallocMatrix(&rg_map, rm->size1, rm->size2, true);
 
             if (!rb_map) {
                 dbg();
@@ -3045,10 +3239,10 @@ bool FCW_SegmentTaillight(
             }
 
             // Get matrix of subtracting r with b.
-            for (r=0 ; r<rb_map->size1 ; ++r) {
-                for (c=0 ; c<rb_map->size2 ; ++c) {
-                    gsl_matrix_set(rb_map, r, c, 
-                            gsl_matrix_get(rm, r, c) - gsl_matrix_get(bm, r, c));
+            for (r=cur_vc->m_r ; r<cur_vc->m_r + cur_vc->m_h ; ++r) {
+                for (c=cur_vc->m_c ; c<cur_vc->m_c + cur_vc->m_w ; ++c) {
+                    gsl_matrix_set(rb_map, r, c, gsl_matrix_get(rm, r, c) - gsl_matrix_get(bm, r, c));
+                    gsl_matrix_set(rg_map, r, c, gsl_matrix_get(rm, r, c) - gsl_matrix_get(gm, r, c));
                 }
             }
 
@@ -3059,16 +3253,93 @@ bool FCW_SegmentTaillight(
             //dbg("%.03lf, %.03lf", max, min);
 
             // Normalize to 0~255
-            for (r=0 ; r<rb_map->size1 ; ++r)
-                for (c=0 ; c<rb_map->size2 ; ++c)
+            for (r=cur_vc->m_r ; r<cur_vc->m_r + cur_vc->m_h ; ++r) 
+                for (c=cur_vc->m_c ; c<cur_vc->m_c + cur_vc->m_w ; ++c) 
                     gsl_matrix_set(rb_map, r, c,
                             (gsl_matrix_get(rb_map, r, c) * 255 / delta));
 
-            for (r=0 ; r<rb_map->size1 ; ++r) {
-                for (c=0 ; c<rb_map->size2 ; ++c) {
-                    if (gsl_matrix_get(rm, r, c) > r_th && gsl_matrix_get(rb_map, r, c) > rb_th) {
-                        //gsl_matrix_set(dst_y, r, c, gsl_matrix_get(src_y, r, c));
-                        gsl_matrix_set(dst_y, r, c, 255);
+            max = gsl_matrix_max(rg_map);
+            min = gsl_matrix_min(rg_map);
+            delta = max - min;
+
+            //dbg("%.03lf, %.03lf", max, min);
+
+            // Normalize to 0~255
+            for (r=cur_vc->m_r ; r<cur_vc->m_r + cur_vc->m_h ; ++r)
+                for (c=cur_vc->m_c ; c<cur_vc->m_c + cur_vc->m_w ; ++c)
+                    gsl_matrix_set(rg_map, r, c,
+                            (gsl_matrix_get(rg_map, r, c) * 255 / delta));
+
+            pix_cnt = 0;
+
+            for (r=cur_vc->m_r ; r<cur_vc->m_r + cur_vc->m_h ; ++r) {
+                for (c=cur_vc->m_c ; c<cur_vc->m_c + cur_vc->m_w ; ++c) {
+                    if (gsl_matrix_get(rg_map, r, c) > 128)// &&
+                        //gsl_matrix_get(rb_map, r, c) > rb_th) 
+                    {
+                    //if (gsl_matrix_get(rm, r, c) > r_th && gsl_matrix_get(rb_map, r, c) > rb_th) {
+                        gsl_matrix_set(dst_y, r, c, gsl_matrix_get(src_y, r, c));
+                        //gsl_matrix_set(dst_y, r, c, 255);
+                        gsl_matrix_set(dst_u, r/2, c/2, gsl_matrix_get(src_u, r/2, c/2));
+                        gsl_matrix_set(dst_v, r/2, c/2, gsl_matrix_get(src_v, r/2, c/2));
+                        ++pix_cnt;
+                    } else {
+                        gsl_matrix_set(dst_y, r, c, 0);
+                    }
+                }
+            }
+
+            dbg("vc[%d]: %d", cur_vc->m_id, pix_cnt);
+        }
+
+        cur_vc = cur_vc->m_next;
+    }
+
+    FreeMatrix(&rb_map);
+    FreeMatrix(&rg_map);
+
+    return true;
+}
+
+bool FCW_SegmentTaillightByLab(
+        const gsl_matrix* src_y, 
+        const gsl_matrix* src_u, 
+        const gsl_matrix* src_v, 
+        gsl_matrix* dst_y, 
+        gsl_matrix* dst_u, 
+        gsl_matrix* dst_v, 
+        const gsl_matrix* lab[3],
+        const Candidate* vc_tracker
+        )
+{
+    uint32_t r, c;
+    const gsl_matrix *lm = NULL, *am = NULL, *bm = NULL;
+    const Candidate* cur_vc = vc_tracker;
+
+    lm = lab[0];
+    am = lab[1];
+    bm = lab[2];
+
+    if (!src_y || !src_u || !src_v ||
+        !dst_y || !dst_u || !dst_v ||
+        !lab || !lm || !am || !bm) {
+        dbg();
+        return false;
+    }
+
+    // Clear destnation yuv .
+    gsl_matrix_set_all(dst_y, 0);
+    gsl_matrix_set_all(dst_u, 128);
+    gsl_matrix_set_all(dst_v, 128);
+
+    while (cur_vc) {
+        if (cur_vc->m_valid == true) {
+            for (r=cur_vc->m_r ; r<cur_vc->m_r + cur_vc->m_h ; ++r) {
+                for (c=cur_vc->m_c ; c<cur_vc->m_c + cur_vc->m_w ; ++c) {
+
+                    if (gsl_matrix_get(am, r, c) > 15) {
+                        //gsl_matrix_set(dst_y, r, c, 255);
+                        gsl_matrix_set(dst_y, r, c, gsl_matrix_get(src_y, r, c));
                         gsl_matrix_set(dst_u, r/2, c/2, gsl_matrix_get(src_u, r/2, c/2));
                         gsl_matrix_set(dst_v, r/2, c/2, gsl_matrix_get(src_v, r/2, c/2));
                     } else {
@@ -3080,8 +3351,6 @@ bool FCW_SegmentTaillight(
 
         cur_vc = cur_vc->m_next;
     }
-
-    FreeMatrix(&rb_map);
 
     return true;
 }

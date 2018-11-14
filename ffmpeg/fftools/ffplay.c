@@ -77,6 +77,10 @@ static uint8_t* rgb_imgy = NULL;
 static uint8_t* rgb_imgu = NULL;
 static uint8_t* rgb_imgv = NULL;
 
+static uint8_t* lab_imgy = NULL;
+static uint8_t* lab_imgu = NULL;
+static uint8_t* lab_imgv = NULL;
+
 static VehicleCandidates vcs, vcs2;
 static gsl_vector* vertical_hist = NULL;
 static gsl_vector* hori_hist = NULL;
@@ -91,6 +95,7 @@ enum {
     FCW_WINDOW_HEATMAP,
     FCW_WINDOW_TAILLIGHT,
     FCW_WINDOW_TAILLIGHT2,
+    FCW_WINDOW_TAILLIGHT3,
     FCW_WINDOW_RESULT,
     FCW_WINDOW_TOTAL,
 };
@@ -100,8 +105,9 @@ static const char *fcw_window_title[FCW_WINDOW_TOTAL] = {
     [FCW_WINDOW_SHADOW]     = "Shadow based IntegralImage",
     [FCW_WINDOW_EDGE]       = "Vertical Edge",
     [FCW_WINDOW_VEHICLE]    = "Candidates",
-    [FCW_WINDOW_TAILLIGHT]  = "Tail-light",
-    [FCW_WINDOW_TAILLIGHT2] = "Tail-light2",
+    [FCW_WINDOW_TAILLIGHT]  = "Tail-light HSV",
+    [FCW_WINDOW_TAILLIGHT2] = "Tail-light RGB",
+    [FCW_WINDOW_TAILLIGHT3] = "Tail-light Lab",
     [FCW_WINDOW_HEATMAP]    = "Heatmap",
     [FCW_WINDOW_RESULT]     = "Result",
 };
@@ -1027,25 +1033,20 @@ static int upload_texture(SDL_Texture **tex, AVFrame *frame, struct SwsContext *
                 CheckOrReallocVector(&hori_hist, frame->height, true);
                 CheckOrReallocVector(&grayscale_hist, 256, true);
 
-                if (!roi_img) {
+                if (!roi_img) 
                     roi_img = av_malloc(frame->linesize[0] * frame->height + 16 + 16/*STRIDE_ALIGN*/ - 1);
-                }
 
-                if (!vedge) {
+                if (!vedge) 
                     vedge = av_malloc(frame->linesize[0] * frame->height + 16 + 16/*STRIDE_ALIGN*/ - 1);
-                }
 
-                if (!shadow) {
+                if (!shadow) 
                     shadow = av_malloc(frame->linesize[0] * frame->height + 16 + 16/*STRIDE_ALIGN*/ - 1);
-                }
 
-                if (!heatmap) {
+                if (!heatmap) 
                     heatmap = av_malloc(frame->linesize[0] * frame->height + 16 + 16/*STRIDE_ALIGN*/ - 1);
-                }
 
-                if (!hsv_imgy) {
+                if (!hsv_imgy) 
                     hsv_imgy = av_malloc(frame->linesize[0] * frame->height + 16 + 16/*STRIDE_ALIGN*/ - 1);
-                }
 
                 if (!hsv_imgu)
                     hsv_imgu = av_malloc(frame->linesize[1] * frame->height / 2 + 16 + 16 - 1);
@@ -1053,15 +1054,24 @@ static int upload_texture(SDL_Texture **tex, AVFrame *frame, struct SwsContext *
                 if (!hsv_imgv)
                     hsv_imgv = av_malloc(frame->linesize[1] * frame->height / 2 + 16 + 16 - 1);
 
-                if (!rgb_imgy) {
+                if (!rgb_imgy)
                     rgb_imgy = av_malloc(frame->linesize[0] * frame->height + 16 + 16/*STRIDE_ALIGN*/ - 1);
-                }
 
                 if (!rgb_imgu)
                     rgb_imgu = av_malloc(frame->linesize[1] * frame->height / 2 + 16 + 16 - 1);
 
                 if (!rgb_imgv)
                     rgb_imgv = av_malloc(frame->linesize[1] * frame->height / 2 + 16 + 16 - 1);
+
+                if (!lab_imgy) 
+                    lab_imgy = av_malloc(frame->linesize[0] * frame->height + 16 + 16/*STRIDE_ALIGN*/ - 1);
+
+                if (!lab_imgu)
+                    lab_imgu = av_malloc(frame->linesize[1] * frame->height / 2 + 16 + 16 - 1);
+
+                if (!lab_imgv)
+                    lab_imgv = av_malloc(frame->linesize[1] * frame->height / 2 + 16 + 16 - 1);
+
 
                 roi.point[ROI_LEFTTOP].r = frame->height / 10;
                 roi.point[ROI_LEFTTOP].c = frame->width * 3 / 10 ;
@@ -1106,6 +1116,9 @@ static int upload_texture(SDL_Texture **tex, AVFrame *frame, struct SwsContext *
                                 rgb_imgy,
                                 rgb_imgu,
                                 rgb_imgv,
+                                lab_imgy,
+                                lab_imgu,
+                                lab_imgv,
                                 &roi
                                 ); 
 
@@ -1139,6 +1152,10 @@ static int upload_texture(SDL_Texture **tex, AVFrame *frame, struct SwsContext *
                 ret = SDL_UpdateYUVTexture(fcw_texture[FCW_WINDOW_TAILLIGHT2], NULL, rgb_imgy, frame->linesize[0],
                                            rgb_imgu, frame->linesize[1],
                                            rgb_imgv, frame->linesize[2]);
+
+                ret = SDL_UpdateYUVTexture(fcw_texture[FCW_WINDOW_TAILLIGHT3], NULL, lab_imgy, frame->linesize[0],
+                                           lab_imgu, frame->linesize[1],
+                                           lab_imgv, frame->linesize[2]);
 
                 ret = SDL_UpdateYUVTexture(fcw_texture[FCW_WINDOW_RESULT], NULL, frame->data[0], frame->linesize[0],
                                            frame->data[1], frame->linesize[1],
@@ -1702,6 +1719,15 @@ static void do_exit(VideoState *is)
 
     if (rgb_imgv)
         av_freep(&rgb_imgv);
+
+    if (lab_imgy)
+        av_freep(&lab_imgy);
+
+    if (lab_imgu)
+        av_freep(&lab_imgu);
+
+    if (lab_imgv)
+        av_freep(&lab_imgv);
 
     exit(0);
 }

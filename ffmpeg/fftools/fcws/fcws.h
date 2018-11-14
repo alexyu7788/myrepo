@@ -89,6 +89,9 @@ bool FCW_DoDetection(
         uint8_t* rgb_imgy,
         uint8_t* rgb_imgu,
         uint8_t* rgb_imgv,
+        uint8_t* lab_imgy,
+        uint8_t* lab_imgu,
+        uint8_t* lab_imgv,
         const roi_t* roi
         );
 
@@ -179,11 +182,15 @@ double FCW_GetObjDist(double pixel);
 
 double FCW_GetObjWidth(double objdist);
 
-void FCW_ConvertYUVToRGB(int y, int u, int v, uint8_t* r, uint8_t* g, uint8_t* b);
+void FCW_ConvertYUV2RGB(int y, int u, int v, uint8_t* r, uint8_t* g, uint8_t* b);
 
-void FCW_ConvertRGBToHSV(uint8_t r, uint8_t g, uint8_t b, double* h, double* s, double* v);
+void FCW_ConvertRGB2HSV(uint8_t r, uint8_t g, uint8_t b, double* h, double* s, double* v);
 
-bool FCW_ConvertIYUVToRGB(
+void FCW_ConvertRGB2XYZ(uint8_t r, uint8_t g, uint8_t b, double* x, double* y, double* z);
+
+void FCW_ConvertXYZ2Lab(double x, double y, double z, double* l, double* a, double* b);
+
+bool FCW_ConvertIYUV2RGB(
         bool night_mode,
         const gsl_matrix* imgy,
         const gsl_matrix* imgu,
@@ -191,7 +198,7 @@ bool FCW_ConvertIYUVToRGB(
         const Candidate* vc_tracker,
         gsl_matrix* rgb[3]);
 
-bool FCW_ConvertIYUVToHSV(
+bool FCW_ConvertIYUV2HSV(
         bool night_mode,
         const gsl_matrix* imgy,
         const gsl_matrix* imgu,
@@ -199,7 +206,15 @@ bool FCW_ConvertIYUVToHSV(
         const Candidate* vc_tracker,
         gsl_matrix* hsv[3]);
 
-bool FCW_SegmentPossibleTaillight(
+bool FCW_ConvertIYUV2Lab(
+        bool night_mode,
+        const gsl_matrix* imgy,
+        const gsl_matrix* imgu,
+        const gsl_matrix* imgv,
+        const Candidate* vc_tracker,
+        gsl_matrix* lab[3]);
+
+bool FCW_SegmentTaillightByHSV(
         const gsl_matrix* src_y, 
         const gsl_matrix* src_u, 
         const gsl_matrix* src_v, 
@@ -213,7 +228,7 @@ bool FCW_SegmentPossibleTaillight(
         double sat_th,
         double val_th);
 
-bool FCW_SegmentTaillight(
+bool FCW_SegmentTaillightByRGB(
         const gsl_matrix* src_y, 
         const gsl_matrix* src_u, 
         const gsl_matrix* src_v, 
@@ -224,6 +239,17 @@ bool FCW_SegmentTaillight(
         const Candidate* vc_tracker, 
         double r_th,
         double rb_th
+        );
+
+bool FCW_SegmentTaillightByLab(
+        const gsl_matrix* src_y, 
+        const gsl_matrix* src_u, 
+        const gsl_matrix* src_v, 
+        gsl_matrix* dst_y, 
+        gsl_matrix* dst_u, 
+        gsl_matrix* dst_v, 
+        const gsl_matrix* lab[3],
+        const Candidate* vc_tracker
         );
 //class CFCWS {
 //    protected:
