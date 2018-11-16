@@ -154,7 +154,7 @@ bool FCW_VehicleCandidateGenerate(
         const gsl_vector* horizontal_hist, 
         VehicleCandidates* vcs);
 
-bool FCW_UpdateBlobByEdge(const gsl_matrix* imgy, blob*  blob);
+bool FCW_UpdateBlobByStrongVEdge(const gsl_matrix* imgy, blob*  blob);
 
 bool FCW_CheckBlobByArea(const gsl_matrix* imgy, blob* cur);
 
