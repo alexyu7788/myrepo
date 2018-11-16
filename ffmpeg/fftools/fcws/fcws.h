@@ -140,8 +140,16 @@ void FCW_BlobClear(blob** bhead);
 
 bool FCW_BlobGenerator(const gsl_matrix* imgy, uint32_t peak_idx, blob** bhead);
 
+bool FCW_BlobRemoveLiteralShadow(
+        const gsl_matrix* imgy,
+        const gsl_matrix* intimg,
+        const gsl_matrix* shadow_imgy,
+        const blob* bhead);
+
 bool FCW_VehicleCandidateGenerate(
-        const gsl_matrix* imgy, 
+        const gsl_matrix* imgy,
+        const gsl_matrix* intimg,
+        const gsl_matrix* shadow_imgy, 
         const gsl_matrix* edged_imgy, 
         const gsl_vector* horizontal_hist, 
         VehicleCandidates* vcs);

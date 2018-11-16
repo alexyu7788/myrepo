@@ -419,13 +419,16 @@ bool FCW_DoDetection(
     FCW_EdgeDetection(m_imgy, m_vedge_imgy, m_gradient, m_direction, 1);
 
     // Get VC
-    FCW_VehicleCandidateGenerate(m_shadow,
-                                m_vedge_imgy,
-                                hori_hist,
-                                vcs);
+    FCW_VehicleCandidateGenerate(
+            m_imgy,
+            m_intimg,
+            m_shadow,
+            m_vedge_imgy,
+            hori_hist,
+            vcs);
 
     // Check symmetry property.
-    //FCW_CheckSymmProperty(m_imgy, vcs, 0.1, 0.25);
+    //FCW_CheckSymmProperty(m_imgy, vcs, 0.1, 0.5);
 
     // Update HeatMap
     FCW_UpdateVehicleHeatMap(m_heatmap, m_heatmap_id, vcs);
@@ -1271,12 +1274,13 @@ examine:
                                 //        max_blob_r, max_blob_c, max_blob_w, max_blob_h,
                                 //        max_blob_pixel_cnt, blob_pixel_density);
 
-                                tblob.r = max_blob_r;
-                                tblob.c = max_blob_c;
-                                tblob.w = max_blob_w;
-                                tblob.h = max_blob_h;
+                                tblob.valid = true;
+                                tblob.r     = max_blob_r;
+                                tblob.c     = max_blob_c;
+                                tblob.w     = max_blob_w;
+                                tblob.h     = max_blob_h;
                                 tblob.number = blob_cnt;
-                                tblob.next = NULL;
+                                tblob.next  = NULL;
 
                                 if (FCW_BlobFindIdentical(bhead, &tblob) == false) {
                                     blob_cnt++;
@@ -1311,8 +1315,93 @@ examine:
     return true;
 }
 
+bool FCW_BlobRemoveLiteralShadow(
+        const gsl_matrix* imgy,
+        const gsl_matrix* intimg,
+        const gsl_matrix* shadow_imgy,
+        const blob* bhead)
+{
+    bool below_th;
+    uint32_t r, c;
+    uint32_t lcs, rcs;  // left- and right- column of shadow
+    double mean, sd, samples, sum;
+    blob* cur_blob = NULL;
+    gsl_matrix_view imgy_sm;
+
+    if (!imgy || !intimg || !shadow_imgy || !bhead) {
+        dbg();
+        return false;
+    }
+
+    cur_blob = bhead;
+
+    while (cur_blob) {
+        dbg("cur_blob is at (%d, %d) with (%d, %d)", cur_blob->r, cur_blob->c, cur_blob->w, cur_blob->h);
+
+        imgy_sm = gsl_matrix_submatrix((gsl_matrix*)imgy, cur_blob->r, cur_blob->c, cur_blob->h, cur_blob->w);
+        mean = sd = samples = sum = 0;
+
+        for (r=0 ; r<imgy_sm.matrix.size1 ; ++r) {
+            for (c=0 ; c<imgy_sm.matrix.size2 ; ++c) {
+                mean += gsl_matrix_get(&imgy_sm.matrix, r, c);
+                samples++;
+            }
+        }
+
+        if (samples > 1) {
+            mean /= samples;
+
+            for (r=0 ; r<imgy_sm.matrix.size1 ; ++r) {
+                for (c=0 ; c<imgy_sm.matrix.size2 ; ++c) {
+                    sum += gsl_pow_2(mean - gsl_matrix_get(&imgy_sm.matrix, r, c));
+                }
+            }
+
+            sd = sqrt(sum / (samples - 1));
+            dbg("mean %.02lf, sd %.02lf", mean, sd);
+
+            lcs = rcs = UINT_MAX;
+            for (c=0 ; c<imgy_sm.matrix.size2 ; ++c) {
+                below_th = true;
+
+                for (r=0 ; r<imgy_sm.matrix.size1 ; ++r) {
+                    if (gsl_matrix_get(&imgy_sm.matrix, r, c) > (mean + sd / 2.0)) {
+                        below_th = false;
+                        break;
+                    }
+
+                    if (below_th == true) {
+                        if (lcs == UINT_MAX)
+                            lcs = c;
+                        if (rcs == UINT_MAX || rcs < c)
+                            rcs = c;
+                    }
+                }
+            }
+
+            if (rcs > lcs) {
+                cur_blob->c += lcs;
+                cur_blob->w = (rcs - lcs + 1);
+                dbg("lcs %d, rcs %d, width %d", lcs, rcs, rcs - lcs + 1);
+                dbg("cur_blob is at (%d, %d) with (%d, %d)", cur_blob->r, cur_blob->c, cur_blob->w, cur_blob->h);
+
+                if (cur_blob->w <= 10)
+                    cur_blob->valid = false;
+            }
+        }
+
+        cur_blob = cur_blob->next;
+    }
+
+    dbg("========================");
+
+    return true;
+}
+
 bool FCW_VehicleCandidateGenerate(
-        const gsl_matrix* imgy, 
+        const gsl_matrix* imgy,
+        const gsl_matrix* intimg,
+        const gsl_matrix* shadow_imgy, 
         const gsl_matrix* vedge_imgy, 
         const gsl_vector* horizontal_hist, 
         VehicleCandidates* vcs)
@@ -1331,13 +1420,13 @@ bool FCW_VehicleCandidateGenerate(
     //vector<PEAK*>::iterator pg_it;
     gsl_vector* temp_hh = NULL;
 
-    if (!imgy || !horizontal_hist || !vedge_imgy || !vcs) {
+    if (!shadow_imgy || !horizontal_hist || !vedge_imgy || !vcs) {
         dbg();
         return false;
     }
 
-    row = imgy->size1;
-    col = imgy->size2;
+    row = shadow_imgy->size1;
+    col = shadow_imgy->size2;
     //memset(&pg, 0x0, sizeof(PEAK_GROUP));
     memset(vcs, 0x0, sizeof(VehicleCandidates));
     //for (CandidatesIT it = vcs.begin() ; it != vcs.end(); ++it) {
@@ -1376,7 +1465,7 @@ bool FCW_VehicleCandidateGenerate(
 
         gsl_vector_set(m_temp_hori_hist, cur_peak_idx, 0);
 
-        FCW_BlobGenerator(imgy, cur_peak_idx, &m_blob_head);
+        FCW_BlobGenerator(shadow_imgy, cur_peak_idx, &m_blob_head);
     }
     
     if (m_blob_head) {
@@ -1399,6 +1488,11 @@ bool FCW_VehicleCandidateGenerate(
         //}
         //printf("\n");
 
+        //FCW_BlobRemoveLiteralShadow(imgy,
+        //                            intimg,
+        //                            shadow_imgy,
+        //                            m_blob_head);
+
         blob *cur = m_blob_head;
         int left_idx, right_idx, bottom_idx;
         int vehicle_startr, vehicle_startc;
@@ -1407,102 +1501,104 @@ bool FCW_VehicleCandidateGenerate(
 
         while (cur != NULL) {
 
-//            dbg("Before scaleup: blob at (%d,%d) with (%d,%d)",
-//                    cur->r,
-//                    cur->c,
-//                    cur->w,
-//                    cur->h);
+            if (cur->valid == true) {
+                //dbg("Before scaleup: blob at (%d,%d) with (%d,%d)",
+                //        cur->r,
+                //        cur->c,
+                //        cur->w,
+                //        cur->h);
 
-            bottom_idx      = cur->r;
+                bottom_idx      = cur->r;
 
-            //scale up searching region of blob with 1/4 time of width on the left & right respectively.
-            left_idx        = (cur->c - (cur->w >> 2));
-            right_idx       = (cur->c + cur->w + (cur->w >> 2));
+                //scale up searching region of blob with 1/4 time of width on the left & right respectively.
+                left_idx        = (cur->c - (cur->w >> 2));
+                right_idx       = (cur->c + cur->w + (cur->w >> 2));
 
-            left_idx        = (left_idx < 0 ? 0 : left_idx);
-            right_idx       = (right_idx >= vedge_imgy->size2 ? vedge_imgy->size2 - 1 : right_idx);
+                left_idx        = (left_idx < 0 ? 0 : left_idx);
+                right_idx       = (right_idx >= vedge_imgy->size2 ? vedge_imgy->size2 - 1 : right_idx);
 
-            vehicle_width   = (right_idx - left_idx + 1);
+                vehicle_width   = (right_idx - left_idx + 1);
 
-            if ((bottom_idx - (cur->w * 0.5)) < 0) {
-                vehicle_startr = 0;
-                vehicle_height = bottom_idx;
-            } else {
-                vehicle_height = cur->w * 0.5;
-                vehicle_startr = bottom_idx - vehicle_height;
-            }
+                if ((bottom_idx - (cur->w * 0.5)) < 0) {
+                    vehicle_startr = 0;
+                    vehicle_height = bottom_idx;
+                } else {
+                    vehicle_height = cur->w * 0.5;
+                    vehicle_startr = bottom_idx - vehicle_height;
+                }
 
-            vehicle_startc  = left_idx;
+                vehicle_startc  = left_idx;
 
-            if (left_idx + vehicle_width >= imgy->size2) {
-                right_idx       = vedge_imgy->size2 - 1;
-                vehicle_width   = right_idx - left_idx + 1;
-            } 
-            
-            
-//            dbg("Vehicle at (%d,%d) with (%d,%d)", 
-//                        vehicle_startr,
-//                        vehicle_startc,
-//                        vehicle_width,
-//                        vehicle_height);
+                if (left_idx + vehicle_width >= shadow_imgy->size2) {
+                    right_idx       = vedge_imgy->size2 - 1;
+                    vehicle_width   = right_idx - left_idx + 1;
+                } 
 
-            cur->r = vehicle_startr;
-            cur->c = vehicle_startc;
-            cur->w = vehicle_width;
-            cur->h = vehicle_height;
 
-            imgy_submatrix = gsl_matrix_submatrix((gsl_matrix*)vedge_imgy,
-                                                   vehicle_startr,
-                                                   vehicle_startc,
-                                                   vehicle_height,
-                                                   vehicle_width);
+                //dbg("Vehicle at (%d,%d) with (%d,%d)", 
+                //            vehicle_startr,
+                //            vehicle_startc,
+                //            vehicle_width,
+                //            vehicle_height);
 
-//            dbg("Before Edge: Vehicle at (%d,%d) with (%d,%d)",
-//                    cur->r,
-//                    cur->c,
-//                    cur->w,
-//                    cur->h);
+                cur->r = vehicle_startr;
+                cur->c = vehicle_startc;
+                cur->w = vehicle_width;
+                cur->h = vehicle_height;
 
-            FCW_UpdateBlobByEdge(&imgy_submatrix.matrix, cur);
+                imgy_submatrix = gsl_matrix_submatrix((gsl_matrix*)vedge_imgy,
+                        vehicle_startr,
+                        vehicle_startc,
+                        vehicle_height,
+                        vehicle_width);
 
-//            dbg("Before Valid: Vehicle at (%d,%d) with (%d,%d)",
-//                    cur->r,
-//                    cur->c,
-//                    cur->w,
-//                    cur->h);
+                //dbg("Before Edge: Vehicle at (%d,%d) with (%d,%d)",
+                //        cur->r,
+                //        cur->c,
+                //        cur->w,
+                //        cur->h);
 
-            FCW_CheckBlobValid(imgy, vedge_imgy, cur);
+                FCW_UpdateBlobByEdge(&imgy_submatrix.matrix, cur);
 
-            if (cur->valid) {
+                //dbg("Before Valid: Vehicle at (%d,%d) with (%d,%d)",
+                //        cur->r,
+                //        cur->c,
+                //        cur->w,
+                //        cur->h);
 
-                vcs->vc[vcs->vc_count].m_valid  = true;
-                vcs->vc[vcs->vc_count].m_dist   = FCW_GetObjDist(cur->w);
-                vcs->vc[vcs->vc_count].m_id     = cur->number;
+                FCW_CheckBlobValid(shadow_imgy, vedge_imgy, cur);
 
-                vcs->vc[vcs->vc_count].m_r      = (cur->r == 0 ? 1 : cur->r);
-                vcs->vc[vcs->vc_count].m_c      = cur->c;
-                vcs->vc[vcs->vc_count].m_w      = cur->w;
-                vcs->vc[vcs->vc_count].m_h      = (cur->r == 0 ? cur->h - 1 : cur->h);
+                if (cur->valid) {
 
-                vcs->vc[vcs->vc_count].m_st     = Disappear;
+                    vcs->vc[vcs->vc_count].m_valid  = true;
+                    vcs->vc[vcs->vc_count].m_dist   = FCW_GetObjDist(cur->w);
+                    vcs->vc[vcs->vc_count].m_id     = cur->number;
 
-//                dbg("\033[1;33mVehicle %d at (%d,%d) with (%d,%d), dist %.02lfm\033[m\n\n",
-//                        vcs->vc[vcs->vc_count].m_id,
-//                        vcs->vc[vcs->vc_count].m_r,
-//                        vcs->vc[vcs->vc_count].m_c,
-//                        vcs->vc[vcs->vc_count].m_w,
-//                        vcs->vc[vcs->vc_count].m_h,
-//                        vcs->vc[vcs->vc_count].m_dist);
+                    vcs->vc[vcs->vc_count].m_r      = (cur->r == 0 ? 1 : cur->r);
+                    vcs->vc[vcs->vc_count].m_c      = cur->c;
+                    vcs->vc[vcs->vc_count].m_w      = cur->w;
+                    vcs->vc[vcs->vc_count].m_h      = (cur->r == 0 ? cur->h - 1 : cur->h);
 
-                vcs->vc_count++;
-            }
-            else {
-                dbg("Fail Vehicle at (%d,%d) with (%d,%d)\n\n",
-                        cur->r,
-                        cur->c,
-                        cur->w,
-                        cur->h);
+                    vcs->vc[vcs->vc_count].m_st     = Disappear;
 
+                    //                dbg("\033[1;33mVehicle %d at (%d,%d) with (%d,%d), dist %.02lfm\033[m\n\n",
+                    //                        vcs->vc[vcs->vc_count].m_id,
+                    //                        vcs->vc[vcs->vc_count].m_r,
+                    //                        vcs->vc[vcs->vc_count].m_c,
+                    //                        vcs->vc[vcs->vc_count].m_w,
+                    //                        vcs->vc[vcs->vc_count].m_h,
+                    //                        vcs->vc[vcs->vc_count].m_dist);
+
+                    vcs->vc_count++;
+                }
+                else {
+                    dbg("Fail Vehicle at (%d,%d) with (%d,%d)\n\n",
+                            cur->r,
+                            cur->c,
+                            cur->w,
+                            cur->h);
+
+                }
             }
 
             cur = cur->next;
@@ -1751,7 +1847,7 @@ bool FCW_UpdateBlobByEdge(const gsl_matrix* imgy, blob*  blob)
 {
     int left_idx, right_idx, bottom_idx;
     uint32_t r, c;
-    uint32_t max_vedge_c;
+    uint32_t max_vedge_c, max_vedge_c_left;
     double magnitude;
     double vedge_strength, max_vedge_strength;
     gsl_matrix_view imgy_block;
@@ -1778,6 +1874,7 @@ bool FCW_UpdateBlobByEdge(const gsl_matrix* imgy, blob*  blob)
     max_vedge_c = 0;
     max_vedge_strength = 0;
 
+    //for (c=0 ; c<((imgy->size2 / 2) - 2) ; ++c) {
     for (c=0 ; c<((imgy->size2 / 4) - 2) ; ++c) {
     //for (c=((imgy->size2 / 4) - 2) ; c>2 ; --c) {
         imgy_block = gsl_matrix_submatrix((gsl_matrix*)imgy, 
@@ -1813,9 +1910,11 @@ bool FCW_UpdateBlobByEdge(const gsl_matrix* imgy, blob*  blob)
 
     // upate right idx
 //    dbg("Update right idx");
+    max_vedge_c_left = max_vedge_c;
     max_vedge_c = 0;
     max_vedge_strength = 0;
 
+    //for (c=imgy->size2 - 2 ; c>(max_vedge_c_left + 2) ; --c) {
     for (c=imgy->size2 - 2 ; c>((imgy->size2 * 3 / 4) - 2) ; --c) {
     //for (c=((imgy->size2 * 3 / 4) - 2) ; c<(imgy->size2 - 2) ; ++c) {
         imgy_block = gsl_matrix_submatrix((gsl_matrix*)imgy, 
