@@ -1857,19 +1857,21 @@ bool FCW_UpdateBlobByStrongVEdge(const gsl_matrix* imgy, blob*  blob)
         return false;
     }
 
-    dbg("==================");
+//    dbg("==================");
+//
+//    dbg("Before (%d, %d) with (%d, %d)",
+//        blob->r,
+//        blob->c,
+//        blob->w,
+//        blob->h);
 
-    dbg("Before (%d, %d) with (%d, %d)",
-        blob->r,
-        blob->c,
-        blob->w,
-        blob->h);
-
-#if 1
+#if 0
     {
         uint32_t pix_cnt = 0;
+        uint32_t column_cnt = 0;
         uint32_t max_edge_idx = 0;
         double max_edge_value = 0;
+        double mean = 0, sd = 0, delta = 0;
         gsl_vector* strong_edge_value = NULL;
 
         strong_edge_value = gsl_vector_alloc(imgy->size2);
@@ -1883,8 +1885,7 @@ bool FCW_UpdateBlobByStrongVEdge(const gsl_matrix* imgy, blob*  blob)
                     imgy->size1, 
                     2);
 
-            magnitude = 0;
-            pix_cnt = 0;
+            pix_cnt = magnitude = 0;
 
             for (uint32_t rr= (imgy_block.matrix.size1/2); rr<imgy_block.matrix.size1 ; ++rr) {
                 for (uint32_t cc=0 ; cc<imgy_block.matrix.size2 ; ++cc) {
@@ -1895,14 +1896,30 @@ bool FCW_UpdateBlobByStrongVEdge(const gsl_matrix* imgy, blob*  blob)
 
             vedge_strength = (magnitude / (double)(pix_cnt));
             gsl_vector_set(strong_edge_value, c, vedge_strength);
-            dbg("strong edge[%d] = %lf", c, vedge_strength);
+//            dbg("strong edge[%d] = %lf", c, vedge_strength);
+
+            column_cnt++;
+            mean += vedge_strength;
         }
+
+        // mean & standart deviation
+        mean /= column_cnt;
+
+        for (c=0 ; c<imgy->size2 - 2 ; ++c) {
+            delta = (mean - gsl_vector_get(strong_edge_value, c));
+            sd += (delta * delta);
+        }
+
+        sd = sqrt(sd / (double)(column_cnt - 1));
+
+//        dbg("mean %lf, sd %lf", mean, sd);
 
         // Find left max
         max_edge_idx = 0;
         max_edge_value = 0;
         for (c=0 ; c<strong_edge_value->size / 2 ; ++c) {
-            if (max_edge_value < gsl_vector_get(strong_edge_value, c)) {
+            if ((gsl_vector_get(strong_edge_value, c) > (mean + 2 * sd)) && 
+                (max_edge_value < gsl_vector_get(strong_edge_value, c))) {
                 max_edge_value = gsl_vector_get(strong_edge_value, c);
                 max_edge_idx = c;
             }
@@ -1913,15 +1930,16 @@ bool FCW_UpdateBlobByStrongVEdge(const gsl_matrix* imgy, blob*  blob)
             return false;
         }
 
-        dbg("Left max %lf at %d", max_edge_value, max_edge_idx);
+//        dbg("Left max %lf at %d", max_edge_value, max_edge_idx);
         left_idx = max_edge_idx;
         blob->c += max_edge_idx;
 
         // Find right max
         max_edge_idx = 0;
         max_edge_value = 0;
-        for (c=strong_edge_value->size / 2 ; c<strong_edge_value->size ; ++c) {
-            if (max_edge_value < gsl_vector_get(strong_edge_value, c)) {
+        for (c=strong_edge_value->size / 2 ; c<(strong_edge_value->size - 2); ++c) {
+            if ((gsl_vector_get(strong_edge_value, c) > (mean + 2 * sd)) && 
+                (max_edge_value < gsl_vector_get(strong_edge_value, c))) {
                 max_edge_value = gsl_vector_get(strong_edge_value, c);
                 max_edge_idx = c;
             }
@@ -1932,7 +1950,7 @@ bool FCW_UpdateBlobByStrongVEdge(const gsl_matrix* imgy, blob*  blob)
             return false;
         }
 
-        dbg("Right max %lf at %d", max_edge_value, max_edge_idx);
+//        dbg("Right max %lf at %d", max_edge_value, max_edge_idx);
 
         blob->w = max_edge_idx - left_idx + 1;
         blob->h = (blob->w * VHW_RATIO > bottom_idx) ? bottom_idx : blob->w * VHW_RATIO;
@@ -1942,11 +1960,11 @@ bool FCW_UpdateBlobByStrongVEdge(const gsl_matrix* imgy, blob*  blob)
         gsl_vector_free(strong_edge_value);
         strong_edge_value = NULL;
 
-        dbg("After (%d, %d) with (%d, %d)",
-                blob->r,
-                blob->c,
-                blob->w,
-                blob->h);
+//        dbg("After (%d, %d) with (%d, %d)",
+//                blob->r,
+//                blob->c,
+//                blob->w,
+//                blob->h);
 
         return true;
     }
