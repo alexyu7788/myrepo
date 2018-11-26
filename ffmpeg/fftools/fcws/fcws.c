@@ -1865,7 +1865,7 @@ bool FCW_UpdateBlobByStrongVEdge(const gsl_matrix* imgy, blob*  blob)
 //        blob->w,
 //        blob->h);
 
-#if 0
+#if 1
     {
         uint32_t pix_cnt = 0;
         uint32_t column_cnt = 0;

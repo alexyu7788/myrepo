@@ -2,6 +2,8 @@
 #define __FCWS_H__
 
 #include "common.h"
+#include "../utils/common.hpp"
+#include "../utils/ma.h"
 #include "candidate.h"
 
 #define NOT_SHADOW      255

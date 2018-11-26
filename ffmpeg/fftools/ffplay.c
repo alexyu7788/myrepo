@@ -115,7 +115,11 @@ static SDL_Window *fcw_window[FCW_WINDOW_TOTAL] = {NULL};
 static SDL_Renderer *fcw_renderer[FCW_WINDOW_TOTAL] = {NULL};
 static SDL_Texture *fcw_texture[FCW_WINDOW_TOTAL] = {NULL};
 static SDL_RendererInfo fcw_renderer_info[FCW_WINDOW_TOTAL] = {{0}};
-// -----------------------------------FCWS---------------------------------------------
+// -----------------------------------LDWS---------------------------------------------
+#include "ldws/ldws_cwrapper.h"
+
+
+
 
 const char program_name[] = "ffplay";
 const int program_birth_year = 2003;
@@ -1161,7 +1165,12 @@ static int upload_texture(SDL_Texture **tex, AVFrame *frame, struct SwsContext *
                                            frame->data[1], frame->linesize[1],
                                            frame->data[2], frame->linesize[2]);
 
-                //---------------------FCW------------------
+                //---------------------LDW------------------
+                LDW_DoDetection(frame->data[0],
+                                frame->linesize[0],
+                                frame->width,
+                                frame->height
+                                );
 #endif
             } else if (frame->linesize[0] < 0 && frame->linesize[1] < 0 && frame->linesize[2] < 0) {
                 ret = SDL_UpdateYUVTexture(*tex, NULL, frame->data[0] + frame->linesize[0] * (frame->height                    - 1), -frame->linesize[0],
@@ -1728,6 +1737,9 @@ static void do_exit(VideoState *is)
 
     if (lab_imgv)
         av_freep(&lab_imgv);
+
+    // ---------------------- LDWS ------------------
+    LDW_DeInit();
 
     exit(0);
 }
@@ -4226,6 +4238,8 @@ int main(int argc, char **argv)
 
     //------------FCW--------------
     FCW_Init();
+    //------------LDW--------------
+    LDW_Init();
 
     event_loop(is);
 
