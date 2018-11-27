@@ -109,6 +109,7 @@ class CLDWS {
     protected:
         CImgProc*   m_ip; // Image Process object
         gsl_matrix* m_imgy;
+        gsl_matrix* m_edge_imgy;
         
     public:
         CLDWS();
@@ -119,7 +120,7 @@ class CLDWS {
 
         bool DeInit();
 
-        bool DoDetection();
+        bool DoDetection(uint8_t* src, int linesize, int w, int h);
 };
 
 //void LDW_DoDetection(uint8_t* src, int linesize, int w, int h);

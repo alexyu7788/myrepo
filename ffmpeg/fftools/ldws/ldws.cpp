@@ -198,29 +198,62 @@ static void LDW_EdgeDetect2(gsl_matrix* src, gsl_matrix* dst, int linesize, int 
 
 CLDWS::CLDWS()
 {
-    m_ip    = NULL;
-    m_imgy  = NULL;
+    m_ip            = NULL;
+    m_imgy          = NULL;
+    m_edged_imgy    = NULL;
 }
 
 CLDWS::~CLDWS()
 {
     DeInit();
-
-    FreeMatrix(&m_imgy);
 }
 
 bool CLDWS::Init()
 {
-    return true;
+    bool ret = true;
+
+    m_ip = new CImgProc();
+
+    if (m_ip)
+        m_ip->Init();
+
+    return ret;
 }
 
 bool CLDWS::DeInit()
 {
+    FreeMatrix(&m_imgy);
+    FreeMatrix(&m_edged_imgy);
+
+    if (m_ip) {
+        delete m_ip;
+        m_ip = NULL;
+    }
+
     return true;
 }
 
-bool CLDWS::DoDetection()
+bool CLDWS::DoDetection(uint8_t* src, int linesize, int w, int h)
 {
+    uint32_t r, c;
+
+    if (!src) {
+        dbg();
+        return false;
+    }
+
+    if (!m_ip) {
+        dbg();
+        return false;
+    }
+
+    CheckOrReallocMatrix(&m_imgy, h, w, true);
+    CheckOrReallocMatrix(&m_edged_imgy, h, w, true);
+
+    m_ip->CopyMatrix(src, m_imgy, w, h, linesize);
+
+
+
     return true;
 }
 //#ifdef __cplusplus

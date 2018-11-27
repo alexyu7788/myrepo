@@ -5,10 +5,14 @@ CLDWS* ldws_obj = NULL;
 
 void LDW_Init()
 {
-    if (ldws_obj == NULL)
+    if (ldws_obj == NULL) {
         ldws_obj = new CLDWS();
-}
 
+        if (ldws_obj)
+            ldws_obj->Init();
+    }
+}
+ 
 void LDW_DoDetection(uint8_t* src, int linesize, int w, int h)
 {
     if (!ldws_obj) {
@@ -16,7 +20,10 @@ void LDW_DoDetection(uint8_t* src, int linesize, int w, int h)
         return;
     }
 
-    ldws_obj->DoDetection();
+    ldws_obj->DoDetection(src,
+                         linesize,
+                         w, 
+                         h);
 }
 
 void LDW_DeInit(void)

@@ -7,7 +7,7 @@
 extern "C" {
 #endif
 
-void LDW_Init();
+void LDW_Init(void);
 
 void LDW_DoDetection(uint8_t* src, int linesize, int w, int h);
 

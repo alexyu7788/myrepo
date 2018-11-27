@@ -18,7 +18,7 @@ class CImgProc {
         gsl_matrix*     m_gb_src;
         gsl_matrix*     m_gb_dst;
         
-        // Gradient
+        // Sobel
         bool            m_gradient_init;
         gsl_matrix_view m_dx;
         gsl_matrix_view m_dy;
@@ -31,9 +31,25 @@ class CImgProc {
         
         bool DeinitGB();
 
-        // Gradient
-        bool InitGradient();
+        bool GaussianBlue(gsl_matrix* src, gsl_matrix* dst, int kernel_size);
 
+        // Sobel
+        bool InitSobel();
+
+        int GetRoundedDirection(int gx, int gy);
+
+        bool NonMaximumSuppression(gsl_matrix* dst,
+                                   gsl_matrix_char* dir,
+                                   gsl_matrix_ushort* src);
+
+        bool Sobel(gsl_matrix_ushort* dst, 
+                gsl_matrix_char* dir, 
+                gsl_matrix* src,
+                int direction, 
+                int crop_r, 
+                int crop_c, 
+                int crop_w, 
+                int crop_h);
     public:
         CImgProc();
 
@@ -41,9 +57,13 @@ class CImgProc {
 
         bool Init();
 
-        // Gaussian Blur
-        bool GaussianBlue(gsl_matrix* src, gsl_matrix* dst);
-
         //bool EdgeDetect(gsl_matrix* src, gsl_matrix
+
+
+
+        bool CopyMatrix(uint8_t* src, gsl_matrix* dst, int w, int h, int linesize);
+
+        bool CopyBackMarix(gsl_matrix* src, uint8_t* dst, int w, int h, int linesize);
+
 };
 #endif
