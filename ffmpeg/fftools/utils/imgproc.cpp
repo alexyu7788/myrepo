@@ -122,13 +122,16 @@ bool CImgProc::GaussianBlue(gsl_matrix* src, gsl_matrix* dst, int kernel_size)
 // Sobel
 bool CImgProc::InitSobel()
 {
-    if (m_gradient_init == false) {
+    if (m_sobel_init == false) {
         m_dx    = gsl_matrix_view_array(dx_ary, 3, 3);
         m_dy    = gsl_matrix_view_array(dy_ary, 3, 3);
         m_dx1d  = gsl_vector_view_array(dx1d_ary, 3);
         m_dy1d  = gsl_vector_view_array(dx1d_ary, 3);
 
-        m_gradient_init = true;
+        m_gradient = NULL;
+        m_dir   = NULL;
+
+        m_sobel_init = true;
     }
 
     return true;
@@ -206,7 +209,7 @@ bool CImgProc::NonMaximumSuppression(gsl_matrix* dst,
     return true;
 }
 
-bool CImgProc::Sobel(gsl_matrix_ushort* dst, 
+bool CImgProc::Sobel(gsl_matrix_ushort* grad, 
         gsl_matrix_char* dir, 
         gsl_matrix* src,
         int direction, 
@@ -223,7 +226,7 @@ bool CImgProc::Sobel(gsl_matrix_ushort* dst,
     gsl_matrix_view submatrix_src;
     gsl_matrix_view cropmatrix_src;
 
-    if (!src || !dst || !dir) {
+    if (!src || !grad || !dir) {
         dbg();
         return false;
     }
@@ -259,7 +262,7 @@ bool CImgProc::Sobel(gsl_matrix_ushort* dst,
         else
             cw = crop_w;
 
-        CheckOrReallocMatrixUshort(&dst, ch, cw, true);
+        CheckOrReallocMatrixUshort(&grad, ch, cw, true);
         CheckOrReallocMatrixChar(&dir, ch, cw, true);
 
         cropmatrix_src = gsl_matrix_submatrix((gsl_matrix*)src, cr, cc, ch, cw);
@@ -300,13 +303,44 @@ bool CImgProc::Sobel(gsl_matrix_ushort* dst,
             }
 
             //gsl_matrix_ushort_set(dst, r, c, gsl_hypot(gx, gy));
-            gsl_matrix_ushort_set(dst, r, c, abs(gx) + abs(gy));
+            gsl_matrix_ushort_set(grad, r, c, abs(gx) + abs(gy));
             gsl_matrix_char_set(dir, r, c, GetRoundedDirection(gx, gy));
         }
     }
 
     return true;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -322,18 +356,52 @@ CImgProc::CImgProc() {
     m_gb_src    =
     m_gb_dst    = NULL;
     
-    // Gradient
-    m_gradient_init  = false;
+    // Sobel 
+    m_sobel_init  = false;
 }
 
 CImgProc::~CImgProc()
 {
     FreeMatrix(&m_gb_src);
     FreeMatrix(&m_gb_dst);
+
+    FreeMatrixUshort(&m_gradient);
+    FreeMatrixChar(&m_dir);
 }
 
 bool CImgProc::Init() 
 {
+
+    return true;
+}
+
+bool CImgProc::EdgeDetectForLDWS(gsl_matrix* src, 
+        gsl_matrix* dst,
+        int linesize,
+        int threshold,
+        double* dir,
+        int double_edge)
+{
+    gsl_matrix* temp = NULL; 
+
+    if (!src || !dst) {
+        dbg();
+        return false;
+    }
+
+    if (InitSobel() == false) {
+        dbg("Fail to init sobel");
+        return false;
+    }
+
+    CheckOrReallocMatrix(&temp, src->size1, src->size2, true);
+    CheckOrReallocMatrixUshort(&m_gradient, src->size1, src->size2, true);
+    CheckOrReallocMatrixChar(&m_dir, src->size1, src->size2, true);
+
+    GaussianBlue(src, temp, 3);
+    Sobel(m_gradient, m_dir, temp, 0);
+
+    FreeMatrix(&temp);
 
     return true;
 }

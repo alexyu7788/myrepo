@@ -251,7 +251,7 @@ bool CLDWS::DoDetection(uint8_t* src, int linesize, int w, int h)
     CheckOrReallocMatrix(&m_edged_imgy, h, w, true);
 
     m_ip->CopyMatrix(src, m_imgy, w, h, linesize);
-
+    m_ip->EdgeDetectForLDWS(m_imgy, m_edged_imgy, linesize, 80, NULL, 0);
 
 
     return true;

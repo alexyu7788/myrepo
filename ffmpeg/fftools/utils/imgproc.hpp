@@ -19,11 +19,13 @@ class CImgProc {
         gsl_matrix*     m_gb_dst;
         
         // Sobel
-        bool            m_gradient_init;
-        gsl_matrix_view m_dx;
-        gsl_matrix_view m_dy;
-        gsl_vector_view m_dx1d;
-        gsl_vector_view m_dy1d;
+        bool                m_sobel_init;
+        gsl_matrix_view     m_dx;
+        gsl_matrix_view     m_dy;
+        gsl_vector_view     m_dx1d;
+        gsl_vector_view     m_dy1d;
+        gsl_matrix_ushort*  m_gradient;
+        gsl_matrix_char*    m_dir;
 
     protected:
         // Gaussian Blur
@@ -42,14 +44,14 @@ class CImgProc {
                                    gsl_matrix_char* dir,
                                    gsl_matrix_ushort* src);
 
-        bool Sobel(gsl_matrix_ushort* dst, 
+        bool Sobel(gsl_matrix_ushort* grad, 
                 gsl_matrix_char* dir, 
                 gsl_matrix* src,
                 int direction, 
-                int crop_r, 
-                int crop_c, 
-                int crop_w, 
-                int crop_h);
+                int crop_r = 0, 
+                int crop_c = 0, 
+                int crop_w = 0, 
+                int crop_h = 0);
     public:
         CImgProc();
 
@@ -57,7 +59,12 @@ class CImgProc {
 
         bool Init();
 
-        //bool EdgeDetect(gsl_matrix* src, gsl_matrix
+        bool EdgeDetectForLDWS(gsl_matrix* src, 
+                                gsl_matrix* dst,
+                                int linesize,
+                                int threshold,
+                                double* dir,
+                                int double_edge);
 
 
 

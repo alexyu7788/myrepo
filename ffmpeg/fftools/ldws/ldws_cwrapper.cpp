@@ -28,11 +28,8 @@ void LDW_DoDetection(uint8_t* src, int linesize, int w, int h)
 
 void LDW_DeInit(void)
 {
-    if (!ldws_obj) {
-        dbg();
-        return;
+    if (ldws_obj) {
+        delete ldws_obj;
+        ldws_obj = NULL;
     }
-
-    delete ldws_obj;
-    ldws_obj = NULL;
 }
