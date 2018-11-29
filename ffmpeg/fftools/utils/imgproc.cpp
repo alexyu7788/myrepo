@@ -209,10 +209,11 @@ bool CImgProc::NonMaximumSuppression(gsl_matrix* dst,
     return true;
 }
 
-bool CImgProc::Sobel(gsl_matrix_ushort* grad, 
+bool CImgProc::Sobel(gsl_matrix* grad, 
         gsl_matrix_char* dir, 
         gsl_matrix* src,
         int direction, 
+        bool double_edge,
         int crop_r, 
         int crop_c, 
         int crop_w, 
@@ -262,7 +263,7 @@ bool CImgProc::Sobel(gsl_matrix_ushort* grad,
         else
             cw = crop_w;
 
-        CheckOrReallocMatrixUshort(&grad, ch, cw, true);
+        CheckOrReallocMatrix(&grad, ch, cw, true);
         CheckOrReallocMatrixChar(&dir, ch, cw, true);
 
         cropmatrix_src = gsl_matrix_submatrix((gsl_matrix*)src, cr, cc, ch, cw);
@@ -302,8 +303,12 @@ bool CImgProc::Sobel(gsl_matrix_ushort* grad,
                 }
             }
 
-            //gsl_matrix_ushort_set(dst, r, c, gsl_hypot(gx, gy));
-            gsl_matrix_ushort_set(grad, r, c, abs(gx) + abs(gy));
+            //gsl_matrix_ushort_set(grad, r, c, gsl_hypot(gx, gy));
+            if (double_edge)
+                gsl_matrix_set(grad, r, c, abs(gx) + abs(gy));
+            else
+                gsl_matrix_set(grad, r, c, gx + gy);
+
             gsl_matrix_char_set(dir, r, c, GetRoundedDirection(gx, gy));
         }
     }
@@ -365,7 +370,7 @@ CImgProc::~CImgProc()
     FreeMatrix(&m_gb_src);
     FreeMatrix(&m_gb_dst);
 
-    FreeMatrixUshort(&m_gradient);
+    FreeMatrix(&m_gradient);
     FreeMatrixChar(&m_dir);
 }
 
@@ -382,6 +387,7 @@ bool CImgProc::EdgeDetectForLDWS(gsl_matrix* src,
         double* dir,
         int double_edge)
 {
+    size_t r, c;
     gsl_matrix* temp = NULL; 
 
     if (!src || !dst) {
@@ -395,11 +401,20 @@ bool CImgProc::EdgeDetectForLDWS(gsl_matrix* src,
     }
 
     CheckOrReallocMatrix(&temp, src->size1, src->size2, true);
-    CheckOrReallocMatrixUshort(&m_gradient, src->size1, src->size2, true);
+    CheckOrReallocMatrix(&m_gradient, src->size1, src->size2, true);
     CheckOrReallocMatrixChar(&m_dir, src->size1, src->size2, true);
 
     GaussianBlue(src, temp, 3);
-    Sobel(m_gradient, m_dir, temp, 0);
+    Sobel(m_gradient, m_dir, temp, 1, false);
+
+    for (r=0 ; r < m_gradient->size1 ; ++r) {
+        for (c=0 ; c < m_gradient->size2 ; ++c) {
+            if (gsl_matrix_get(m_gradient, r, c) < threshold)
+                gsl_matrix_set(dst, r, c, 255);
+            else 
+                gsl_matrix_set(dst, r, c, 0);
+        }
+    }
 
     FreeMatrix(&temp);
 

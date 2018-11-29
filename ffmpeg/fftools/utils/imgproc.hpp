@@ -24,7 +24,7 @@ class CImgProc {
         gsl_matrix_view     m_dy;
         gsl_vector_view     m_dx1d;
         gsl_vector_view     m_dy1d;
-        gsl_matrix_ushort*  m_gradient;
+        gsl_matrix*         m_gradient;
         gsl_matrix_char*    m_dir;
 
     protected:
@@ -44,10 +44,11 @@ class CImgProc {
                                    gsl_matrix_char* dir,
                                    gsl_matrix_ushort* src);
 
-        bool Sobel(gsl_matrix_ushort* grad, 
+        bool Sobel(gsl_matrix* grad, 
                 gsl_matrix_char* dir, 
                 gsl_matrix* src,
                 int direction, 
+                bool double_edge,
                 int crop_r = 0, 
                 int crop_c = 0, 
                 int crop_w = 0, 

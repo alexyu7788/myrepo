@@ -118,6 +118,7 @@ static SDL_RendererInfo fcw_renderer_info[FCW_WINDOW_TOTAL] = {{0}};
 // -----------------------------------LDWS---------------------------------------------
 #include "ldws/ldws_cwrapper.h"
 
+static uint8_t* edged_img = NULL;
 
 
 
@@ -1166,11 +1167,22 @@ static int upload_texture(SDL_Texture **tex, AVFrame *frame, struct SwsContext *
                                            frame->data[2], frame->linesize[2]);
 
                 //---------------------LDW------------------
+
+                if (!edged_img) 
+                    edged_img = av_malloc(frame->linesize[0] * frame->height + 16 + 16/*STRIDE_ALIGN*/ - 1);
+
                 LDW_DoDetection(frame->data[0],
                                 frame->linesize[0],
                                 frame->width,
                                 frame->height
                                 );
+ 
+                LDW_GetEdgeImg(edged_img, frame->width, frame->height, frame->linesize[0]);
+
+                ret = SDL_UpdateYUVTexture(fcw_texture[FCW_WINDOW_TAILLIGHT], NULL, edged_img, frame->linesize[0],
+                                           frame->data[1], frame->linesize[1],
+                                           frame->data[2], frame->linesize[2]);
+
 #endif
             } else if (frame->linesize[0] < 0 && frame->linesize[1] < 0 && frame->linesize[2] < 0) {
                 ret = SDL_UpdateYUVTexture(*tex, NULL, frame->data[0] + frame->linesize[0] * (frame->height                    - 1), -frame->linesize[0],
@@ -1740,6 +1752,9 @@ static void do_exit(VideoState *is)
 
     // ---------------------- LDWS ------------------
     LDW_DeInit();
+
+    if (edged_img)
+        av_freep(&edged_img);
 
     exit(0);
 }

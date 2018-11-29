@@ -33,3 +33,11 @@ void LDW_DeInit(void)
         ldws_obj = NULL;
     }
 }
+
+bool LDW_GetEdgeImg(uint8_t* dst, int w, int h, int linesize)
+{
+    if (ldws_obj) 
+        return ldws_obj->GetEdgedImg(dst, w, h, linesize);
+
+    return false;
+}

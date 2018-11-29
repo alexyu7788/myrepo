@@ -24,6 +24,9 @@ extern "C" {
 
 #define MAX_LANE_NUMBER 5
 
+class CLDWS;
+
+
 enum {
     LANE_DETECT_CHECK_OK = 1,
     LANE_DETECT_CHECK_AGENT_TRIANGLE_AREA_ERROR = -1,
@@ -105,12 +108,28 @@ typedef struct ldws_stat_s{
 	int			widthofbottom;
 }lane_stat_t;
  
+typedef struct param_s {
+    CLDWS*  ldws;
+    int     id;
+}param_t;
+
 class CLDWS {
     protected:
+        bool        m_terminate;
         CImgProc*   m_ip; // Image Process object
         gsl_matrix* m_imgy;
         gsl_matrix* m_edge_imgy;
         
+        lane_stat_t m_lane_stat;
+
+        uint8_t     m_thread_done;
+        param_t     m_param[2];
+        pthread_t   m_thread[2];
+        pthread_mutex_t m_mutex[2];
+        pthread_cond_t  m_cond[2];
+        pthread_mutex_t m_jobdone_mutex[2];
+        pthread_cond_t  m_jobdone_cond[2];
+
     public:
         CLDWS();
 
@@ -121,6 +140,29 @@ class CLDWS {
         bool DeInit();
 
         bool DoDetection(uint8_t* src, int linesize, int w, int h);
+
+        bool GetEdgedImg(uint8_t* dst, int w, int h, int linesize);
+
+    protected:
+        double agent_cal_dist(lanepoint* p1, lanepoint* p2);
+
+        int agent_determine_ijk(lanepoint* p1, lanepoint* p2, lanepoint* p3, lanepoint** i, lanepoint** j, lanepoint** k);
+
+        int check_agent_is_horizontal(lanepoint* i, lanepoint* j);
+
+        int check_dist_of_k_to_vector_ij(lanepoint* i, lanepoint* j, lanepoint* k);
+
+        int check_dist_of_k_to_ij(lanepoint* i, lanepoint* j, lanepoint* k);
+
+        int check_agent_valid(lanepoint** p1, lanepoint** p2, lanepoint** p3);
+
+        static void* FindPartialLane(void* args);
+
+        bool FindLane(gsl_matrix* src,
+                    int start_row,
+                    int start_col,
+                    lanepoint* p,
+                    lane *l[LANE_NUM]);
 };
 
 //void LDW_DoDetection(uint8_t* src, int linesize, int w, int h);
