@@ -87,6 +87,8 @@ typedef struct lane{
 #define LANE_FAR_AWAY_LEFT_SIDE 80
 #define LANE_FAR_AWAY_RIGHT_SIDE    560
 
+#define LANE_THREADS 2 
+
 typedef struct lane_status{
 	int		frame;
 	char    	cur;
@@ -122,13 +124,14 @@ class CLDWS {
         
         lane_stat_t m_lane_stat;
 
+        param_t     m_param[LANE_THREADS];
+        pthread_t   m_thread[LANE_THREADS];
+        pthread_mutex_t m_mutex[LANE_THREADS];
+        pthread_cond_t  m_cond[LANE_THREADS];
+
         uint8_t     m_thread_done;
-        param_t     m_param[2];
-        pthread_t   m_thread[2];
-        pthread_mutex_t m_mutex[2];
-        pthread_cond_t  m_cond[2];
-        pthread_mutex_t m_jobdone_mutex[2];
-        pthread_cond_t  m_jobdone_cond[2];
+        pthread_mutex_t m_jobdone_mutex;
+        pthread_cond_t  m_jobdone_cond;
 
     public:
         CLDWS();
@@ -155,6 +158,10 @@ class CLDWS {
         int check_dist_of_k_to_ij(lanepoint* i, lanepoint* j, lanepoint* k);
 
         int check_agent_valid(lanepoint** p1, lanepoint** p2, lanepoint** p3);
+
+        void WakeUpThread();
+
+        void WaitThreadDone();
 
         static void* FindPartialLane(void* args);
 

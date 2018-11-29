@@ -3,6 +3,7 @@ extern "C" {
 #include "libavutil/avutil.h"
 }
 #endif
+#include <unistd.h>
 #include "ldws.hpp"
 #include "../utils/imgproc.hpp"
 
@@ -208,8 +209,8 @@ CLDWS::CLDWS()
     memset(m_thread, 0x0, sizeof(pthread_t) * 2);
     memset(m_mutex, 0x0, sizeof(pthread_mutex_t) * 2);
     memset(m_cond, 0x0, sizeof(pthread_cond_t) * 2);
-    memset(m_jobdone_mutex, 0x0, sizeof(pthread_mutex_t) * 2);
-    memset(m_jobdone_cond, 0x0, sizeof(pthread_cond_t) * 2);
+    memset(&m_jobdone_mutex, 0x0, sizeof(pthread_mutex_t));
+    memset(&m_jobdone_cond, 0x0, sizeof(pthread_cond_t));
 }
 
 CLDWS::~CLDWS()
@@ -222,6 +223,7 @@ CLDWS::~CLDWS()
 bool CLDWS::Init()
 {
     bool ret = true;
+    pthread_attr_t attr;
 
     m_ip = new CImgProc();
 
@@ -230,16 +232,25 @@ bool CLDWS::Init()
 
     memset(&m_lane_stat, 0x0, sizeof(lane_stat_t));
 
-    for (int i=0 ; i < 2; ++i) {
+    // pthread relevant
+    pthread_mutex_init(&m_jobdone_mutex, NULL);
+    pthread_cond_init(&m_jobdone_cond, NULL);
+
+    pthread_attr_init(&attr);
+
+    for (int i=0 ; i < LANE_THREADS; ++i) {
         pthread_mutex_init(&m_mutex[i], NULL);
         pthread_cond_init(&m_cond[i], NULL);
-        pthread_mutex_init(&m_jobdone_mutex[i], NULL);
-        pthread_cond_init(&m_jobdone_cond[i], NULL);
+
+        pthread_attr_setschedpolicy(&attr, SCHED_FIFO);
 
         m_param[i].ldws = this;
         m_param[i].id   = i;
-        pthread_create(&m_thread[i], NULL, FindPartialLane, (void*)&m_param[i]);
+
+        pthread_create(&m_thread[i], &attr, FindPartialLane, (void*)&m_param[i]);
     }
+
+    pthread_attr_destroy(&attr);
 
     return ret;
 }
@@ -248,26 +259,22 @@ bool CLDWS::DeInit()
 {
     int i;
 
-    for (i = 0; i < 2 ; ++i) {
+    for (i = 0; i < LANE_THREADS ; ++i) {
         pthread_mutex_lock(&m_mutex[i]);
         pthread_cond_signal(&m_cond[i]);
         pthread_mutex_unlock(&m_mutex[i]);
     }
 
-    pthread_join(m_thread[0], NULL);
-    pthread_join(m_thread[1], NULL);
+    for (i = 0 ; i < LANE_THREADS ; ++i)
+        pthread_join(m_thread[LANE_THREADS], NULL);
 
-    for (i = 0; i < 2 ; ++i) {
-        pthread_mutex_lock(&m_jobdone_mutex[i]);
-        pthread_cond_signal(&m_jobdone_cond[i]);
-        pthread_mutex_unlock(&m_jobdone_mutex[i]);
-    }
+    pthread_mutex_lock(&m_jobdone_mutex);
+    pthread_cond_signal(&m_jobdone_cond);
+    pthread_mutex_unlock(&m_jobdone_mutex);
 
-    for (i = 0 ; i < 2 ; ++i) {
+    for (i = 0 ; i < LANE_THREADS ; ++i) {
         pthread_cond_destroy(&m_cond[i]);
-        pthread_cond_destroy(&m_jobdone_cond[i]);
         pthread_mutex_destroy(&m_mutex[i]);
-        pthread_mutex_destroy(&m_jobdone_mutex[i]);
     }
 
     FreeMatrix(&m_imgy);
@@ -299,7 +306,7 @@ bool CLDWS::DoDetection(uint8_t* src, int linesize, int w, int h)
     CheckOrReallocMatrix(&m_edged_imgy, h, w, true);
 
     m_ip->CopyMatrix(src, m_imgy, w, h, linesize);
-    m_ip->EdgeDetectForLDWS(m_imgy, m_edged_imgy, linesize, 80, NULL, 0);
+    m_ip->EdgeDetectForLDWS(m_imgy, m_edged_imgy, linesize, 60, NULL, 0);
 
     FindLane(m_edged_imgy, 0, 0, m_lane_stat.p, m_lane_stat.l);
 
@@ -474,6 +481,31 @@ int CLDWS::check_agent_valid(lanepoint** p1, lanepoint** p2, lanepoint** p3)
     return rval;
 }
 
+void CLDWS::WakeUpThread()
+{
+    m_thread_done = 0;
+    
+    for (int i = 0 ; i < LANE_THREADS; ++i) {
+        pthread_mutex_lock(&m_mutex[i]);
+        pthread_cond_signal(&m_cond[i]);
+        pthread_mutex_unlock(&m_mutex[i]);
+    }
+
+    //pthread_yield();
+}
+
+void CLDWS::WaitThreadDone()
+{
+    pthread_mutex_lock(&m_jobdone_mutex);
+
+    while (m_thread_done < LANE_THREADS) {
+        pthread_cond_wait(&m_jobdone_cond, &m_jobdone_mutex);
+        //dbg("m_thread_done %d", m_thread_done);
+    }
+
+    pthread_mutex_unlock(&m_jobdone_mutex);
+}
+
 void* CLDWS::FindPartialLane(void* args)
 {
     param_t *param = (param_t*)args;
@@ -483,26 +515,36 @@ void* CLDWS::FindPartialLane(void* args)
     pthread_mutex_lock(&pThis->m_mutex[id]);
 
     while (!pThis->m_terminate) {
-        dbg();
         pthread_cond_wait(&pThis->m_cond[id], &pThis->m_mutex[id]);
 
-        if (!pThis->m_terminate) {
-            pthread_mutex_lock(&pThis->m_mutex[id]);
+        if (pThis->m_terminate) {
+            pthread_mutex_unlock(&pThis->m_mutex[id]);
             return NULL;
         }
 
-        dbg("id %d is done", id);
+
+
+
+
+
+
+
+
+
+
+        switch (id) {
+            case 0:
+                dbg("Left is done");
+                break;
+            case 1:
+                dbg("Right is done");
+                break;
+        }
+
+        pthread_mutex_lock(&pThis->m_jobdone_mutex);
         pThis->m_thread_done++;
-
-
-
-        dbg();
-        pthread_mutex_lock(&pThis->m_jobdone_mutex[id]);
-        dbg();
-        pthread_cond_signal(&pThis->m_jobdone_cond[id]);
-        dbg();
-        pthread_mutex_unlock(&pThis->m_jobdone_mutex[id]);
-        dbg();
+        pthread_cond_signal(&pThis->m_jobdone_cond);
+        pthread_mutex_unlock(&pThis->m_jobdone_mutex);
     }
 
     pthread_mutex_unlock(&pThis->m_mutex[id]);
@@ -524,28 +566,10 @@ bool CLDWS::FindLane(gsl_matrix* src,
         return false;
     }
 
-    m_thread_done = 0;
-    
-    for (i = 0 ; i < 2; ++i) {
-        dbg();
-        pthread_mutex_lock(&m_mutex[i]);
-        dbg();
-        pthread_cond_signal(&m_cond[i]);
-        dbg();
-        pthread_mutex_unlock(&m_mutex[i]);
-    }
+    // prepare data for each thead.
+    WakeUpThread();
+    WaitThreadDone();
 
-        pthread_yield();
-
-    for (i = 0 ; i < 2; ++i) {
-        dbg();
-        pthread_mutex_lock(&m_jobdone_mutex[i]);
-        dbg();
-        pthread_cond_wait(&m_jobdone_cond[i], &m_jobdone_mutex[i]);
-        dbg("m_thread_done %d", m_thread_done);
-        pthread_mutex_unlock(&m_jobdone_mutex[i]);
-        dbg();
-    }
 
     return true;
 }
