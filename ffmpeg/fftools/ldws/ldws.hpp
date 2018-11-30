@@ -24,6 +24,9 @@ extern "C" {
 
 #define MAX_LANE_NUMBER 5
 
+typedef double** MATRIX;
+typedef double* VECTOR;
+
 class CLDWS;
 
 
@@ -111,7 +114,7 @@ typedef struct ldws_stat_s{
 }lane_stat_t;
  
 typedef struct param_s {
-    CLDWS*  ldws;
+    CLDWS*  obj;
     int     id;
 }param_t;
 
@@ -132,6 +135,9 @@ class CLDWS {
         uint8_t     m_thread_done;
         pthread_mutex_t m_jobdone_mutex;
         pthread_cond_t  m_jobdone_cond;
+
+        gsl_matrix_view m_subimgy[LANE_THREADS];
+
 
     public:
         CLDWS();
@@ -158,6 +164,19 @@ class CLDWS {
         int check_dist_of_k_to_ij(lanepoint* i, lanepoint* j, lanepoint* k);
 
         int check_agent_valid(lanepoint** p1, lanepoint** p2, lanepoint** p3);
+
+        // ----------------kluge polynomial relevant----------------
+        void solve_equation(gsl_matrix* a, gsl_vector* x, gsl_vector* b);
+
+        void kp_solve(lanepoint* pp[3], lane** l); 
+
+        double kp_dist_of_points_to_kp(lanepoint* p, lane** l, uint32_t search_range_r);
+
+        double kp_evidence_check(int count, lanepoint* p, lane**l);
+
+        void kp_gen_point(uint32_t rows, uint32_t cols, lane** l);
+
+        void kp_rel_point(lane** l);
 
         void WakeUpThread();
 

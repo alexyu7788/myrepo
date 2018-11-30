@@ -12,14 +12,20 @@
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_blas.h>
 #include <gsl/gsl_math.h>
+#include <gsl/gsl_linalg.h>
 
 #define DEBUG
 
 #ifdef DEBUG
 //#define dbg(format, args...) printf("[%s][%s][%d] " format "\n", __FILE__, __func__, __LINE__, ##args)
 #define dbg(format, args...) printf("[%d] " format "\n", __LINE__, ##args)
+#define ldwsdbg(format, args...) printf("[LDWS][%d] " format "\n", __LINE__, ##args)
+#define fcwsdbg(format, args...) printf("[FCWS][%d] " format "\n", __LINE__, ##args)
+#define dbg(format, args...) printf("[%d] " format "\n", __LINE__, ##args)
 #else
 #define dbg(format, args...)
+#define ldwsdbg(format, args...)
+#define fcwsdbg(format, args...)
 #endif
 
 #ifndef bool
