@@ -13,6 +13,11 @@ CLDWS::CLDWS()
 {
     m_terminate     = false;
 
+    m_left_start_row    =
+    m_left_start_col    =
+    m_right_start_row   =
+    m_right_start_col   = 0;
+
     m_ip            = NULL;
     m_imgy          = NULL;
     m_edged_imgy    = NULL;
@@ -258,7 +263,7 @@ int CLDWS::agent_determine_ijk(lanepoint* p1, lanepoint* p2, lanepoint* p3, lane
         ldwsdbg();
         return rval;
     }
-
+ 
     dist = agent_cal_dist(p1, p2);
     if (max_dist < dist){
         max_dist = dist;
@@ -313,7 +318,7 @@ int CLDWS::check_dist_of_k_to_vector_ij(lanepoint* i, lanepoint* j, lanepoint* k
         ldwsdbg();
         return rval;
     }
-
+ 
     dist = fabs(((j->c - i->c)*k->r) + ((i->r - j->r)*k->c) + (i->c * j->r) - (j->c * i->r)) / sqrt(pow(j->c - i->c, 2) + pow(j->r - i->r, 2));
 
     if (dist <= VALID_DIST_OF_K_TO_VECTOR_IJ)
@@ -492,7 +497,7 @@ double CLDWS::kp_evidence_check(int count, lanepoint* p, lane**l)
     return rval;
 }
 
-void CLDWS::kp_gen_point(uint32_t rows, uint32_t cols, lane* l)
+void CLDWS::kp_gen_point(uint32_t rows, uint32_t cols, lane* l, uint32_t start_col)
 {
     uint32_t rr,pix_cnt=0;
     uint32_t col_cnt=0;
@@ -520,7 +525,7 @@ void CLDWS::kp_gen_point(uint32_t rows, uint32_t cols, lane* l)
         c = (int)((k/r) + (b*r) + v);
         if( c>=0 && c<= cols) {
             l->pix[pix_cnt].r = (int)r;
-            l->pix[pix_cnt].c = (int)c;
+            l->pix[pix_cnt].c = (int)(c + start_col);
             col_cnt += c;
   //          fprintf(stdout, "cnt=%d, (%d,%d)\n", cnt, (*l)->pix[cnt].c, (*l)->pix[cnt].r);
             pix_cnt++;
@@ -763,14 +768,15 @@ void* CLDWS::FindPartialLane(void* args)
                         }
                     }
                 }
-
+  
                 /* examine validness of agent points. */ 
                 agent_valid = check_agent_valid(&pp[0], &pp[1], &pp[2]);
 
                 if (agent_valid != LANE_DETECT_CHECK_OK) {
+                    //ldwsdbg("%s: Invalid reason %d", (id == 0 ? "Left" : "Right"), agent_valid);
                     pp[0]->pickup =
-                        pp[1]->pickup = 
-                        pp[2]->pickup = 0;
+                    pp[1]->pickup = 
+                    pp[2]->pickup = 0;
 
                     if ((++find_agent_fail_count) >= MAX_FIND_AGENT_FAIL_COUNT)
                         break;
@@ -782,7 +788,7 @@ void* CLDWS::FindPartialLane(void* args)
 
             if (agent_valid != LANE_DETECT_CHECK_OK) {
                 lane_find = 0;
-                ldwsdbg("%s: Can not find valid agent points", (id == 0 ? "LEFT" : "RIGHT"));
+                //ldwsdbg("%s: Can not find valid agent points", (id == 0 ? "LEFT" : "RIGHT"));
                 break;
             } else {
                 //ldwsdbg("Find valid agent points");
@@ -812,11 +818,11 @@ void* CLDWS::FindPartialLane(void* args)
         }
 
         if (lane_find) {
-            ldwsdbg("%s: Find lanes", (id == 0 ? "LEFT" : "RIGHT"));
+            //ldwsdbg("%s: Find lanes", (id == 0 ? "LEFT" : "RIGHT"));
 
             /* calculate pixel center of each lane. */
             for (i = 0 ; i < lane_num ; ++i)
-                kp_gen_point(rows, cols, l_temp[i]);
+                kp_gen_point(rows, cols, l_temp[i], (id == 0 ? partial->m_left_start_col : partial->m_right_start_col));
 
             /* find max grade lane.*/
             for (i = 0 ; i < lane_num ; ++i) {
@@ -832,13 +838,13 @@ void* CLDWS::FindPartialLane(void* args)
             l->kluge_poly.v = l_temp[max_grade_lane_no]->kluge_poly.v;
 
             l->exist        = 1;
-            kp_gen_point(rows, cols, l);
+            kp_gen_point(rows, cols, l, (id == 0 ? partial->m_left_start_col : partial->m_right_start_col));
         } else {
-            ldwsdbg("%s: Can not find lanes", (id == 0 ? "LEFT" : "RIGHT"));
+            //ldwsdbg("%s: Can not find lanes", (id == 0 ? "LEFT" : "RIGHT"));
             /* evidence checking for previous lane poly. */
             if (l->exist) {
                 evidence_percentage = kp_evidence_check(count, points, &l);
-                kp_gen_point(rows, cols, l);
+                kp_gen_point(rows, cols, l, (id == 0 ? partial->m_left_start_col : partial->m_right_start_col));
 
                 if (evidence_percentage > VALID_LINE_EVIDENCE_PERCENTAGE) {
                     l->fail_count = 0;
@@ -903,12 +909,17 @@ bool CLDWS::FindLane(gsl_matrix* src,
 
     ldwsdbg(LIGHT_RED "=============New Frame=============" NONE);
     // prepare data for each thead.
+
+    m_left_start_row = start_row;
+    m_left_start_col = 0;
     m_subimgy[LANE_LEFT] = gsl_matrix_submatrix(src, 
                                                 start_row, 
                                                 0, 
                                                 src->size1 - start_row, 
                                                 src->size2 / 2);
 
+    m_right_start_row = start_row;
+    m_right_start_col = src->size2 / 2;
     m_subimgy[LANE_RIGHT] = gsl_matrix_submatrix(src, 
                                                 start_row, 
                                                 src->size2 / 2, 

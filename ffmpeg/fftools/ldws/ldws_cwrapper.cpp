@@ -55,7 +55,7 @@ bool LDW_DrawLanes(SDL_Renderer* render, uint32_t width)
     ldws_obj->GetLane(&left, &right, &center);
 
     if (left && left->pix && left->pix_count) {
-        dbg("left %p: %d", left->pix, left->pix_count);
+//        dbg("left %p: %d", left->pix, left->pix_count);
         for (idx = 0 ; idx < left->pix_count ; ++idx)
             SDL_RenderDrawLine(render,
                                 left->pix[idx].c,
@@ -65,7 +65,7 @@ bool LDW_DrawLanes(SDL_Renderer* render, uint32_t width)
     }
 
     if (right && right->pix && right->pix_count) {
-        dbg("right %p: %d", right->pix, right->pix_count);
+//        dbg("right %p: %d", right->pix, right->pix_count);
         for (idx = 0 ; idx < right->pix_count ; ++idx)
             SDL_RenderDrawLine(render,
                                 right->pix[idx].c,
@@ -75,7 +75,7 @@ bool LDW_DrawLanes(SDL_Renderer* render, uint32_t width)
     }
 
     if (center && center->pix && center->pix_count) {
-        dbg("center %p: %d", center->pix, center->pix_count);
+//        dbg("center %p: %d", center->pix, center->pix_count);
         for (idx = 0 ; idx < center->pix_count ; ++idx)
             SDL_RenderDrawLine(render,
                                 center->pix[idx].c,

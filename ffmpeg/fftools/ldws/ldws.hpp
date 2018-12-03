@@ -11,16 +11,17 @@ extern "C" {
 #include "../utils/common.hpp"
 #include "../utils/imgproc.hpp"
 
-#define VALID_AGENT_TRIANGLE_AREA    30
-#define VALID_AGENT_DISTANCE         60.0
-#define VALID_AGENT_HORIZONTAL       30 
-#define VALID_DIST_OF_K_TO_VECTOR_IJ 2
+#define VALID_AGENT_TRIANGLE_AREA       30
+#define VALID_AGENT_DISTANCE            60.0
+#define VALID_AGENT_HORIZONTAL          30 
+#define VALID_DIST_OF_K_TO_VECTOR_IJ    2
 #define VALID_DIST_OF_K_TO_KLUGE_POLY   2
-#define VALID_DIST_OF_POINT_TO_POINT 40   
-#define MAX_FIND_AGENT_FAIL_COUNT    400
-#define MAX_FIND_LINE_FAIL_COUNT     30
+#define VALID_DIST_OF_POINT_TO_POINT    40   
+
+#define MAX_FIND_AGENT_FAIL_COUNT       400
+#define MAX_FIND_LINE_FAIL_COUNT        30
 #define VALID_LINE_EVIDENCE_PERCENTAGE  0.20
-#define VALID_POINT_COUNT            30
+#define VALID_POINT_COUNT               30
 
 #define MAX_LANE_NUMBER 5
 
@@ -123,6 +124,12 @@ typedef struct param_s {
 class CLDWS {
     protected:
         bool        m_terminate;
+
+        uint32_t    m_left_start_row;
+        uint32_t    m_left_start_col;
+        uint32_t    m_right_start_row;
+        uint32_t    m_right_start_col;
+
         CImgProc*   m_ip; // Image Process object
         gsl_matrix* m_imgy;
         gsl_matrix* m_edged_imgy;
@@ -187,7 +194,7 @@ class CLDWS {
 
         static double kp_evidence_check(int count, lanepoint* p, lane**l);
 
-        static void kp_gen_point(uint32_t rows, uint32_t cols, lane* l);
+        static void kp_gen_point(uint32_t rows, uint32_t cols, lane* l, uint32_t start_col = 0);
 
         static void kp_gen_center_point(uint32_t rows, uint32_t cols, lane* left, lane* right, lane* center);
 
