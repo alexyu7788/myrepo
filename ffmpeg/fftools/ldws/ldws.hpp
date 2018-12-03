@@ -188,11 +188,11 @@ class CLDWS {
         // ----------------kluge polynomial relevant----------------
         static void solve_equation(gsl_matrix* a, gsl_vector* x, gsl_vector* b);
 
-        static void kp_solve(lanepoint* pp[3], lane** l); 
+        static void kp_solve(lanepoint* pp[3], lane* l); 
 
-        static double kp_dist_of_points_to_kp(lanepoint* p, lane** l, uint32_t search_range_r);
+        static double kp_dist_of_points_to_kp(lanepoint* p, lane* l, uint32_t search_range_r);
 
-        static double kp_evidence_check(int count, lanepoint* p, lane**l);
+        static double kp_evidence_check(int count, lanepoint* p, lane*l);
 
         static void kp_gen_point(uint32_t rows, uint32_t cols, lane* l, uint32_t start_col = 0);
 

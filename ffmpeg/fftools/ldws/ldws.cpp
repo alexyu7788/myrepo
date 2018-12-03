@@ -404,13 +404,12 @@ void CLDWS::solve_equation(gsl_matrix* a, gsl_vector* x, gsl_vector* b)
  * where A and B are known, to slove X
  */
 
-void CLDWS::kp_solve(lanepoint* pp[3], lane** l)
+void CLDWS::kp_solve(lanepoint* pp[3], lane* l)
 {
     double r0, r1, r2;
     gsl_matrix* m = NULL;
     gsl_vector* x = NULL;
     gsl_vector* b = NULL;
-	lane *l_temp = *l;
 
     CheckOrReallocMatrix(&m, 3, 3, true);
     CheckOrReallocVector(&x, 3, true);
@@ -434,9 +433,9 @@ void CLDWS::kp_solve(lanepoint* pp[3], lane** l)
 
     solve_equation(m, x, b);
 
-    l_temp->kluge_poly.k = gsl_vector_get(x, 0);
-    l_temp->kluge_poly.b = gsl_vector_get(x, 1);
-    l_temp->kluge_poly.v = gsl_vector_get(x, 2);
+    l->kluge_poly.k = gsl_vector_get(x, 0);
+    l->kluge_poly.b = gsl_vector_get(x, 1);
+    l->kluge_poly.v = gsl_vector_get(x, 2);
 //    fprintf(stdout, "k=%lf,b=%lf,v=%lf\n", l_temp->kluge_poly.k, l_temp->kluge_poly.b, l_temp->kluge_poly.v);
 
     FreeMatrix(&m);
@@ -444,24 +443,21 @@ void CLDWS::kp_solve(lanepoint* pp[3], lane** l)
     FreeVector(&b);
 }
 
-double CLDWS::kp_dist_of_points_to_kp(lanepoint* p, lane** l, uint32_t search_range_r)
+double CLDWS::kp_dist_of_points_to_kp(lanepoint* p, lane* l, uint32_t search_range_r)
 {
     double k,b,v;
     double mini_dist = 1.0E+10,dist;
     int r,c;
     int rr;
-    lane *l_temp = *l;
 	
-    k = l_temp->kluge_poly.k;
-    b = l_temp->kluge_poly.b;
-    v = l_temp->kluge_poly.v;
+    k = l->kluge_poly.k;
+    b = l->kluge_poly.b;
+    v = l->kluge_poly.v;
 
     //fprintf(stdout, "src=(%d,%d)\n", p->c, p->r);
     r = p->r;
-    for ( (rr=r-search_range_r) ; rr<=(r+search_range_r) ; rr++)
-	{
-        if (r>0)
-		{
+    for ((rr=r-search_range_r) ; rr<=(r+search_range_r) ; rr++) {
+        if (r>0) {
             c = (int)(k/rr+b*rr+v);  
             dist = sqrt(pow(c-p->c, 2)+pow(rr - p->r, 2));
             //fprintf(stdout, "mini_dist = %lf, dist=%lf,(%d,%d) to (%d,%d)\n", mini_dist, dist, p->c, p->r, c, rr);
@@ -473,18 +469,15 @@ double CLDWS::kp_dist_of_points_to_kp(lanepoint* p, lane** l, uint32_t search_ra
     return mini_dist;
 }
 
-double CLDWS::kp_evidence_check(int count, lanepoint* p, lane**l)
+double CLDWS::kp_evidence_check(int count, lanepoint* p, lane* l)
 {
     double rval=0;
     int i;
     int evidence_count=0;
 
-    for (i=0 ; i<count ; i++)
-	{
-        if (!p[i].pickup)
-		{
-            if (kp_dist_of_points_to_kp(&p[i], l, 10) < VALID_DIST_OF_K_TO_KLUGE_POLY)
-			{
+    for (i=0 ; i<count ; i++) {
+        if (!p[i].pickup) {
+            if (kp_dist_of_points_to_kp(&p[i], l, 10) < VALID_DIST_OF_K_TO_KLUGE_POLY) {
                 p[i].pol = 1;
                 evidence_count++;
             }
@@ -795,10 +788,10 @@ void* CLDWS::FindPartialLane(void* args)
             }
 
             evidence_count = 0;
-            kp_solve(pp, &l_temp[lane_num]);
+            kp_solve(pp, l_temp[lane_num]);
 
             /* evidence checking. */
-            evidence_percentage = kp_evidence_check(count, points, &l_temp[lane_num]);
+            evidence_percentage = kp_evidence_check(count, points, l_temp[lane_num]);
 
             if (evidence_percentage > VALID_LINE_EVIDENCE_PERCENTAGE) {
                 lane_find = 1;
@@ -843,7 +836,7 @@ void* CLDWS::FindPartialLane(void* args)
             //ldwsdbg("%s: Can not find lanes", (id == 0 ? "LEFT" : "RIGHT"));
             /* evidence checking for previous lane poly. */
             if (l->exist) {
-                evidence_percentage = kp_evidence_check(count, points, &l);
+                evidence_percentage = kp_evidence_check(count, points, l);
                 kp_gen_point(rows, cols, l, (id == 0 ? partial->m_left_start_col : partial->m_right_start_col));
 
                 if (evidence_percentage > VALID_LINE_EVIDENCE_PERCENTAGE) {
