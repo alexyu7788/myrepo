@@ -1,7 +1,8 @@
 #include "ldws_cwrapper.h"
 #include "ldws.hpp"
 
-CLDWS* ldws_obj = NULL;
+static CLDWS* ldws_obj = NULL;
+static lane *left = NULL, *right = NULL, *center = NULL;
 
 void LDW_Init()
 {
@@ -40,4 +41,50 @@ bool LDW_GetEdgeImg(uint8_t* dst, int w, int h, int linesize)
         return ldws_obj->GetEdgedImg(dst, w, h, linesize);
 
     return false;
+}
+
+bool LDW_DrawLanes(SDL_Renderer* render, uint32_t width)
+{
+    uint32_t idx;
+
+    if (!ldws_obj || !render) {
+        ldwsdbg();
+        return false;
+    }
+
+    ldws_obj->GetLane(&left, &right, &center);
+
+    if (left && left->pix && left->pix_count) {
+        dbg("left %p: %d", left->pix, left->pix_count);
+        for (idx = 0 ; idx < left->pix_count ; ++idx)
+            SDL_RenderDrawLine(render,
+                                left->pix[idx].c,
+                                left->pix[idx].r,
+                                left->pix[idx].c + width,
+                                left->pix[idx].r);
+    }
+
+    if (right && right->pix && right->pix_count) {
+        dbg("right %p: %d", right->pix, right->pix_count);
+        for (idx = 0 ; idx < right->pix_count ; ++idx)
+            SDL_RenderDrawLine(render,
+                                right->pix[idx].c,
+                                right->pix[idx].r,
+                                right->pix[idx].c + width,
+                                right->pix[idx].r);
+    }
+
+    if (center && center->pix && center->pix_count) {
+        dbg("center %p: %d", center->pix, center->pix_count);
+        for (idx = 0 ; idx < center->pix_count ; ++idx)
+            SDL_RenderDrawLine(render,
+                                center->pix[idx].c,
+                                center->pix[idx].r,
+                                center->pix[idx].c + width,
+                                center->pix[idx].r);
+    }
+
+    ldws_obj->DestroyLane(&left, &right, &center);
+
+    return true;
 }

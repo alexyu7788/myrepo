@@ -81,6 +81,8 @@ typedef struct lane{
     int     fail_count;
     double  evidence_percentage;
     double  grade;
+
+    pthread_mutex_t mutex;
 }lane;
 
 #define LANE_FAIL_COUNT 5
@@ -123,7 +125,7 @@ class CLDWS {
         bool        m_terminate;
         CImgProc*   m_ip; // Image Process object
         gsl_matrix* m_imgy;
-        gsl_matrix* m_edge_imgy;
+        gsl_matrix* m_edged_imgy;
         
         lane_stat_t m_lane_stat;
 
@@ -152,35 +154,50 @@ class CLDWS {
 
         bool GetEdgedImg(uint8_t* dst, int w, int h, int linesize);
 
+        // For drawing
+        bool GetLane(lane** left, lane** right, lane** center);
+
+        bool DestroyLane(lane** left, lane** right, lane** center);
+
     protected:
-        double agent_cal_dist(lanepoint* p1, lanepoint* p2);
+        static lane* LaneInit(void);
 
-        int agent_determine_ijk(lanepoint* p1, lanepoint* p2, lanepoint* p3, lanepoint** i, lanepoint** j, lanepoint** k);
+        static lane* LaneInit(const lane* const ref);
 
-        int check_agent_is_horizontal(lanepoint* i, lanepoint* j);
+        static void LaneDeinit(lane** l);
 
-        int check_dist_of_k_to_vector_ij(lanepoint* i, lanepoint* j, lanepoint* k);
+        static double agent_cal_dist(lanepoint* p1, lanepoint* p2);
 
-        int check_dist_of_k_to_ij(lanepoint* i, lanepoint* j, lanepoint* k);
+        static int agent_determine_ijk(lanepoint* p1, lanepoint* p2, lanepoint* p3, lanepoint** i, lanepoint** j, lanepoint** k);
 
-        int check_agent_valid(lanepoint** p1, lanepoint** p2, lanepoint** p3);
+        static int check_agent_is_horizontal(lanepoint* i, lanepoint* j);
+
+        static int check_dist_of_k_to_vector_ij(lanepoint* i, lanepoint* j, lanepoint* k);
+
+        static int check_dist_of_k_to_ij(lanepoint* i, lanepoint* j, lanepoint* k);
+
+        static int check_agent_valid(lanepoint** p1, lanepoint** p2, lanepoint** p3);
 
         // ----------------kluge polynomial relevant----------------
-        void solve_equation(gsl_matrix* a, gsl_vector* x, gsl_vector* b);
+        static void solve_equation(gsl_matrix* a, gsl_vector* x, gsl_vector* b);
 
-        void kp_solve(lanepoint* pp[3], lane** l); 
+        static void kp_solve(lanepoint* pp[3], lane** l); 
 
-        double kp_dist_of_points_to_kp(lanepoint* p, lane** l, uint32_t search_range_r);
+        static double kp_dist_of_points_to_kp(lanepoint* p, lane** l, uint32_t search_range_r);
 
-        double kp_evidence_check(int count, lanepoint* p, lane**l);
+        static double kp_evidence_check(int count, lanepoint* p, lane**l);
 
-        void kp_gen_point(uint32_t rows, uint32_t cols, lane** l);
+        static void kp_gen_point(uint32_t rows, uint32_t cols, lane* l);
 
-        void kp_rel_point(lane** l);
+        static void kp_gen_center_point(uint32_t rows, uint32_t cols, lane* left, lane* right, lane* center);
+
+        static void kp_rel_point(lane* l);
 
         void WakeUpThread();
 
         void WaitThreadDone();
+
+        bool UpdateLaneStatus(uint32_t rows, uint32_t cols, lane* left, lane* right, lane* center);
 
         static void* FindPartialLane(void* args);
 
@@ -191,10 +208,4 @@ class CLDWS {
                     lane *l[LANE_NUM]);
 };
 
-//void LDW_DoDetection(uint8_t* src, int linesize, int w, int h);
-//
-//void LDW_DeInit(void);
-
-//void lane_detect(unsigned char *img, int rows, int cols, int start_row, int start_col, point *p, lane **l);
-//int lane_check_over_status(lane **l, int center_pos);
 #endif

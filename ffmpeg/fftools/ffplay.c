@@ -1431,6 +1431,11 @@ static void video_image_display(VideoState *is)
                 SDL_RenderDrawRect(fcw_renderer[FCW_WINDOW_TAILLIGHT2], &vrect);
             }
         }
+
+        // LDWS
+        color = &COLOR[COLOR_YELLOW];
+        SDL_SetRenderDrawColor(fcw_renderer[FCW_WINDOW_TAILLIGHT], color->r, color->g, color->b, color->a);
+        LDW_DrawLanes(fcw_renderer[FCW_WINDOW_TAILLIGHT], 4);
     }
 #endif
 }

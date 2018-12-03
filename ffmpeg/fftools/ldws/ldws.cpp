@@ -7,194 +7,6 @@ extern "C" {
 #include "ldws.hpp"
 #include "../utils/imgproc.hpp"
 
-static gsl_matrix* m_imgy       = NULL;
-static gsl_matrix* m_edged_imgy = NULL;
-
-static void LDW_GaussianBlur(uint8_t* src_data, uint8_t* dst_data, int src_w, int src_h, int src_stride, int matrix_size)
-{
-    int i,j;
-
-    if (matrix_size != 3 && matrix_size != 5)
-        matrix_size = 3;
-
-    if (matrix_size == 3)
-    {
-        memcpy(dst_data, src_data, src_w); dst_data += src_stride; src_data += src_stride;
-
-        for (j = 1; j < src_h - 1; j++) 
-        {
-            dst_data[0] = src_data[0];
-            for (i = 1; i < src_w - 1; i++) 
-            {
-                /* Gaussian mask of size 3x3*/
-                dst_data[i] = ((src_data[-src_stride + i-1] + src_data[-src_stride + i+1]) 
-                            +  (src_data[ src_stride + i-1] + src_data[ src_stride + i+1]) 
-                            +  (src_data[-src_stride + i  ] + src_data[ src_stride + i  ]) * 2
-                            +  (src_data[ src_stride + i-1] + src_data[ src_stride + i+1]) * 2
-                            +  (src_data[ src_stride + i  ]                              ) * 4
-                            ) / 16;
-            }
-            dst_data[i] = src_data[i];
-
-            dst_data += src_stride;
-            src_data += src_stride;
-        }
-
-        memcpy(dst_data, src_data, src_w);
-    }
-    else if (matrix_size == 5)
-    {
-        memcpy(dst_data, src_data, src_w); dst_data += src_stride; src_data += src_stride;
-        memcpy(dst_data, src_data, src_w); dst_data += src_stride; src_data += src_stride;
-
-        for (j = 2; j < src_h - 2; j++) 
-        {
-            dst_data[0] = src_data[0];
-            dst_data[1] = src_data[1];
-            for (i = 2; i < src_w - 2; i++) 
-            {
-                /* Gaussian mask of size 5x5*/
-                dst_data[i] = ((src_data[-2*src_stride + i-2] + src_data[2*src_stride + i-2]) * 2
-                             + (src_data[-2*src_stride + i-1] + src_data[2*src_stride + i-1]) * 4
-                             + (src_data[-2*src_stride + i  ] + src_data[2*src_stride + i  ]) * 5
-                             + (src_data[-2*src_stride + i+1] + src_data[2*src_stride + i+1]) * 4
-                             + (src_data[-2*src_stride + i+2] + src_data[2*src_stride + i+2]) * 2
-
-                             + (src_data[  -src_stride + i-2] + src_data[  src_stride + i-2]) *  4
-                             + (src_data[  -src_stride + i-1] + src_data[  src_stride + i-1]) *  9
-                             + (src_data[  -src_stride + i  ] + src_data[  src_stride + i  ]) * 12
-                             + (src_data[  -src_stride + i+1] + src_data[  src_stride + i+1]) *  9
-                             + (src_data[  -src_stride + i+2] + src_data[  src_stride + i+2]) *  4
-
-                             + src_data[i-2] *  5
-                             + src_data[i-1] * 12
-                             + src_data[i  ] * 15
-                             + src_data[i+1] * 12
-                             + src_data[i+2] *  5) / 159;
-            }
-            dst_data[i    ] = src_data[i];
-            dst_data[i + 1] = src_data[i + 1];
-
-            dst_data += src_stride;
-            src_data += src_stride;
-        }
-
-        memcpy(dst_data, src_data, src_w); dst_data += src_stride; src_data += src_stride;
-        memcpy(dst_data, src_data, src_w);
-    }
-}
- 
-static void LDW_SobelAndThreshoding(uint8_t *src_data, uint8_t *dst_data, int src_w, int src_h, int src_stride, int threshold, int grandient, double *dir, int double_edge)
-{
-    int i, j;
-
-    for (j = 1; j < src_h - 1; j++) 
-    {
-        dst_data += src_stride;
-        src_data += src_stride;
-
-        if (dir)
-            dir += src_stride;
-        
-        for (i = 1; i < src_w - 1; i++) 
-        {
-            if (grandient == 0)// Gx
-            {
-                /*
-                *   { -1 , 0 , 1}        
-                *   { -2 , 0 , 2}    
-                *   { -1 , 0 , 1}
-                */            
-                int gx =
-                    (src_data[-src_stride + i+1] + 2 * src_data[i+1] + src_data[src_stride + i+1]) - \
-                    (src_data[-src_stride + i-1] + 2 * src_data[i-1] + src_data[src_stride + i-1]);
-
-                if (double_edge)
-                    gx = FFABS(gx);
-
-                //threshoding
-                if (gx < threshold)
-                    gx = 255;   //non-edge
-                else
-                    gx = 0;     //edge
-
-                dst_data[i] = gx;
-            }
-            else if (grandient == 1)//Gy
-            {
-                /*
-                *   { -1 , -2 , -1}        
-                *   {  0 ,  0 ,  0}    
-                *   {  1 ,  2 ,  1}
-                */            
-                int gy =
-                    (src_data[ src_stride + i-1] + 2 * src_data[ src_stride + i] + src_data[ src_stride + i+1]) - \
-                    (src_data[-src_stride + i-1] + 2 * src_data[-src_stride + i] + src_data[-src_stride + i+1]);
-
-                if (double_edge)
-                    gy = FFABS(gy);
-
-                //threshoding
-                if (gy < threshold)
-                    gy = 255;   //non-edge
-                else
-                    gy = 0;     //edge
-
-                dst_data[i] = gy;
-            }
-            else if (grandient == 2)//Gx+Gy
-            {
-                int gx =
-                    (src_data[-src_stride + i+1] + 2 * src_data[i+1] + src_data[src_stride + i+1]) - \
-                    (src_data[-src_stride + i-1] + 2 * src_data[i-1] + src_data[src_stride + i-1]);
-                
-                int gy =
-                    (src_data[ src_stride + i-1] + 2 * src_data[ src_stride + i] + src_data[ src_stride + i+1]) - \
-                    (src_data[-src_stride + i-1] + 2 * src_data[-src_stride + i] + src_data[-src_stride + i+1]);
-
-                if (dir)
-                {
-                    //dir[i] = get_rounded_direction(gx, gy);
-                    dir[i] = atan2((double)gy, (double)gx) * 180 / M_PI;
-                }
-                
-                if (double_edge)
-                {
-                    gx = FFABS(gx);
-                    gy = FFABS(gy);
-                }
-
-                dst_data[i] = sqrt(pow(gx, 2.0) + pow(gy, 2.0));
-                
-                //threshoding
-                if (dst_data[i] < threshold)
-                    dst_data[i] = 255;  //non-edge
-                else
-                    dst_data[i] = 0;    //edge
-            }
-        }
-    }
-}
-
-static void LDW_EdgeDetect(uint8_t* src_data, uint8_t* dst_data, int src_w, int src_h, int src_stride, int threshold, int gradient, double* dir, int double_edge)
-{
-    uint8_t *temp_data = (uint8_t*)av_mallocz(sizeof(uint8_t)*src_w*src_h);
-
-    LDW_GaussianBlur(src_data, temp_data, src_w, src_h, src_stride, 3);
-    //LDW_SobelAndThreshoding(temp_data, dst_data, src_w, src_h, src_stride, threshold, gradient, dir, double_edge);
-
-    av_freep(&temp_data);
-}
-
-static void LDW_EdgeDetect2(gsl_matrix* src, gsl_matrix* dst, int linesize, int threshold, int gradient, double* dir, int double_edge)
-{
-    gsl_matrix* temp = NULL;
-    CheckOrReallocMatrix(&temp, src->size1, src->size2, true);
-
-
-    FreeMatrix(&temp);
-}
- 
 //============================================================================
 
 CLDWS::CLDWS()
@@ -223,6 +35,7 @@ CLDWS::~CLDWS()
 bool CLDWS::Init()
 {
     bool ret = true;
+    uint32_t i;
     pthread_attr_t attr;
 
     m_ip = new CImgProc();
@@ -231,6 +44,8 @@ bool CLDWS::Init()
         m_ip->Init();
 
     memset(&m_lane_stat, 0x0, sizeof(lane_stat_t));
+    for (i = 0 ; i < LANE_NUM ; ++i)
+        m_lane_stat.l[i] = LaneInit();
 
     // pthread relevant
     pthread_mutex_init(&m_jobdone_mutex, NULL);
@@ -257,7 +72,7 @@ bool CLDWS::Init()
 
 bool CLDWS::DeInit()
 {
-    int i;
+    uint32_t i;
 
     for (i = 0; i < LANE_THREADS ; ++i) {
         pthread_mutex_lock(&m_mutex[i]);
@@ -285,8 +100,12 @@ bool CLDWS::DeInit()
         m_ip = NULL;
     }
 
+    for (i = 0 ; i < LANE_NUM ; ++i)
+        LaneDeinit(&m_lane_stat.l[i]);
+
     return true;
 }
+
 
 bool CLDWS::DoDetection(uint8_t* src, int linesize, int w, int h)
 {
@@ -332,7 +151,29 @@ bool CLDWS::GetEdgedImg(uint8_t* dst, int w, int h, int linesize)
     return false;
 }
 
+// For drawing
+bool CLDWS::GetLane(lane** left, lane** right, lane** center)
+{
+    if (!left || !right || !center) {
+        ldwsdbg();
+        return false;
+    }
 
+    *left   = LaneInit(m_lane_stat.l[LANE_LEFT]);
+    *right  = LaneInit(m_lane_stat.l[LANE_RIGHT]);
+    *center = LaneInit(m_lane_stat.l[LANE_CENTER]);
+
+    return true;
+}
+
+bool CLDWS::DestroyLane(lane** left, lane** right, lane** center)
+{
+    LaneDeinit(left);
+    LaneDeinit(right);
+    LaneDeinit(center);
+
+    return true;
+}
 
 
 
@@ -346,6 +187,56 @@ bool CLDWS::GetEdgedImg(uint8_t* dst, int w, int h, int linesize)
 
 
 //------------------------------------------------------------------------------
+lane* CLDWS::LaneInit(void)
+{
+    lane* l = NULL;
+    pthread_mutexattr_t attr;
+
+    l = new lane;
+    memset(l, 0x0, sizeof(lane));
+    l->pix = NULL;
+
+    pthread_mutexattr_init(&attr);
+    pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE_NP);
+    pthread_mutex_init(&l->mutex, &attr);
+    pthread_mutexattr_destroy(&attr);
+
+    return l;
+}
+
+lane* CLDWS::LaneInit(const lane* const ref)
+{
+    uint32_t cnt = 0;
+
+    lane* l = LaneInit();
+
+    memcpy(l, ref, sizeof(lane));
+
+    l->pix = new lanepoint[l->pix_count];
+
+    for (cnt = 0 ; cnt < l->pix_count ; ++cnt) {
+        l->pix[cnt].r = ref->pix[cnt].r;
+        l->pix[cnt].c = ref->pix[cnt].c;
+    }
+
+    return l;
+}
+
+void CLDWS::LaneDeinit(lane** l)
+{
+    if (*l) {
+        if ((*l)->pix) {
+            delete [] (*l)->pix;
+            (*l)->pix = NULL;
+        }
+
+        pthread_mutex_destroy(&(*l)->mutex);
+
+        delete (*l);
+        (*l) = NULL; 
+    }
+}
+
 double CLDWS::agent_cal_dist(lanepoint* p1, lanepoint* p2)
 {
     if (!p1 || !p2)
@@ -510,13 +401,11 @@ void CLDWS::solve_equation(gsl_matrix* a, gsl_vector* x, gsl_vector* b)
 
 void CLDWS::kp_solve(lanepoint* pp[3], lane** l)
 {
-    double r0, b0;
-    double r1, b1;
-    double r2, b2;
-	lane *l_temp = *l;
+    double r0, r1, r2;
     gsl_matrix* m = NULL;
     gsl_vector* x = NULL;
     gsl_vector* b = NULL;
+	lane *l_temp = *l;
 
     CheckOrReallocMatrix(&m, 3, 3, true);
     CheckOrReallocVector(&x, 3, true);
@@ -603,54 +492,98 @@ double CLDWS::kp_evidence_check(int count, lanepoint* p, lane**l)
     return rval;
 }
 
-void CLDWS::kp_gen_point(uint32_t rows, uint32_t cols, lane** l)
+void CLDWS::kp_gen_point(uint32_t rows, uint32_t cols, lane* l)
 {
     uint32_t rr,pix_cnt=0;
     uint32_t col_cnt=0;
     double k,b,v;
     double r, c;
-	lane *l_temp = *l;
-	
-    if (l_temp->pix != NULL)
-	{
-        delete [] l_temp->pix;
-        l_temp->pix = NULL;
+
+    if (!l) {
+        ldwsdbg();
+        return;
     }
 
-    l_temp->pix = new lanepoint[rows];
+    pthread_mutex_lock(&l->mutex);
 
-    k = l_temp->kluge_poly.k;
-    b = l_temp->kluge_poly.b;
-    v = l_temp->kluge_poly.v;
+    kp_rel_point(l);
+    l->pix = new lanepoint[rows];
+    memset(l->pix, 0x0, sizeof(lanepoint) * rows);
+
+    k = l->kluge_poly.k;
+    b = l->kluge_poly.b;
+    v = l->kluge_poly.v;
 
 //    fprintf(stdout, "k=%lf, b=%lf, v=%lf\n", k, b, v);
-    for (rr=0, pix_cnt=0 ; rr<rows ; rr++)
-	{
+    for (rr=0, pix_cnt=0 ; rr<rows ; rr++) {
         r = (double)(rr+1);
         c = (int)((k/r) + (b*r) + v);
-        if( c>=0 && c<= cols)
-		{
-            l_temp->pix[pix_cnt].r = (int)r;
-            l_temp->pix[pix_cnt].c = (int)c;
+        if( c>=0 && c<= cols) {
+            l->pix[pix_cnt].r = (int)r;
+            l->pix[pix_cnt].c = (int)c;
             col_cnt += c;
   //          fprintf(stdout, "cnt=%d, (%d,%d)\n", cnt, (*l)->pix[cnt].c, (*l)->pix[cnt].r);
             pix_cnt++;
         }
     }
 
-    l_temp->pix_count = pix_cnt;
-    l_temp->pix_col_center = (int)(col_cnt/pix_cnt);
+    l->pix_count = pix_cnt;
+    l->pix_col_center = (int)(col_cnt/pix_cnt);
 
-    ldwsdbg("l_temp: count %d, column center %d", 
-            l_temp->pix_count, l_temp->pix_col_center);
+//    ldwsdbg("l_temp: count %d, column center %d", 
+//            l_temp->pix_count, l_temp->pix_col_center);
+    pthread_mutex_unlock(&l->mutex);
 }
 
-void CLDWS::kp_rel_point(lane** l)
+void CLDWS::kp_gen_center_point(uint32_t rows, uint32_t cols, lane* left, lane* right, lane* center)
 {
-    if ((*l)->pix) {
-        delete [] (*l)->pix;
-        (*l)->pix = NULL;
-        (*l)->pix_col_center = (*l)->pix_count = 0;
+    uint32_t r, cnt = 0, mean_c = 0;
+
+    if (!left || !left->pix || !right || !right->pix || !center) {
+        ldwsdbg();
+        return;
+    }
+
+    pthread_mutex_lock(&left->mutex);
+    pthread_mutex_lock(&right->mutex);
+    pthread_mutex_lock(&center->mutex);
+
+    if (left->pix && right->pix) {
+        kp_rel_point(center);
+        center->pix = new lanepoint[rows];
+        memset(center->pix, 0x0, sizeof(lanepoint) * rows);
+
+        for (r = 0 ; ; ++r) {
+            if ((r > left->pix_count - 1) || (r > right->pix_count - 1))
+                break;
+
+            center->pix[r].r = (left->pix[r].r + right->pix[r].r) / 2;
+            center->pix[r].c = (left->pix[r].c + right->pix[r].c) / 2;
+            ++cnt;
+            mean_c += center->pix[r].c;
+        }
+
+        center->pix_count = cnt;
+        mean_c /= cnt;
+        center->shift = mean_c - cols/2;
+        ldwsdbg("center shift %d", center->shift);
+    }
+
+    pthread_mutex_unlock(&left->mutex);
+    pthread_mutex_unlock(&right->mutex);
+    pthread_mutex_unlock(&center->mutex);
+}
+
+void CLDWS::kp_rel_point(lane* l)
+{
+    if (l) {
+        pthread_mutex_lock(&l->mutex);
+
+        delete [] l->pix;
+        l->pix = NULL;
+        l->pix_col_center = l->pix_count = 0;
+
+        pthread_mutex_unlock(&l->mutex);
     }
 }
 
@@ -688,6 +621,23 @@ void CLDWS::WaitThreadDone()
     pthread_mutex_unlock(&m_jobdone_mutex);
 }
 
+bool CLDWS::UpdateLaneStatus(uint32_t rows, uint32_t cols, lane* left, lane* right, lane* center)
+{
+    if (!left || !right || !center) {
+        ldwsdbg();
+        return false;
+    }
+
+    center->exist = (left->exist & right->exist ? 1 : 0);
+
+    if (center->exist)
+        kp_gen_center_point(rows, cols, left, right, center);
+    else
+        kp_rel_point(center);
+
+    return true;
+}
+
 void* CLDWS::FindPartialLane(void* args)
 {
     int id = -1;
@@ -710,11 +660,11 @@ void* CLDWS::FindPartialLane(void* args)
            max_evidence_percentage,
            max_grade;
 
-    gsl_matrix_view* sm = NULL;
     lanepoint* points   = NULL;
     lanepoint* pp[3];
-    lane *l_temp[MAX_LANE_NUMBER] = {0};
     lane *l = NULL;
+    lane *l_temp[MAX_LANE_NUMBER] = {0};
+    gsl_matrix_view* sm = NULL;
 
     if (!param)
         return NULL;
@@ -723,19 +673,12 @@ void* CLDWS::FindPartialLane(void* args)
     id      = param->id;
 
     l = partial->m_lane_stat.l[id];
-    if (!l && (l = new lane) == NULL) {
-        ldwsdbg("id[%d]: Can not allocate memory", id);
-        goto fail1;
-    }
-    ldwsdbg("id[%d]: l:%p", id, l);
 
     for (i = 0 ; i < MAX_LANE_NUMBER ; ++i) {
-        if(!l_temp[i] && (l_temp[i] = new lane) == NULL) {
-            ldwsdbg("id[%d]: Can not allocate memory", id);
-            goto fail1;
-        }
+        if ((l_temp[i] = LaneInit()) == NULL)
+                goto fail1;
 
-        ldwsdbg("id[%d]: l_temp[%d]: %p", id, i, l_temp[i]);
+        //ldwsdbg("id[%d]: l_temp[%d]: %p", id, i, l_temp[i]);
     }
 
     pthread_mutex_lock(&partial->m_mutex[id]);
@@ -753,8 +696,6 @@ void* CLDWS::FindPartialLane(void* args)
 
             break;
         }
-
-        ldwsdbg("================%s==================", id == 0 ? "Left" : "Right");
 
         rows = sm->matrix.size1;
         cols = sm->matrix.size2;
@@ -824,7 +765,7 @@ void* CLDWS::FindPartialLane(void* args)
                 }
 
                 /* examine validness of agent points. */ 
-                agent_valid = partial->check_agent_valid(&pp[0], &pp[1], &pp[2]);
+                agent_valid = check_agent_valid(&pp[0], &pp[1], &pp[2]);
 
                 if (agent_valid != LANE_DETECT_CHECK_OK) {
                     pp[0]->pickup =
@@ -840,17 +781,18 @@ void* CLDWS::FindPartialLane(void* args)
             }
 
             if (agent_valid != LANE_DETECT_CHECK_OK) {
-                ldwsdbg("Can not find valid agent points");
+                lane_find = 0;
+                ldwsdbg("%s: Can not find valid agent points", (id == 0 ? "LEFT" : "RIGHT"));
                 break;
             } else {
                 //ldwsdbg("Find valid agent points");
             }
 
             evidence_count = 0;
-            partial->kp_solve(pp, &l_temp[lane_num]);
+            kp_solve(pp, &l_temp[lane_num]);
 
             /* evidence checking. */
-            evidence_percentage = partial->kp_evidence_check(count, points, &l_temp[lane_num]);
+            evidence_percentage = kp_evidence_check(count, points, &l_temp[lane_num]);
 
             if (evidence_percentage > VALID_LINE_EVIDENCE_PERCENTAGE) {
                 lane_find = 1;
@@ -870,11 +812,11 @@ void* CLDWS::FindPartialLane(void* args)
         }
 
         if (lane_find) {
-            ldwsdbg("Find lanes");
+            ldwsdbg("%s: Find lanes", (id == 0 ? "LEFT" : "RIGHT"));
 
             /* calculate pixel center of each lane. */
             for (i = 0 ; i < lane_num ; ++i)
-                partial->kp_gen_point(rows, cols, &l_temp[i]);
+                kp_gen_point(rows, cols, l_temp[i]);
 
             /* find max grade lane.*/
             for (i = 0 ; i < lane_num ; ++i) {
@@ -889,45 +831,26 @@ void* CLDWS::FindPartialLane(void* args)
             l->kluge_poly.b = l_temp[max_grade_lane_no]->kluge_poly.b;
             l->kluge_poly.v = l_temp[max_grade_lane_no]->kluge_poly.v;
 
-            partial->kp_gen_point(rows, cols, &l);
+            l->exist        = 1;
+            kp_gen_point(rows, cols, l);
         } else {
-            ldwsdbg("Can not find lanes");
+            ldwsdbg("%s: Can not find lanes", (id == 0 ? "LEFT" : "RIGHT"));
             /* evidence checking for previous lane poly. */
             if (l->exist) {
-                evidence_percentage = partial->kp_evidence_check(count, points, &l);
-                partial->kp_gen_point(rows, cols, &l);
+                evidence_percentage = kp_evidence_check(count, points, &l);
+                kp_gen_point(rows, cols, l);
 
                 if (evidence_percentage > VALID_LINE_EVIDENCE_PERCENTAGE) {
                     l->fail_count = 0;
                 } else {
                     if (++l->fail_count > LANE_FAIL_COUNT) {
                         l->exist = 0;
-                        partial->kp_rel_point(&l);
+                        kp_rel_point(l);
                     } else {
-                        ldwsdbg("Keep previous lane");
+                        ldwsdbg("%s: Keep previous lane", (id == 0 ? "LEFT" : "RIGHT"));
                     }
                 }
             }
-        }
-
-
-
-
-
-
-
-
-
-
-
-
-        switch (id) {
-            case 0:
-                ldwsdbg("Left is done");
-                break;
-            case 1:
-                ldwsdbg("Right is done");
-                break;
         }
 
         pthread_mutex_lock(&partial->m_jobdone_mutex);
@@ -938,6 +861,9 @@ void* CLDWS::FindPartialLane(void* args)
 
     delete [] points;
     points = NULL;
+
+    for (i = 0 ; i < LANE_NUM ; ++i)
+        LaneDeinit(&l_temp[i]);
 
     pthread_mutex_unlock(&partial->m_mutex[id]);
 
@@ -952,13 +878,8 @@ fail2:
     pthread_cond_signal(&partial->m_jobdone_cond);
     pthread_mutex_unlock(&partial->m_jobdone_mutex);
 fail1:
-    for (i = 0 ; i < LANE_NUM ; ++i) {
-        delete l_temp[i];
-        l_temp[i] = NULL;
-    }
-
-    delete l;
-    l = NULL;
+    for (i = 0 ; i < LANE_NUM ; ++i)
+        LaneDeinit(&l_temp[i]);
 
     return NULL;
 }
@@ -969,14 +890,18 @@ bool CLDWS::FindLane(gsl_matrix* src,
                     lanepoint* p,
                     lane *l[LANE_NUM])
 {
-    int i;
-    size_t r, c;
+    lane *left = NULL, *right = NULL, *center = NULL;
 
-    if (!src) {
+    left    = l[LANE_LEFT];
+    right   = l[LANE_RIGHT];
+    center  = l[LANE_CENTER];
+
+    if (!src || !left || !right || !center) {
         ldwsdbg();
         return false;
     }
 
+    ldwsdbg(LIGHT_RED "=============New Frame=============" NONE);
     // prepare data for each thead.
     m_subimgy[LANE_LEFT] = gsl_matrix_submatrix(src, 
                                                 start_row, 
@@ -990,11 +915,18 @@ bool CLDWS::FindLane(gsl_matrix* src,
                                                 src->size1 - start_row, 
                                                 src->size2 / 2);
 
-
-
     WakeUpThread();
     WaitThreadDone();
 
+    if (m_terminate)
+        return false;
+
+    // Update status of center lane
+    UpdateLaneStatus(src->size1 - start_row,
+                     src->size2 - start_col,
+                     left,
+                     right,
+                     center);
 
     return true;
 }
@@ -1011,28 +943,3 @@ bool CLDWS::FindLane(gsl_matrix* src,
 
 
 
-//#ifdef __cplusplus
-//extern "C" {
-//void LDW_DoDetection(uint8_t* src, int linesize, int w, int h)
-//{
-//    uint32_t r, c;
-//
-//    CheckOrReallocMatrix(&m_imgy, h, w, true);
-//    CheckOrReallocMatrix(&m_edged_imgy, h, w, true);
-//
-//    for (r=0 ; r<m_imgy->size1 ; ++r) {
-//        for (c=0 ; c<m_imgy->size2 ; ++c) {
-//            gsl_matrix_set(m_imgy, r, c, src[r * linesize]);
-//        }
-//    }
-//
-//    LDW_EdgeDetect2(m_imgy, m_edged_imgy, linesize, 80, 0, NULL, 0);
-//}
-//
-//void LDW_DeInit(void)
-//{
-//    FreeMatrix(&m_imgy);
-//    FreeMatrix(&m_edged_imgy);
-//}
-//}
-//#endif
