@@ -60,6 +60,10 @@
 
 #include <assert.h>
 
+// -----------------------------------ADAS---------------------------------------------
+#define HorizonPositionPercentage       0.15
+#define LDWSPositionPercentage          0.30
+
 // -----------------------------------FCWS---------------------------------------------
 #include "fcws/candidate.h"
 #include "fcws/fcws.h"
@@ -1172,11 +1176,14 @@ static int upload_texture(SDL_Texture **tex, AVFrame *frame, struct SwsContext *
                     edged_img = av_malloc(frame->linesize[0] * frame->height + 16 + 16/*STRIDE_ALIGN*/ - 1);
 
                 LDW_DoDetection(frame->data[0],
-                                frame->linesize[0],
                                 frame->width,
-                                frame->height
+                                frame->height,
+                                frame->linesize[0],
+                                frame->height * LDWSPositionPercentage 
                                 );
  
+                memset(edged_img, 0xff, sizeof(uint8_t) * frame->linesize[0] * frame->height + 16 + 16/*STRIDE_ALIGN*/ - 1);
+
                 LDW_GetEdgeImg(edged_img, frame->width, frame->height, frame->linesize[0]);
 
                 ret = SDL_UpdateYUVTexture(fcw_texture[FCW_WINDOW_TAILLIGHT], NULL, edged_img, frame->linesize[0],
@@ -1308,6 +1315,19 @@ static void video_image_display(VideoState *is)
     }
 
 #if 1
+    //----------------------ADAS-----------------------------------
+    SDL_SetRenderDrawColor(renderer, 0xff, 0, 0, 0xff);
+    SDL_RenderDrawLine(renderer, rect.x, 
+                                 rect.y + rect.h * HorizonPositionPercentage, 
+                                 rect.x + rect.w, 
+                                 rect.y + rect.h * HorizonPositionPercentage);
+
+    SDL_SetRenderDrawColor(renderer, 0, 0xff, 0, 0xff);
+    SDL_RenderDrawLine(renderer, rect.x, 
+                                 rect.y + rect.h * LDWSPositionPercentage, 
+                                 rect.x + rect.w, 
+                                 rect.y + rect.h * LDWSPositionPercentage);
+
     //----------------------FCW------------------------------------
     {
         uint32_t i;
@@ -1349,9 +1369,10 @@ static void video_image_display(VideoState *is)
         //        rect.x + hist_peak * rect.w / 256.0,
         //        rect.y + rect.h);
 
-        SDL_SetRenderDrawColor(renderer, 0xff, 0xff, 0, 0xff);
-        for (int i=0 ; i<ROI_TOTAL ; i++)
-            SDL_RenderDrawLine(renderer, roi.point[i%ROI_TOTAL].c, roi.point[i%ROI_TOTAL].r, roi.point[(i+1)%ROI_TOTAL].c, roi.point[(i+1)%ROI_TOTAL].r);
+        // ROI
+        //SDL_SetRenderDrawColor(renderer, 0xff, 0xff, 0, 0xff);
+        //for (int i=0 ; i<ROI_TOTAL ; i++)
+        //    SDL_RenderDrawLine(renderer, roi.point[i%ROI_TOTAL].c, roi.point[i%ROI_TOTAL].r, roi.point[(i+1)%ROI_TOTAL].c, roi.point[(i+1)%ROI_TOTAL].r);
 
         // Draw vertical histogram
         SDL_SetRenderDrawColor(renderer, 0, 0, 0xff, 0xff);
@@ -1384,9 +1405,10 @@ static void video_image_display(VideoState *is)
         //SDL_RenderDrawLine(fcw_renderer[FCW_WINDOW_SHADOW], rect.w / 2, 0, rect.w / 2, rect.h);
         //SDL_RenderDrawLine(fcw_renderer[FCW_WINDOW_SHADOW], 0, rect.h / 2, rect.w, rect.h / 2);
 
-        for (int i=0 ; i<ROI_TOTAL ; i++) {
-            SDL_RenderDrawLine(fcw_renderer[FCW_WINDOW_SHADOW], roi.point[i%ROI_TOTAL].c, roi.point[i%ROI_TOTAL].r, roi.point[(i+1)%ROI_TOTAL].c, roi.point[(i+1)%ROI_TOTAL].r);
-        }
+        // ROI
+        //for (int i=0 ; i<ROI_TOTAL ; i++) {
+        //    SDL_RenderDrawLine(fcw_renderer[FCW_WINDOW_SHADOW], roi.point[i%ROI_TOTAL].c, roi.point[i%ROI_TOTAL].r, roi.point[(i+1)%ROI_TOTAL].c, roi.point[(i+1)%ROI_TOTAL].r);
+        //}
 
         // Draw rectangle of candidate
         SDL_SetRenderDrawColor(fcw_renderer[FCW_WINDOW_VEHICLE], 0, 0xff, 0, 0xff);
@@ -1435,7 +1457,28 @@ static void video_image_display(VideoState *is)
         // LDWS
         color = &COLOR[COLOR_YELLOW];
         SDL_SetRenderDrawColor(fcw_renderer[FCW_WINDOW_TAILLIGHT], color->r, color->g, color->b, color->a);
-        LDW_DrawLanes(fcw_renderer[FCW_WINDOW_TAILLIGHT], 4);
+        LDW_DrawLanes(fcw_renderer[FCW_WINDOW_TAILLIGHT], &rect, 4);
+
+        point lanepoint[4];
+
+        memset(lanepoint, 0x0, sizeof(point) * 4);
+        LDW_GetLanePoints(&lanepoint[0], &lanepoint[1], &lanepoint[2], &lanepoint[3]);
+
+        color = &COLOR[COLOR_RED];
+        SDL_SetRenderDrawColor(fcw_renderer[FCW_WINDOW_RESULT], color->r, color->g, color->b, color->a);
+
+        SDL_RenderDrawLine(fcw_renderer[FCW_WINDOW_RESULT], 
+                           rect.x + lanepoint[0].c, 
+                           rect.y + lanepoint[0].r, 
+                           rect.x + lanepoint[1].c, 
+                           rect.y + lanepoint[1].r);
+
+        SDL_RenderDrawLine(fcw_renderer[FCW_WINDOW_RESULT], 
+                           rect.x + lanepoint[2].c, 
+                           rect.y + lanepoint[2].r, 
+                           rect.x + lanepoint[3].c, 
+                           rect.y + lanepoint[3].r);
+
     }
 #endif
 }

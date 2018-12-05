@@ -25,11 +25,7 @@ extern "C" {
 
 #define MAX_LANE_NUMBER 5
 
-typedef double** MATRIX;
-typedef double* VECTOR;
-
 class CLDWS;
-
 
 enum {
     LANE_DETECT_CHECK_OK = 1,
@@ -125,10 +121,19 @@ class CLDWS {
     protected:
         bool        m_terminate;
 
-        uint32_t    m_left_start_row;
-        uint32_t    m_left_start_col;
-        uint32_t    m_right_start_row;
-        uint32_t    m_right_start_col;
+        uint32_t    m_rows;
+        uint32_t    m_cols;
+        uint32_t    m_rowoffset;
+
+        uint32_t    m_left_coloffset;
+        uint32_t    m_right_coloffset;
+
+        // vanishing point
+        point       m_vp;
+        float       m_slope_left;
+        float       m_delta_left;
+        float       m_slope_right;
+        float       m_delta_right;
 
         CImgProc*   m_ip; // Image Process object
         gsl_matrix* m_imgy;
@@ -136,12 +141,12 @@ class CLDWS {
         
         lane_stat_t m_lane_stat;
 
-        param_t     m_param[LANE_THREADS];
-        pthread_t   m_thread[LANE_THREADS];
+        param_t         m_param[LANE_THREADS];
+        pthread_t       m_thread[LANE_THREADS];
         pthread_mutex_t m_mutex[LANE_THREADS];
         pthread_cond_t  m_cond[LANE_THREADS];
 
-        uint8_t     m_thread_done;
+        uint8_t         m_thread_done;
         pthread_mutex_t m_jobdone_mutex;
         pthread_cond_t  m_jobdone_cond;
 
@@ -157,7 +162,7 @@ class CLDWS {
 
         bool DeInit();
 
-        bool DoDetection(uint8_t* src, int linesize, int w, int h);
+        bool DoDetection(uint8_t* src, int w, int h, int linesize, int rowoffset = 0);
 
         bool GetEdgedImg(uint8_t* dst, int w, int h, int linesize);
 
@@ -165,6 +170,10 @@ class CLDWS {
         bool GetLane(lane** left, lane** right, lane** center);
 
         bool DestroyLane(lane** left, lane** right, lane** center);
+
+        bool GetLanePoints(point* leftmiddle, point* leftbottom, point* rightmiddle, point* rightbottom);
+
+        bool GetVanishingPoint(point& vp);
 
     protected:
         static lane* LaneInit(void);
@@ -194,7 +203,7 @@ class CLDWS {
 
         static double kp_evidence_check(int count, lanepoint* p, lane*l);
 
-        static void kp_gen_point(uint32_t rows, uint32_t cols, lane* l, uint32_t start_col = 0);
+        static void kp_gen_point(uint32_t rows, uint32_t cols, lane* l, uint32_t rowoffset = 0, uint32_t coloffset = 0);
 
         static void kp_gen_center_point(uint32_t rows, uint32_t cols, lane* left, lane* right, lane* center);
 

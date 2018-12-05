@@ -93,4 +93,17 @@ static SDL_Color COLOR[COLOR_TOTAL] = {
    /*[COLOR_DARKGREEN]    =*/ {   0, 0x64,    0, 0x50},
    /*[COLOR_BROWN]        =*/ {0x8b, 0x45, 0x13, 0x50},
 };
+
+typedef struct rect_s {
+    int r;
+    int c;
+    int w;
+    int h;
+}rect;
+
+typedef struct point_s {
+    int r;
+    int c;
+}point;
+
 #endif

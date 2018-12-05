@@ -44,18 +44,6 @@ enum {
     ROI_TOTAL,
 };
 
-typedef struct rect_s {
-    int r;
-    int c;
-    int w;
-    int h;
-}rect;
-
-typedef struct point_s {
-    int r;
-    int c;
-}point;
-
 typedef struct roi_s {
     point point[ROI_TOTAL];
     int size;

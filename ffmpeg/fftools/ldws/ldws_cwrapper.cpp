@@ -14,7 +14,7 @@ void LDW_Init()
     }
 }
  
-void LDW_DoDetection(uint8_t* src, int linesize, int w, int h)
+void LDW_DoDetection(uint8_t* src, int w, int h, int linesize, int rowoffset)
 {
     if (!ldws_obj) {
         dbg();
@@ -22,9 +22,10 @@ void LDW_DoDetection(uint8_t* src, int linesize, int w, int h)
     }
 
     ldws_obj->DoDetection(src,
-                         linesize,
                          w, 
-                         h);
+                         h,
+                         linesize,
+                         rowoffset);
 }
 
 void LDW_DeInit(void)
@@ -43,11 +44,11 @@ bool LDW_GetEdgeImg(uint8_t* dst, int w, int h, int linesize)
     return false;
 }
 
-bool LDW_DrawLanes(SDL_Renderer* render, uint32_t width)
+bool LDW_DrawLanes(SDL_Renderer* const render, SDL_Rect* const rect, uint32_t width)
 {
     uint32_t idx;
 
-    if (!ldws_obj || !render) {
+    if (!ldws_obj || !render || !rect) {
         ldwsdbg();
         return false;
     }
@@ -58,33 +59,45 @@ bool LDW_DrawLanes(SDL_Renderer* render, uint32_t width)
 //        dbg("left %p: %d", left->pix, left->pix_count);
         for (idx = 0 ; idx < left->pix_count ; ++idx)
             SDL_RenderDrawLine(render,
-                                left->pix[idx].c,
-                                left->pix[idx].r,
-                                left->pix[idx].c + width,
-                                left->pix[idx].r);
+                                rect->x + left->pix[idx].c,
+                                rect->y + left->pix[idx].r,
+                                rect->x + left->pix[idx].c + width,
+                                rect->y + left->pix[idx].r);
     }
 
     if (right && right->pix && right->pix_count) {
 //        dbg("right %p: %d", right->pix, right->pix_count);
         for (idx = 0 ; idx < right->pix_count ; ++idx)
             SDL_RenderDrawLine(render,
-                                right->pix[idx].c,
-                                right->pix[idx].r,
-                                right->pix[idx].c + width,
-                                right->pix[idx].r);
+                                rect->x + right->pix[idx].c,
+                                rect->y + right->pix[idx].r,
+                                rect->x + right->pix[idx].c + width,
+                                rect->y + right->pix[idx].r);
     }
 
     if (center && center->pix && center->pix_count) {
 //        dbg("center %p: %d", center->pix, center->pix_count);
         for (idx = 0 ; idx < center->pix_count ; ++idx)
             SDL_RenderDrawLine(render,
-                                center->pix[idx].c,
-                                center->pix[idx].r,
-                                center->pix[idx].c + width,
-                                center->pix[idx].r);
+                                rect->x + center->pix[idx].c,
+                                rect->y + center->pix[idx].r,
+                                rect->x + center->pix[idx].c + width,
+                                rect->y + center->pix[idx].r);
     }
 
     ldws_obj->DestroyLane(&left, &right, &center);
+
+    return true;
+}
+
+bool LDW_GetLanePoints(point* leftmiddle, point* leftbottom, point* rightmiddle, point* rightbottom)
+{
+    if (!ldws_obj || !leftmiddle || !leftbottom || !rightmiddle || !rightbottom) {
+        ldwsdbg();
+        return false;
+    }
+
+    ldws_obj->GetLanePoints(leftmiddle, leftbottom, rightmiddle, rightbottom);
 
     return true;
 }

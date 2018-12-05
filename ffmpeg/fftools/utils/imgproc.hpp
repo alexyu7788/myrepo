@@ -62,16 +62,15 @@ class CImgProc {
 
         bool EdgeDetectForLDWS(gsl_matrix* src, 
                                 gsl_matrix* dst,
-                                int linesize,
                                 int threshold,
                                 double* dir,
                                 int double_edge);
 
 
 
-        bool CopyMatrix(uint8_t* src, gsl_matrix* dst, int w, int h, int linesize);
+        bool CopyMatrix(uint8_t* src, gsl_matrix* dst, uint32_t w, uint32_t h, uint32_t linesize, uint32_t rowoffset = 0);
 
-        bool CopyBackMarix(gsl_matrix* src, uint8_t* dst, int w, int h, int linesize);
+        bool CopyBackMarix(gsl_matrix* src, uint8_t* dst, uint32_t w, uint32_t h, uint32_t linesize, uint32_t rowoffset = 0);
 
 };
 #endif

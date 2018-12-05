@@ -13,14 +13,19 @@ CLDWS::CLDWS()
 {
     m_terminate     = false;
 
-    m_left_start_row    =
-    m_left_start_col    =
-    m_right_start_row   =
-    m_right_start_col   = 0;
-
+    m_left_coloffset    =
+    m_right_coloffset   = 0;
+ 
     m_ip            = NULL;
     m_imgy          = NULL;
     m_edged_imgy    = NULL;
+
+    memset(&m_vp, 0x0, sizeof(m_vp));
+
+    m_slope_left    = 
+    m_delta_left    = 
+    m_slope_right   = 
+    m_delta_right   = 0.0;
 
     memset(m_param, 0x0, sizeof(param_t) * 2);
     memset(m_thread, 0x0, sizeof(pthread_t) * 2);
@@ -43,6 +48,14 @@ bool CLDWS::Init()
     uint32_t i;
     pthread_attr_t attr;
 
+    m_terminate = false;
+
+    m_rows              =
+    m_cols              =
+    m_rowoffset         = 
+    m_left_coloffset    =
+    m_right_coloffset   = 0;
+
     m_ip = new CImgProc();
 
     if (m_ip)
@@ -57,7 +70,7 @@ bool CLDWS::Init()
     pthread_cond_init(&m_jobdone_cond, NULL);
 
     pthread_attr_init(&attr);
-
+ 
     for (int i=0 ; i < LANE_THREADS; ++i) {
         pthread_mutex_init(&m_mutex[i], NULL);
         pthread_cond_init(&m_cond[i], NULL);
@@ -66,7 +79,7 @@ bool CLDWS::Init()
 
         m_param[i].obj  = this;
         m_param[i].id   = i;
-
+        
         pthread_create(&m_thread[i], &attr, FindPartialLane, (void*)&m_param[i]);
     }
 
@@ -112,10 +125,8 @@ bool CLDWS::DeInit()
 }
 
 
-bool CLDWS::DoDetection(uint8_t* src, int linesize, int w, int h)
+bool CLDWS::DoDetection(uint8_t* src, int w, int h, int linesize, int rowoffset)
 {
-    uint32_t r, c;
-
     if (!src) {
         ldwsdbg();
         return false;
@@ -126,11 +137,20 @@ bool CLDWS::DoDetection(uint8_t* src, int linesize, int w, int h)
         return false;
     }
 
-    CheckOrReallocMatrix(&m_imgy, h, w, true);
-    CheckOrReallocMatrix(&m_edged_imgy, h, w, true);
+    if (w <= 0 || h <= 0 || linesize <= 0 || h <= rowoffset) {
+        dbg("Incorrect geometric parameters.");
+        return false;
+    }
 
-    m_ip->CopyMatrix(src, m_imgy, w, h, linesize);
-    m_ip->EdgeDetectForLDWS(m_imgy, m_edged_imgy, linesize, 60, NULL, 0);
+    m_rows      = (h - rowoffset);
+    m_cols      = w;
+    m_rowoffset = rowoffset;
+
+    CheckOrReallocMatrix(&m_imgy, m_rows, m_cols, true);
+    CheckOrReallocMatrix(&m_edged_imgy, m_rows, m_cols, true);
+
+    m_ip->CopyMatrix(src, m_imgy, w, h, linesize, m_rowoffset);
+    m_ip->EdgeDetectForLDWS(m_imgy, m_edged_imgy, 60, NULL, 0);
 
     FindLane(m_edged_imgy, 0, 0, m_lane_stat.p, m_lane_stat.l);
 
@@ -141,17 +161,13 @@ bool CLDWS::GetEdgedImg(uint8_t* dst, int w, int h, int linesize)
 {
    size_t r, c;
 
-   if (!dst || !m_edged_imgy || m_edged_imgy->size1 != h || m_edged_imgy->size2 != w) {
+   if (!dst || !m_edged_imgy /*|| m_edged_imgy->size1 != h || m_edged_imgy->size2 != w*/) {
        ldwsdbg();
        return false;
    }
 
     if (m_ip)
-        return m_ip->CopyBackMarix(m_edged_imgy, dst, w, h, linesize);
-//    for (r=0 ; r < m_edged_imgy->size1 ; ++r)
-//        for (c=0 ; c < m_edged_imgy->size2 ; ++c)
-//            dst[r * linesize + c] = (uint8_t)gsl_matrix_get(m_edged_imgy, r, c);
-
+        return m_ip->CopyBackMarix(m_edged_imgy, dst, w, h, linesize, m_rowoffset);
 
     return false;
 }
@@ -180,8 +196,123 @@ bool CLDWS::DestroyLane(lane** left, lane** right, lane** center)
     return true;
 }
 
+bool CLDWS::GetLanePoints(point* leftmiddle, point* leftbottom, point* rightmiddle, point* rightbottom)
+{
+    lane *left = NULL, *right = NULL;
 
+    if (!leftmiddle || !leftbottom || !rightmiddle || !rightbottom) {
+        ldwsdbg();
+        return false;
+    }
 
+    left    = m_lane_stat.l[LANE_LEFT];
+    right   = m_lane_stat.l[LANE_RIGHT];
+
+    if (!left || !right) {
+        ldwsdbg();
+        return false;
+    }
+
+    pthread_mutex_lock(&left->mutex);
+    pthread_mutex_lock(&right->mutex);
+
+    m_vp.r = m_vp.c = 0;
+    GetVanishingPoint(m_vp);
+
+    if (left->exist && left->pix) {
+        if (m_vp.r && m_vp.c) {
+            leftmiddle->r = m_vp.r;
+            leftmiddle->c = m_vp.c;
+        } else {
+            leftmiddle->r = left->pix[left->pix_count / 3].r;
+            leftmiddle->c = left->pix[left->pix_count / 3].c;
+        }
+
+        leftbottom->r = left->pix[left->pix_count - 1].r;
+        leftbottom->c = left->pix[left->pix_count - 1].c;
+    }
+
+    if (right->exist && right->pix) {
+        if (m_vp.r && m_vp.c) {
+            rightmiddle->r = m_vp.r;
+            rightmiddle->c = m_vp.c;
+        } else {
+            rightmiddle->r = right->pix[right->pix_count / 3].r;
+            rightmiddle->c = right->pix[right->pix_count / 3].c;
+        }
+
+        rightbottom->r = right->pix[right->pix_count - 1].r;
+        rightbottom->c = right->pix[right->pix_count - 1].c;
+    }
+
+    pthread_mutex_unlock(&left->mutex);
+    pthread_mutex_unlock(&right->mutex);
+
+    return true;
+}
+
+bool CLDWS::GetVanishingPoint(point& vp)
+{
+    uint32_t r;
+    int32_t r1, r2, c1, c2;
+    lane *left = NULL, *right = NULL;
+
+    left    = m_lane_stat.l[LANE_LEFT];
+    right   = m_lane_stat.l[LANE_RIGHT];
+
+    if (!left || !right) {
+        ldwsdbg();
+        return false;
+    }
+
+    pthread_mutex_lock(&left->mutex);
+    pthread_mutex_lock(&right->mutex);
+
+    if (left->exist && right->exist) {
+        r1 = left->pix[left->pix_count / 2].r; 
+        c1 = left->pix[left->pix_count / 2].c; 
+        r2 = left->pix[left->pix_count - 1].r; 
+        c2 = left->pix[left->pix_count - 1].c; 
+
+        if (c1 != c2) {
+            m_slope_left = (float)(c1 - c2) / (float)(r1 - r2);
+            m_delta_left = c1 - m_slope_left * r1;
+        } else
+            m_slope_left = -FLT_MAX;
+
+        r1 = right->pix[right->pix_count / 2].r; 
+        c1 = right->pix[right->pix_count / 2].c; 
+        r2 = right->pix[right->pix_count - 1].r; 
+        c2 = right->pix[right->pix_count - 1].c; 
+
+        if (c1 != c2) {
+            m_slope_right = (float)(c1 - c2) / (float)(r1 - r2);
+            m_delta_right = c1 - m_slope_right * r1;
+        } else
+            m_slope_right = -FLT_MAX;
+
+        if (m_slope_left != -FLT_MAX && m_slope_right != -FLT_MAX) {
+            for (r = 0 ; r < m_rows + m_rowoffset ; ++r) {
+                c1 = (int32_t)(r * m_slope_left  + m_delta_left);
+                c2 = (int32_t)(r * m_slope_right + m_delta_right);
+
+                if (c1 > 0 && c2 > 0 && c1 <= c2) {
+                    vp.r = r;
+                    vp.c = c1;
+                    break;
+                }
+            }
+        }
+    } else {
+        m_slope_left    =
+        m_slope_right   = -FLT_MAX;
+    }
+
+    pthread_mutex_unlock(&left->mutex);
+    pthread_mutex_unlock(&right->mutex);
+
+    return true;
+}
 
 
 
@@ -490,9 +621,9 @@ double CLDWS::kp_evidence_check(int count, lanepoint* p, lane* l)
     return rval;
 }
 
-void CLDWS::kp_gen_point(uint32_t rows, uint32_t cols, lane* l, uint32_t start_col)
+void CLDWS::kp_gen_point(uint32_t rows, uint32_t cols, lane* l, uint32_t rowoffset, uint32_t coloffset)
 {
-    uint32_t rr,pix_cnt=0;
+    uint32_t pix_cnt=0;
     uint32_t col_cnt=0;
     double k,b,v;
     double r, c;
@@ -513,20 +644,19 @@ void CLDWS::kp_gen_point(uint32_t rows, uint32_t cols, lane* l, uint32_t start_c
     v = l->kluge_poly.v;
 
 //    fprintf(stdout, "k=%lf, b=%lf, v=%lf\n", k, b, v);
-    for (rr=0, pix_cnt=0 ; rr<rows ; rr++) {
-        r = (double)(rr+1);
+    for (r=1, pix_cnt=0 ; r<rows ; r++) {
         c = (int)((k/r) + (b*r) + v);
         if( c>=0 && c<= cols) {
-            l->pix[pix_cnt].r = (int)r;
-            l->pix[pix_cnt].c = (int)(c + start_col);
+            l->pix[pix_cnt].r = (int)(r + rowoffset);
+            l->pix[pix_cnt].c = (int)(c + coloffset);
             col_cnt += c;
   //          fprintf(stdout, "cnt=%d, (%d,%d)\n", cnt, (*l)->pix[cnt].c, (*l)->pix[cnt].r);
             pix_cnt++;
         }
     }
 
-    l->pix_count = pix_cnt;
-    l->pix_col_center = (int)(col_cnt/pix_cnt);
+    l->pix_count        = pix_cnt;
+    l->pix_col_center   = (int)(col_cnt/pix_cnt);
 
 //    ldwsdbg("l_temp: count %d, column center %d", 
 //            l_temp->pix_count, l_temp->pix_col_center);
@@ -635,7 +765,7 @@ bool CLDWS::UpdateLaneStatus(uint32_t rows, uint32_t cols, lane* left, lane* rig
 
     return true;
 }
-
+ 
 void* CLDWS::FindPartialLane(void* args)
 {
     int id = -1;
@@ -781,7 +911,7 @@ void* CLDWS::FindPartialLane(void* args)
 
             if (agent_valid != LANE_DETECT_CHECK_OK) {
                 lane_find = 0;
-                //ldwsdbg("%s: Can not find valid agent points", (id == 0 ? "LEFT" : "RIGHT"));
+                //ldwsdbg("%s: Can not find valid agent points", (id == 0 ? "Left" : "Right"));
                 break;
             } else {
                 //ldwsdbg("Find valid agent points");
@@ -807,15 +937,16 @@ void* CLDWS::FindPartialLane(void* args)
                     ldwsdbg("MAX_FIND_AGENT_FAIL_COUNT reach");
                     break; // exist for loop
                 }
+                //ldwsdbg("%s: find_lane_fail_count %d", (id == 0 ? "Left" : "Right"), find_lane_fail_count);
             }
         }
 
         if (lane_find) {
-            //ldwsdbg("%s: Find lanes", (id == 0 ? "LEFT" : "RIGHT"));
+            //ldwsdbg("%s: Find lanes", (id == 0 ? "Left" : "Right"));
 
             /* calculate pixel center of each lane. */
             for (i = 0 ; i < lane_num ; ++i)
-                kp_gen_point(rows, cols, l_temp[i], (id == 0 ? partial->m_left_start_col : partial->m_right_start_col));
+                kp_gen_point(rows, cols, l_temp[i], partial->m_rowoffset, (id == 0 ? partial->m_left_coloffset : partial->m_right_coloffset));
 
             /* find max grade lane.*/
             for (i = 0 ; i < lane_num ; ++i) {
@@ -829,15 +960,15 @@ void* CLDWS::FindPartialLane(void* args)
             l->kluge_poly.k = l_temp[max_grade_lane_no]->kluge_poly.k;
             l->kluge_poly.b = l_temp[max_grade_lane_no]->kluge_poly.b;
             l->kluge_poly.v = l_temp[max_grade_lane_no]->kluge_poly.v;
-
+ 
             l->exist        = 1;
-            kp_gen_point(rows, cols, l, (id == 0 ? partial->m_left_start_col : partial->m_right_start_col));
+            kp_gen_point(rows, cols, l, partial->m_rowoffset, (id == 0 ? partial->m_left_coloffset : partial->m_right_coloffset));
         } else {
-            //ldwsdbg("%s: Can not find lanes", (id == 0 ? "LEFT" : "RIGHT"));
+            //ldwsdbg("%s: Can not find lanes", (id == 0 ? "Left" : "Right"));
             /* evidence checking for previous lane poly. */
             if (l->exist) {
                 evidence_percentage = kp_evidence_check(count, points, l);
-                kp_gen_point(rows, cols, l, (id == 0 ? partial->m_left_start_col : partial->m_right_start_col));
+                kp_gen_point(rows, cols, l, partial->m_rowoffset, (id == 0 ? partial->m_left_coloffset : partial->m_right_coloffset));
 
                 if (evidence_percentage > VALID_LINE_EVIDENCE_PERCENTAGE) {
                     l->fail_count = 0;
@@ -846,7 +977,7 @@ void* CLDWS::FindPartialLane(void* args)
                         l->exist = 0;
                         kp_rel_point(l);
                     } else {
-                        ldwsdbg("%s: Keep previous lane", (id == 0 ? "LEFT" : "RIGHT"));
+                        ldwsdbg("%s: Keep previous lane", (id == 0 ? "Left" : "Right"));
                     }
                 }
             }
@@ -858,8 +989,10 @@ void* CLDWS::FindPartialLane(void* args)
         pthread_mutex_unlock(&partial->m_jobdone_mutex);
     }
 
-    delete [] points;
-    points = NULL;
+    if (points) {
+        delete [] points;
+        points = NULL;
+    }
 
     for (i = 0 ; i < LANE_NUM ; ++i)
         LaneDeinit(&l_temp[i]);
@@ -901,18 +1034,16 @@ bool CLDWS::FindLane(gsl_matrix* src,
     }
 
     ldwsdbg(LIGHT_RED "=============New Frame=============" NONE);
-    // prepare data for each thead.
 
-    m_left_start_row = start_row;
-    m_left_start_col = 0;
+    // prepare partial data for each thead.
+    m_left_coloffset = 0;
     m_subimgy[LANE_LEFT] = gsl_matrix_submatrix(src, 
                                                 start_row, 
                                                 0, 
                                                 src->size1 - start_row, 
                                                 src->size2 / 2);
 
-    m_right_start_row = start_row;
-    m_right_start_col = src->size2 / 2;
+    m_right_coloffset = src->size2 / 2;
     m_subimgy[LANE_RIGHT] = gsl_matrix_submatrix(src, 
                                                 start_row, 
                                                 src->size2 / 2, 

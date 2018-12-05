@@ -52,7 +52,7 @@ bool CImgProc::InitGB(int size)
         else if (size == 5)
             m_gk = gsl_matrix_view_array(gk_5by5, 5, 5);
         else {
-            dbg("GB: size %d is not implemnted yet.", size);
+            dbg("GB: size %d is not implemented yet.", size);
             return false;
         }
 
@@ -91,7 +91,7 @@ bool CImgProc::GaussianBlue(gsl_matrix* src, gsl_matrix* dst, int kernel_size)
         return false;
     }
 
-    if (InitGB(kernel_size) == false || m_gk.matrix.size1 != m_gk.matrix.size2) {
+    if (InitGB(kernel_size) == false || m_gk.matrix.size1 != m_gk.matrix.size2 || m_gk_weight == 0) {
         dbg();
         return false;
     }
@@ -382,7 +382,6 @@ bool CImgProc::Init()
 
 bool CImgProc::EdgeDetectForLDWS(gsl_matrix* src, 
         gsl_matrix* dst,
-        int linesize,
         int threshold,
         double* dir,
         int double_edge)
@@ -421,7 +420,12 @@ bool CImgProc::EdgeDetectForLDWS(gsl_matrix* src,
     return true;
 }
 
-bool CImgProc::CopyMatrix(uint8_t* src, gsl_matrix* dst, int w, int h, int linesize)
+bool CImgProc::CopyMatrix(uint8_t* src, 
+                          gsl_matrix* dst, 
+                          uint32_t w, 
+                          uint32_t h, 
+                          uint32_t linesize, 
+                          uint32_t rowoffset)
 {
     uint32_t r, c;
 
@@ -430,21 +434,26 @@ bool CImgProc::CopyMatrix(uint8_t* src, gsl_matrix* dst, int w, int h, int lines
         return false;
     }
 
-    if (dst->size1 != h || dst->size2 != w) {
+    if ((dst->size1 + rowoffset) != h || dst->size2 != w) {
         dbg("Incorrect size of matrix.");
         return false;
     }
 
-    for (r=0 ; r < h ; ++r) {
+    for (r=0 ; r < h - rowoffset ; ++r) {
         for (c=0 ; c < w ; ++c) {
-            gsl_matrix_set(dst, r, c, src[r * linesize + c]);
+            gsl_matrix_set(dst, r, c, src[(r + rowoffset) * linesize + c]);
         }
     }
 
     return true;
 }
 
-bool CImgProc::CopyBackMarix(gsl_matrix* src, uint8_t* dst, int w, int h, int linesize)
+bool CImgProc::CopyBackMarix(gsl_matrix* src, 
+                             uint8_t* dst, 
+                             uint32_t w, 
+                             uint32_t h, 
+                             uint32_t linesize, 
+                             uint32_t rowoffset)
 {
     uint32_t r, c;
 
@@ -453,14 +462,14 @@ bool CImgProc::CopyBackMarix(gsl_matrix* src, uint8_t* dst, int w, int h, int li
         return false;
     }
 
-    if (src->size1 != h || src->size2 != w) {
+    if ((src->size1 + rowoffset) != h || src->size2 != w) {
         dbg("Incorrect size of matrix.");
         return false;
     }
 
-    for (r=0 ; r < h ; ++r) {
-        for (c=0 ; c < w ; ++c) {
-            dst[r * linesize + c] = (uint8_t)gsl_matrix_get(src, r, c);
+    for (r=0 ; r < src->size1 ; ++r) {
+        for (c=0 ; c < src->size2 ; ++c) {
+            dst[(r + rowoffset) * linesize + c] = (uint8_t)gsl_matrix_get(src, r, c);
         }
     }
 
