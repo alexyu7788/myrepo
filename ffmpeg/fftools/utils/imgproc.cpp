@@ -420,12 +420,12 @@ bool CImgProc::EdgeDetectForLDWS(gsl_matrix* src,
     return true;
 }
 
-bool CImgProc::CopyMatrix(uint8_t* src, 
-                          gsl_matrix* dst, 
-                          uint32_t w, 
-                          uint32_t h, 
-                          uint32_t linesize, 
-                          uint32_t rowoffset)
+bool CImgProc::CropMatrix(uint8_t* src, 
+                       gsl_matrix* dst, 
+                       uint32_t w, 
+                       uint32_t h, 
+                       uint32_t linesize,
+                       uint32_t rowoffset)
 {
     uint32_t r, c;
 
@@ -442,6 +442,33 @@ bool CImgProc::CopyMatrix(uint8_t* src,
     for (r=0 ; r < h - rowoffset ; ++r) {
         for (c=0 ; c < w ; ++c) {
             gsl_matrix_set(dst, r, c, src[(r + rowoffset) * linesize + c]);
+        }
+    }
+
+    return true;
+}
+
+bool CImgProc::CopyMatrix(uint8_t* src, 
+                          gsl_matrix* dst, 
+                          uint32_t w, 
+                          uint32_t h, 
+                          uint32_t linesize)
+{
+    uint32_t r, c;
+
+    if (!src || !dst) {
+        dbg();
+        return false;
+    }
+
+    if (dst->size1 != h || dst->size2 != w) {
+        dbg("Incorrect size of matrix.");
+        return false;
+    }
+
+    for (r=0 ; r < h ; ++r) {
+        for (c=0 ; c < w ; ++c) {
+            gsl_matrix_set(dst, r, c, src[r * linesize + c]);
         }
     }
 

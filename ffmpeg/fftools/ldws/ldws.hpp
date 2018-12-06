@@ -130,12 +130,16 @@ class CLDWS {
 
         // vanishing point
         point       m_vp;
+
+        // straight lane
         float       m_slope_left;
         float       m_delta_left;
         float       m_slope_right;
         float       m_delta_right;
+        
+        // Image Process object
+        CImgProc*   m_ip; 
 
-        CImgProc*   m_ip; // Image Process object
         gsl_matrix* m_imgy;
         gsl_matrix* m_edged_imgy;
         
@@ -162,7 +166,12 @@ class CLDWS {
 
         bool DeInit();
 
-        bool DoDetection(uint8_t* src, int w, int h, int linesize, int rowoffset = 0);
+        bool DoDetection(uint8_t* src, 
+                         int w, 
+                         int h, 
+                         int linesize, 
+                         int rowoffset,
+                         bool crop = false);
 
         bool GetEdgedImg(uint8_t* dst, int w, int h, int linesize);
 
@@ -171,9 +180,15 @@ class CLDWS {
 
         bool DestroyLane(lane** left, lane** right, lane** center);
 
-        bool GetLanePoints(point* leftmiddle, point* leftbottom, point* rightmiddle, point* rightbottom);
+        bool GetLanePoints(point* ltop, 
+                           point* lbottom, 
+                           point* rtop, 
+                           point* rbottom,
+                           point* ctop, 
+                           point* cbottom
+                           );
 
-        bool GetVanishingPoint(point& vp);
+        bool DynamicROI(gsl_matrix* src);
 
     protected:
         static lane* LaneInit(void);
@@ -184,7 +199,12 @@ class CLDWS {
 
         static double agent_cal_dist(lanepoint* p1, lanepoint* p2);
 
-        static int agent_determine_ijk(lanepoint* p1, lanepoint* p2, lanepoint* p3, lanepoint** i, lanepoint** j, lanepoint** k);
+        static int agent_determine_ijk(lanepoint* p1, 
+                                       lanepoint* p2, 
+                                       lanepoint* p3, 
+                                       lanepoint** i, 
+                                       lanepoint** j, 
+                                       lanepoint** k);
 
         static int check_agent_is_horizontal(lanepoint* i, lanepoint* j);
 
@@ -203,9 +223,17 @@ class CLDWS {
 
         static double kp_evidence_check(int count, lanepoint* p, lane*l);
 
-        static void kp_gen_point(uint32_t rows, uint32_t cols, lane* l, uint32_t rowoffset = 0, uint32_t coloffset = 0);
+        static void kp_gen_point(uint32_t rows, 
+                                 uint32_t cols, 
+                                 lane* l, 
+                                 uint32_t rowoffset = 0, 
+                                 uint32_t coloffset = 0);
 
-        static void kp_gen_center_point(uint32_t rows, uint32_t cols, lane* left, lane* right, lane* center);
+        static void kp_gen_center_point(uint32_t rows, 
+                                        uint32_t cols, 
+                                        lane* left, 
+                                        lane* right, 
+                                        lane* center);
 
         static void kp_rel_point(lane* l);
 
@@ -213,7 +241,15 @@ class CLDWS {
 
         void WaitThreadDone();
 
-        bool UpdateLaneStatus(uint32_t rows, uint32_t cols, lane* left, lane* right, lane* center);
+        bool UpdateLaneStatus(uint32_t rows, 
+                              uint32_t cols, 
+                              lane* left, 
+                              lane* right, 
+                              lane* center);
+
+        bool CalStraightLanesPoly(void);
+
+        bool CalVanishingPoint(void);
 
         static void* FindPartialLane(void* args);
 

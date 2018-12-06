@@ -45,14 +45,14 @@ class CImgProc {
                                    gsl_matrix_ushort* src);
 
         bool Sobel(gsl_matrix* grad, 
-                gsl_matrix_char* dir, 
-                gsl_matrix* src,
-                int direction, 
-                bool double_edge,
-                int crop_r = 0, 
-                int crop_c = 0, 
-                int crop_w = 0, 
-                int crop_h = 0);
+                   gsl_matrix_char* dir, 
+                   gsl_matrix* src,
+                   int direction, 
+                   bool double_edge,
+                   int crop_r = 0, 
+                   int crop_c = 0, 
+                   int crop_w = 0, 
+                   int crop_h = 0);
     public:
         CImgProc();
 
@@ -61,16 +61,30 @@ class CImgProc {
         bool Init();
 
         bool EdgeDetectForLDWS(gsl_matrix* src, 
-                                gsl_matrix* dst,
-                                int threshold,
-                                double* dir,
-                                int double_edge);
+                               gsl_matrix* dst,
+                               int threshold,
+                               double* dir,
+                               int double_edge);
 
+        bool CropMatrix(uint8_t* src, 
+                        gsl_matrix* dst, 
+                        uint32_t w, 
+                        uint32_t h, 
+                        uint32_t linesize,
+                        uint32_t rowoffset);
 
+        bool CopyMatrix(uint8_t* src, 
+                        gsl_matrix* dst, 
+                        uint32_t w, 
+                        uint32_t h, 
+                        uint32_t linesize);
 
-        bool CopyMatrix(uint8_t* src, gsl_matrix* dst, uint32_t w, uint32_t h, uint32_t linesize, uint32_t rowoffset = 0);
-
-        bool CopyBackMarix(gsl_matrix* src, uint8_t* dst, uint32_t w, uint32_t h, uint32_t linesize, uint32_t rowoffset = 0);
+        bool CopyBackMarix(gsl_matrix* src, 
+                           uint8_t* dst, 
+                           uint32_t w, 
+                           uint32_t h, 
+                           uint32_t linesize, 
+                           uint32_t rowoffset = 0);
 
 };
 #endif

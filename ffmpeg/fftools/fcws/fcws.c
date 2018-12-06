@@ -1,4 +1,5 @@
 #include "fcws.h"
+#include "../ldws/ldws_cwrapper.h"
 
 enum {
     DIRECTION_45UP = 0,
@@ -388,10 +389,14 @@ bool FCW_DoDetection(
         for (c=0 ; c<m_imgy->size2 ; c++) {
             gsl_matrix_set(m_imgy, r, c, img[r * linesize + c]); 
             // Generate ROI image based roi
+#if 1
+            gsl_matrix_set(m_temp_imgy, r, c, img[r * linesize + c]); 
+#else
             if (FCW_PixelInROI(r, c, roi) == true)
                 gsl_matrix_set(m_temp_imgy, r, c, img[r * linesize + c]);
             else
                 gsl_matrix_set(m_temp_imgy, r, c, NOT_SHADOW);
+#endif
         }
     }
 
@@ -405,10 +410,14 @@ bool FCW_DoDetection(
     // Get thresholding image
     FCW_ThresholdingByIntegralImage(m_imgy, m_intimg, m_shadow, 50, 0.7);
 
-    for (r=0 ; r<m_temp_imgy->size1 ; r++) {
-        for(c=0 ; c<m_temp_imgy->size2 ; c++) {
-            if (FCW_PixelInROI(r, c, roi) == false)
-                gsl_matrix_set(m_shadow, r, c, NOT_SHADOW);
+    LDW_TransformAsDynamicROI(m_temp_imgy);
+
+    if (LDW_TransformAsDynamicROI(m_shadow) == false) {
+        for (r=0 ; r<m_shadow->size1 ; r++) {
+            for(c=0 ; c<m_shadow->size2 ; c++) {
+                if (FCW_PixelInROI(r, c, roi) == false)
+                    gsl_matrix_set(m_shadow, r, c, NOT_SHADOW);
+            }
         }
     }
 

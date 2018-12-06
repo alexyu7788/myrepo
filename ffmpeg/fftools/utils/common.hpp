@@ -69,16 +69,16 @@
 #endif
 
 
-enum {
-    COLOR_RED,
+enum adas_color{
+    COLOR_RED = 0,
+    COLOR_GREEN,
+    COLOR_BLUE,
     COLOR_YELLOW,
     COLOR_CYAN,
-    COLOR_DARKGREEN,
-    COLOR_BLUE,
     COLOR_GOLD,
-    COLOR_BROWN,
     COLOR_MAGENTA,
-    COLOR_GREEN,
+    COLOR_BROWN,
+    COLOR_DARKGREEN,
     COLOR_TOTAL
 };
 

@@ -1179,7 +1179,8 @@ static int upload_texture(SDL_Texture **tex, AVFrame *frame, struct SwsContext *
                                 frame->width,
                                 frame->height,
                                 frame->linesize[0],
-                                frame->height * LDWSPositionPercentage 
+                                frame->height * LDWSPositionPercentage,
+                                true
                                 );
  
                 memset(edged_img, 0xff, sizeof(uint8_t) * frame->linesize[0] * frame->height + 16 + 16/*STRIDE_ALIGN*/ - 1);
@@ -1455,30 +1456,10 @@ static void video_image_display(VideoState *is)
         }
 
         // LDWS
-        color = &COLOR[COLOR_YELLOW];
-        SDL_SetRenderDrawColor(fcw_renderer[FCW_WINDOW_TAILLIGHT], color->r, color->g, color->b, color->a);
-        LDW_DrawLanes(fcw_renderer[FCW_WINDOW_TAILLIGHT], &rect, 4);
-
-        point lanepoint[4];
-
-        memset(lanepoint, 0x0, sizeof(point) * 4);
-        LDW_GetLanePoints(&lanepoint[0], &lanepoint[1], &lanepoint[2], &lanepoint[3]);
-
-        color = &COLOR[COLOR_RED];
-        SDL_SetRenderDrawColor(fcw_renderer[FCW_WINDOW_RESULT], color->r, color->g, color->b, color->a);
-
-        SDL_RenderDrawLine(fcw_renderer[FCW_WINDOW_RESULT], 
-                           rect.x + lanepoint[0].c, 
-                           rect.y + lanepoint[0].r, 
-                           rect.x + lanepoint[1].c, 
-                           rect.y + lanepoint[1].r);
-
-        SDL_RenderDrawLine(fcw_renderer[FCW_WINDOW_RESULT], 
-                           rect.x + lanepoint[2].c, 
-                           rect.y + lanepoint[2].r, 
-                           rect.x + lanepoint[3].c, 
-                           rect.y + lanepoint[3].r);
-
+        LDW_DrawSplines(fcw_renderer[FCW_WINDOW_TAILLIGHT], &rect, 4, COLOR_YELLOW);
+        LDW_DrawLanes(fcw_renderer[FCW_WINDOW_RESULT], &rect, COLOR_GOLD);
+        LDW_DrawLanes(fcw_renderer[FCW_WINDOW_ROI], &rect, COLOR_GOLD);
+        LDW_DrawLanes(fcw_renderer[FCW_WINDOW_SHADOW], &rect, COLOR_GOLD);
     }
 #endif
 }

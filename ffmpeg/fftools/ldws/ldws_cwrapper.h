@@ -9,15 +9,18 @@ extern "C" {
 
 void LDW_Init(void);
 
-void LDW_DoDetection(uint8_t* src, int w, int h, int linesize, int rowoffset);
+void LDW_DoDetection(uint8_t* src, int w, int h, int linesize, int rowoffset, bool crop);
 
 void LDW_DeInit(void);
 
 bool LDW_GetEdgeImg(uint8_t* dst, int w, int h, int linesize);
 
-bool LDW_DrawLanes(SDL_Renderer* const render, SDL_Rect* const rect, uint32_t width);
+bool LDW_TransformAsDynamicROI(gsl_matrix* src);
 
-bool LDW_GetLanePoints(point* leftmiddle, point* leftbottom, point* rightmiddle, point* rightbottom);
+bool LDW_DrawSplines(SDL_Renderer* const render, SDL_Rect* const rect, uint32_t width, enum adas_color color);
+
+bool LDW_DrawLanes(SDL_Renderer* const render, SDL_Rect* const rect, enum adas_color color);
+
 #ifdef __cplusplus
 }
 #endif

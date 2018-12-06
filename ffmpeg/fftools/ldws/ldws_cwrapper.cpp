@@ -14,7 +14,7 @@ void LDW_Init()
     }
 }
  
-void LDW_DoDetection(uint8_t* src, int w, int h, int linesize, int rowoffset)
+void LDW_DoDetection(uint8_t* src, int w, int h, int linesize, int rowoffset, bool crop)
 {
     if (!ldws_obj) {
         dbg();
@@ -25,7 +25,8 @@ void LDW_DoDetection(uint8_t* src, int w, int h, int linesize, int rowoffset)
                          w, 
                          h,
                          linesize,
-                         rowoffset);
+                         rowoffset,
+                         crop);
 }
 
 void LDW_DeInit(void)
@@ -44,14 +45,28 @@ bool LDW_GetEdgeImg(uint8_t* dst, int w, int h, int linesize)
     return false;
 }
 
-bool LDW_DrawLanes(SDL_Renderer* const render, SDL_Rect* const rect, uint32_t width)
+bool LDW_TransformAsDynamicROI(gsl_matrix* src)
+{
+    if (!ldws_obj || !src) {
+        ldwsdbg();
+        return false;
+    }
+
+    return ldws_obj->DynamicROI(src);
+}
+
+bool LDW_DrawSplines(SDL_Renderer* const render, SDL_Rect* const rect, uint32_t width, enum adas_color color)
 {
     uint32_t idx;
+    SDL_Color *Color;
 
     if (!ldws_obj || !render || !rect) {
         ldwsdbg();
         return false;
     }
+
+    Color = &COLOR[color];
+    SDL_SetRenderDrawColor(render, Color->r, Color->g, Color->b, Color->a);
 
     ldws_obj->GetLane(&left, &right, &center);
 
@@ -90,14 +105,45 @@ bool LDW_DrawLanes(SDL_Renderer* const render, SDL_Rect* const rect, uint32_t wi
     return true;
 }
 
-bool LDW_GetLanePoints(point* leftmiddle, point* leftbottom, point* rightmiddle, point* rightbottom)
+bool LDW_DrawLanes(SDL_Renderer* const render, SDL_Rect* const rect, enum adas_color color)
 {
-    if (!ldws_obj || !leftmiddle || !leftbottom || !rightmiddle || !rightbottom) {
+    point lanepoint[6];
+    SDL_Color *Color;
+
+    if (!ldws_obj || !render || !rect) {
         ldwsdbg();
         return false;
     }
 
-    ldws_obj->GetLanePoints(leftmiddle, leftbottom, rightmiddle, rightbottom);
+    memset(lanepoint, 0x0, sizeof(point) * 6);
+    ldws_obj->GetLanePoints(&lanepoint[0], 
+                            &lanepoint[1], 
+                            &lanepoint[2], 
+                            &lanepoint[3],
+                            &lanepoint[4], 
+                            &lanepoint[5]);
+
+    Color = &COLOR[color];
+    SDL_SetRenderDrawColor(render, Color->r, Color->g, Color->b, Color->a);
+
+    // Left lane
+    SDL_RenderDrawLine(render, 
+                       rect->x + lanepoint[0].c, 
+                       rect->y + lanepoint[0].r, 
+                       rect->x + lanepoint[1].c, 
+                       rect->y + lanepoint[1].r);
+    // Right lane
+    SDL_RenderDrawLine(render, 
+                       rect->x + lanepoint[2].c, 
+                       rect->y + lanepoint[2].r, 
+                       rect->x + lanepoint[3].c, 
+                       rect->y + lanepoint[3].r);
+    // Center lane
+    SDL_RenderDrawLine(render, 
+                       rect->x + lanepoint[4].c, 
+                       rect->y + lanepoint[4].r, 
+                       rect->x + lanepoint[5].c, 
+                       rect->y + lanepoint[5].r);
 
     return true;
 }

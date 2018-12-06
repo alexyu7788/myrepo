@@ -101,9 +101,8 @@ bool CLDWS::DeInit()
     for (i = 0 ; i < LANE_THREADS ; ++i)
         pthread_join(m_thread[i], NULL);
 
-//    pthread_mutex_lock(&m_jobdone_mutex);
-//    pthread_cond_signal(&m_jobdone_cond);
-//    pthread_mutex_unlock(&m_jobdone_mutex);
+    pthread_cond_destroy(&m_jobdone_cond);
+    pthread_mutex_destroy(&m_jobdone_mutex);
 
     for (i = 0 ; i < LANE_THREADS ; ++i) {
         pthread_cond_destroy(&m_cond[i]);
@@ -125,13 +124,18 @@ bool CLDWS::DeInit()
 }
 
 
-bool CLDWS::DoDetection(uint8_t* src, int w, int h, int linesize, int rowoffset)
+bool CLDWS::DoDetection(uint8_t* src, 
+                        int w, 
+                        int h, 
+                        int linesize, 
+                        int rowoffset,
+                        bool crop)
 {
     if (!src) {
         ldwsdbg();
         return false;
     }
-
+  
     if (!m_ip) {
         ldwsdbg();
         return false;
@@ -142,14 +146,18 @@ bool CLDWS::DoDetection(uint8_t* src, int w, int h, int linesize, int rowoffset)
         return false;
     }
 
-    m_rows      = (h - rowoffset);
+    m_rows      = (crop == true ? (h - rowoffset) : h);
     m_cols      = w;
     m_rowoffset = rowoffset;
 
     CheckOrReallocMatrix(&m_imgy, m_rows, m_cols, true);
     CheckOrReallocMatrix(&m_edged_imgy, m_rows, m_cols, true);
 
-    m_ip->CopyMatrix(src, m_imgy, w, h, linesize, m_rowoffset);
+    if (crop)
+        m_ip->CropMatrix(src, m_imgy, w, h, linesize, m_rowoffset);
+    else
+        m_ip->CopyMatrix(src, m_imgy, w, h, linesize);
+
     m_ip->EdgeDetectForLDWS(m_imgy, m_edged_imgy, 60, NULL, 0);
 
     FindLane(m_edged_imgy, 0, 0, m_lane_stat.p, m_lane_stat.l);
@@ -159,8 +167,6 @@ bool CLDWS::DoDetection(uint8_t* src, int w, int h, int linesize, int rowoffset)
 
 bool CLDWS::GetEdgedImg(uint8_t* dst, int w, int h, int linesize)
 {
-   size_t r, c;
-
    if (!dst || !m_edged_imgy /*|| m_edged_imgy->size1 != h || m_edged_imgy->size2 != w*/) {
        ldwsdbg();
        return false;
@@ -196,124 +202,115 @@ bool CLDWS::DestroyLane(lane** left, lane** right, lane** center)
     return true;
 }
 
-bool CLDWS::GetLanePoints(point* leftmiddle, point* leftbottom, point* rightmiddle, point* rightbottom)
+bool CLDWS::GetLanePoints(point* ltop, 
+                          point* lbottom, 
+                          point* rtop, 
+                          point* rbottom,
+                          point* ctop, 
+                          point* cbottom
+                          )
 {
-    lane *left = NULL, *right = NULL;
+    lane *left = NULL, *right = NULL, *center = NULL;
 
-    if (!leftmiddle || !leftbottom || !rightmiddle || !rightbottom) {
+    if (!ltop || !lbottom || !rtop || !rbottom || !ctop || !cbottom) {
         ldwsdbg();
         return false;
     }
 
     left    = m_lane_stat.l[LANE_LEFT];
     right   = m_lane_stat.l[LANE_RIGHT];
+    center  = m_lane_stat.l[LANE_CENTER];
 
-    if (!left || !right) {
+    if (!left || !right || !center) {
         ldwsdbg();
         return false;
     }
 
     pthread_mutex_lock(&left->mutex);
     pthread_mutex_lock(&right->mutex);
-
-    m_vp.r = m_vp.c = 0;
-    GetVanishingPoint(m_vp);
+    pthread_mutex_lock(&center->mutex);
 
     if (left->exist && left->pix) {
         if (m_vp.r && m_vp.c) {
-            leftmiddle->r = m_vp.r;
-            leftmiddle->c = m_vp.c;
+            ltop->r = m_vp.r;
+            ltop->c = m_vp.c;
         } else {
-            leftmiddle->r = left->pix[left->pix_count / 3].r;
-            leftmiddle->c = left->pix[left->pix_count / 3].c;
+            ltop->r = left->pix[left->pix_count / 2].r;
+            ltop->c = left->pix[left->pix_count / 2].c;
         }
 
-        leftbottom->r = left->pix[left->pix_count - 1].r;
-        leftbottom->c = left->pix[left->pix_count - 1].c;
+        lbottom->r = left->pix[left->pix_count - 1].r;
+        lbottom->c = left->pix[left->pix_count - 1].c;
     }
 
     if (right->exist && right->pix) {
         if (m_vp.r && m_vp.c) {
-            rightmiddle->r = m_vp.r;
-            rightmiddle->c = m_vp.c;
+            rtop->r = m_vp.r;
+            rtop->c = m_vp.c;
         } else {
-            rightmiddle->r = right->pix[right->pix_count / 3].r;
-            rightmiddle->c = right->pix[right->pix_count / 3].c;
+            rtop->r = right->pix[right->pix_count / 2].r;
+            rtop->c = right->pix[right->pix_count / 2].c;
         }
 
-        rightbottom->r = right->pix[right->pix_count - 1].r;
-        rightbottom->c = right->pix[right->pix_count - 1].c;
+        rbottom->r = right->pix[right->pix_count - 1].r;
+        rbottom->c = right->pix[right->pix_count - 1].c;
+    }
+
+    if (center->exist && center->pix) {
+        if (m_vp.r && m_vp.c) {
+            ctop->r = m_vp.r;
+            ctop->c = m_vp.c;
+        } else {
+            ctop->r = center->pix[center->pix_count / 2].r;
+            ctop->c = center->pix[center->pix_count / 2].c;
+        }
+
+        cbottom->r = center->pix[center->pix_count - 1].r;
+        cbottom->c = center->pix[center->pix_count - 1].c;
     }
 
     pthread_mutex_unlock(&left->mutex);
     pthread_mutex_unlock(&right->mutex);
+    pthread_mutex_unlock(&center->mutex);
 
     return true;
 }
 
-bool CLDWS::GetVanishingPoint(point& vp)
+bool CLDWS::DynamicROI(gsl_matrix* src)
 {
-    uint32_t r;
-    int32_t r1, r2, c1, c2;
-    lane *left = NULL, *right = NULL;
+    bool ret = false;
+    uint32_t r, c;
+    lane *left = NULL, *right = NULL, *center = NULL;
 
     left    = m_lane_stat.l[LANE_LEFT];
     right   = m_lane_stat.l[LANE_RIGHT];
+    center  = m_lane_stat.l[LANE_CENTER];
 
-    if (!left || !right) {
+    if (!src || !left || !right || !center) {
         ldwsdbg();
-        return false;
+        return ret;
     }
 
     pthread_mutex_lock(&left->mutex);
     pthread_mutex_lock(&right->mutex);
 
-    if (left->exist && right->exist) {
-        r1 = left->pix[left->pix_count / 2].r; 
-        c1 = left->pix[left->pix_count / 2].c; 
-        r2 = left->pix[left->pix_count - 1].r; 
-        c2 = left->pix[left->pix_count - 1].c; 
-
-        if (c1 != c2) {
-            m_slope_left = (float)(c1 - c2) / (float)(r1 - r2);
-            m_delta_left = c1 - m_slope_left * r1;
-        } else
-            m_slope_left = -FLT_MAX;
-
-        r1 = right->pix[right->pix_count / 2].r; 
-        c1 = right->pix[right->pix_count / 2].c; 
-        r2 = right->pix[right->pix_count - 1].r; 
-        c2 = right->pix[right->pix_count - 1].c; 
-
-        if (c1 != c2) {
-            m_slope_right = (float)(c1 - c2) / (float)(r1 - r2);
-            m_delta_right = c1 - m_slope_right * r1;
-        } else
-            m_slope_right = -FLT_MAX;
-
-        if (m_slope_left != -FLT_MAX && m_slope_right != -FLT_MAX) {
-            for (r = 0 ; r < m_rows + m_rowoffset ; ++r) {
-                c1 = (int32_t)(r * m_slope_left  + m_delta_left);
-                c2 = (int32_t)(r * m_slope_right + m_delta_right);
-
-                if (c1 > 0 && c2 > 0 && c1 <= c2) {
-                    vp.r = r;
-                    vp.c = c1;
-                    break;
-                }
+    if (left->exist && right->exist && m_slope_left != -FLT_MAX && m_slope_right != -FLT_MAX) {
+        for (r = 0 ; r < src->size1 ; ++r) {
+            for (c = 0 ; c < src->size2 ; ++c) {
+                if ((r * m_slope_left + m_delta_left > c) || (r * m_slope_right + m_delta_right < c))
+                    gsl_matrix_set(src, r, c, 255);
             }
         }
-    } else {
-        m_slope_left    =
-        m_slope_right   = -FLT_MAX;
-    }
+
+        ret = true;
+    } else
+        ret = false;
 
     pthread_mutex_unlock(&left->mutex);
     pthread_mutex_unlock(&right->mutex);
 
-    return true;
+    return ret;
 }
-
 
 
 
@@ -366,7 +363,7 @@ void CLDWS::LaneDeinit(lane** l)
             (*l)->pix = NULL;
         }
 
-        pthread_mutex_destroy(&(*l)->mutex);
+        pthread_mutex_destroy(&((*l)->mutex));
 
         delete (*l);
         (*l) = NULL; 
@@ -765,7 +762,100 @@ bool CLDWS::UpdateLaneStatus(uint32_t rows, uint32_t cols, lane* left, lane* rig
 
     return true;
 }
+
+/*
+ * Tranform spline of kluge polynomial into simple straight line polynomial.
+ */
+bool CLDWS::CalStraightLanesPoly(void)
+{
+    int32_t r1, r2, c1, c2;
+    lane *left = NULL, *right = NULL;
+
+    left    = m_lane_stat.l[LANE_LEFT];
+    right   = m_lane_stat.l[LANE_RIGHT];
+
+    if (!left || !right) {
+        ldwsdbg();
+        return false;
+    }
+
+    pthread_mutex_lock(&left->mutex);
+    pthread_mutex_lock(&right->mutex);
+
+    if (left->exist && right->exist) {
+        r1 = left->pix[left->pix_count / 2].r; 
+        c1 = left->pix[left->pix_count / 2].c; 
+        r2 = left->pix[left->pix_count - 1].r; 
+        c2 = left->pix[left->pix_count - 1].c; 
+
+        if (c1 != c2) {
+            m_slope_left = (float)(c1 - c2) / (float)(r1 - r2);
+            m_delta_left = c1 - m_slope_left * r1;
+        } else
+            m_slope_left = -FLT_MAX;
+
+        r1 = right->pix[right->pix_count / 2].r; 
+        c1 = right->pix[right->pix_count / 2].c; 
+        r2 = right->pix[right->pix_count - 1].r; 
+        c2 = right->pix[right->pix_count - 1].c; 
+
+        if (c1 != c2) {
+            m_slope_right = (float)(c1 - c2) / (float)(r1 - r2);
+            m_delta_right = c1 - m_slope_right * r1;
+        } else
+            m_slope_right = -FLT_MAX;
+
+    } else {
+        m_slope_left    =
+        m_slope_right   = -FLT_MAX;
+    }
+
+    pthread_mutex_unlock(&left->mutex);
+    pthread_mutex_unlock(&right->mutex);
+
+    return true;
+}
  
+/*
+ * Vanishing point is the intersection of left- & right straight lane.
+ */
+bool CLDWS::CalVanishingPoint(void)
+{
+    uint32_t r;
+    int32_t c1, c2;
+    lane *left = NULL, *right = NULL;
+
+    left    = m_lane_stat.l[LANE_LEFT];
+    right   = m_lane_stat.l[LANE_RIGHT];
+
+    if (!left || !right) {
+        ldwsdbg();
+        return false;
+    }
+
+    pthread_mutex_lock(&left->mutex);
+    pthread_mutex_lock(&right->mutex);
+
+    if (m_slope_left != -FLT_MAX && m_slope_right != -FLT_MAX) {
+        for (r = 0 ; r < m_rows + m_rowoffset ; ++r) {
+            c1 = (int32_t)(r * m_slope_left  + m_delta_left);
+            c2 = (int32_t)(r * m_slope_right + m_delta_right);
+
+            if (c1 > 0 && c2 > 0 && c1 <= c2) {
+                m_vp.r = r;
+                m_vp.c = c1;
+                break;
+            }
+        }
+    } else
+        m_vp.r = m_vp.c = 0;
+
+    pthread_mutex_unlock(&left->mutex);
+    pthread_mutex_unlock(&right->mutex);
+
+    return true;
+}
+
 void* CLDWS::FindPartialLane(void* args)
 {
     int id = -1;
@@ -774,7 +864,7 @@ void* CLDWS::FindPartialLane(void* args)
 
     int agent_valid;
     uint8_t  lane_find;
-    uint32_t i, j, r, c;
+    uint32_t i, r, c;
     uint32_t rows, cols, area;
     uint32_t count;
     uint32_t find_agent_fail_count,
@@ -782,8 +872,7 @@ void* CLDWS::FindPartialLane(void* args)
              lane_num,
              find_lane_fail_count,
              max_evidence_percentage_lane_no,
-             max_grade_lane_no,
-             mini_center_shift;
+             max_grade_lane_no;
     double evidence_percentage,
            max_evidence_percentage,
            max_grade;
@@ -851,8 +940,6 @@ void* CLDWS::FindPartialLane(void* args)
         evidence_percentage     =
         max_evidence_percentage = 
         max_grade               = 0;
-
-        mini_center_shift       = UINT_MAX;
 
         count = 0;
         for (r = 0 ; r < rows ; ++r) {
@@ -1062,6 +1149,9 @@ bool CLDWS::FindLane(gsl_matrix* src,
                      left,
                      right,
                      center);
+
+    CalStraightLanesPoly();
+    CalVanishingPoint();
 
     return true;
 }
