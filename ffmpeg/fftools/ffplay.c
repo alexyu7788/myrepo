@@ -1457,9 +1457,9 @@ static void video_image_display(VideoState *is)
 
         // LDWS
         LDW_DrawSplines(fcw_renderer[FCW_WINDOW_TAILLIGHT], &rect, 4, COLOR_YELLOW);
-        LDW_DrawLanes(fcw_renderer[FCW_WINDOW_RESULT], &rect, COLOR_GOLD);
-        LDW_DrawLanes(fcw_renderer[FCW_WINDOW_ROI], &rect, COLOR_GOLD);
-        LDW_DrawLanes(fcw_renderer[FCW_WINDOW_SHADOW], &rect, COLOR_GOLD);
+        LDW_DrawLanes(fcw_renderer[FCW_WINDOW_RESULT], &rect, COLOR_CYAN);
+        LDW_DrawLanes(fcw_renderer[FCW_WINDOW_ROI], &rect, COLOR_CYAN);
+        LDW_DrawLanes(fcw_renderer[FCW_WINDOW_SHADOW], &rect, COLOR_CYAN);
     }
 #endif
 }
