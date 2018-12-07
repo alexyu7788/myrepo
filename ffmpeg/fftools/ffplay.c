@@ -66,7 +66,7 @@
 
 // -----------------------------------FCWS---------------------------------------------
 #include "fcws/candidate.h"
-#include "fcws/fcws.h"
+#include "fcws/fcws_cwrapper.h"
 
 static uint8_t* roi_img = NULL;
 static uint8_t* vedge = NULL;
@@ -1082,17 +1082,17 @@ static int upload_texture(SDL_Texture **tex, AVFrame *frame, struct SwsContext *
                     lab_imgv = av_malloc(frame->linesize[1] * frame->height / 2 + 16 + 16 - 1);
 
 
-                roi.point[ROI_LEFTTOP].r = frame->height / 10;
+                roi.point[ROI_LEFTTOP].r = frame->height * HorizonPositionPercentage;
                 roi.point[ROI_LEFTTOP].c = frame->width * 3 / 10 ;
 
-                roi.point[ROI_RIGHTTOP].r = frame->height / 10;
+                roi.point[ROI_RIGHTTOP].r = frame->height * HorizonPositionPercentage;
                 roi.point[ROI_RIGHTTOP].c = frame->width * 7 / 10;
 
-                roi.point[ROI_LEFTBOTTOM].r = frame->height * 18 / 20;
-                roi.point[ROI_LEFTBOTTOM].c = frame->width / 20;
+                roi.point[ROI_LEFTBOTTOM].r = frame->height;
+                roi.point[ROI_LEFTBOTTOM].c = 0;
 
-                roi.point[ROI_RIGHTBOTTOM].r = frame->height * 18 / 20;
-                roi.point[ROI_RIGHTBOTTOM].c = frame->width * 19 / 20;
+                roi.point[ROI_RIGHTBOTTOM].r = frame->height;
+                roi.point[ROI_RIGHTBOTTOM].c = frame->width;
 
                 roi.size = ROI_TOTAL;
 
@@ -1457,9 +1457,8 @@ static void video_image_display(VideoState *is)
 
         // LDWS
         LDW_DrawSplines(fcw_renderer[FCW_WINDOW_TAILLIGHT], &rect, 4, COLOR_YELLOW);
+
         LDW_DrawLanes(fcw_renderer[FCW_WINDOW_RESULT], &rect, COLOR_CYAN);
-        LDW_DrawLanes(fcw_renderer[FCW_WINDOW_ROI], &rect, COLOR_CYAN);
-        LDW_DrawLanes(fcw_renderer[FCW_WINDOW_SHADOW], &rect, COLOR_CYAN);
     }
 #endif
 }

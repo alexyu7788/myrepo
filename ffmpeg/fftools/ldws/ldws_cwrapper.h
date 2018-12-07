@@ -15,7 +15,7 @@ void LDW_DeInit(void);
 
 bool LDW_GetEdgeImg(uint8_t* dst, int w, int h, int linesize);
 
-bool LDW_TransformAsDynamicROI(gsl_matrix* src);
+bool LDW_ApplyDynamicROI(gsl_matrix* src);
 
 bool LDW_DrawSplines(SDL_Renderer* const render, SDL_Rect* const rect, uint32_t width, enum adas_color color);
 

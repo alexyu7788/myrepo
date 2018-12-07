@@ -188,7 +188,7 @@ class CLDWS {
                            point* cbottom
                            );
 
-        bool DynamicROI(gsl_matrix* src);
+        bool ApplyDynamicROI(gsl_matrix* src);
 
     protected:
         static lane* LaneInit(void);

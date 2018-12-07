@@ -276,7 +276,7 @@ bool CLDWS::GetLanePoints(point* ltop,
     return true;
 }
 
-bool CLDWS::DynamicROI(gsl_matrix* src)
+bool CLDWS::ApplyDynamicROI(gsl_matrix* src)
 {
     bool ret = false;
     uint32_t r, c;
