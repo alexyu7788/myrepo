@@ -61,9 +61,10 @@
 #include <assert.h>
 
 // -----------------------------------ADAS---------------------------------------------
+#include "utils/ma.h"
+
 #define HorizonPositionPercentage       0.15
 #define LDWSPositionPercentage          0.30
-
 // -----------------------------------FCWS---------------------------------------------
 #include "fcws/candidate.h"
 #include "fcws/fcws_cwrapper.h"

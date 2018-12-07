@@ -362,7 +362,9 @@ CImgProc::CImgProc() {
     m_gb_dst    = NULL;
     
     // Sobel 
-    m_sobel_init  = false;
+    m_sobel_init    = false;
+    m_gradient      = NULL;
+    m_dir           = NULL;
 }
 
 CImgProc::~CImgProc()

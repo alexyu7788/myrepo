@@ -202,12 +202,12 @@ bool CLDWS::DestroyLane(lane** left, lane** right, lane** center)
     return true;
 }
 
-bool CLDWS::GetLanePoints(point* ltop, 
-                          point* lbottom, 
-                          point* rtop, 
-                          point* rbottom,
-                          point* ctop, 
-                          point* cbottom
+bool CLDWS::GetLanePoints(point_t* ltop, 
+                          point_t* lbottom, 
+                          point_t* rtop, 
+                          point_t* rbottom,
+                          point_t* ctop, 
+                          point_t* cbottom
                           )
 {
     lane *left = NULL, *right = NULL, *center = NULL;
@@ -318,7 +318,7 @@ bool CLDWS::ApplyDynamicROI(gsl_matrix* src)
 
 
 
-
+ 
 //------------------------------------------------------------------------------
 lane* CLDWS::LaneInit(void)
 {

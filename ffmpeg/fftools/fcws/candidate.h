@@ -1,7 +1,7 @@
 #ifndef _CANDIDATE_H_
 #define _CANDIDATE_H_
 
-#include "common.h"
+#include "../utils/common.hpp"
 
 #define MAX_CANDIDATES 128
 

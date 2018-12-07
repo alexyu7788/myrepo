@@ -107,7 +107,7 @@ bool LDW_DrawSplines(SDL_Renderer* const render, SDL_Rect* const rect, uint32_t 
 
 bool LDW_DrawLanes(SDL_Renderer* const render, SDL_Rect* const rect, enum adas_color color)
 {
-    point lanepoint[6];
+    point_t lanepoint[6];
     SDL_Color *Color;
 
     if (!ldws_obj || !render || !rect) {
@@ -115,7 +115,7 @@ bool LDW_DrawLanes(SDL_Renderer* const render, SDL_Rect* const rect, enum adas_c
         return false;
     }
 
-    memset(lanepoint, 0x0, sizeof(point) * 6);
+    memset(lanepoint, 0x0, sizeof(point_t) * 6);
     ldws_obj->GetLanePoints(&lanepoint[0], 
                             &lanepoint[1], 
                             &lanepoint[2], 

@@ -129,7 +129,7 @@ class CLDWS {
         uint32_t    m_right_coloffset;
 
         // vanishing point
-        point       m_vp;
+        point_t      m_vp;
 
         // straight lane
         float       m_slope_left;
@@ -180,12 +180,12 @@ class CLDWS {
 
         bool DestroyLane(lane** left, lane** right, lane** center);
 
-        bool GetLanePoints(point* ltop, 
-                           point* lbottom, 
-                           point* rtop, 
-                           point* rbottom,
-                           point* ctop, 
-                           point* cbottom
+        bool GetLanePoints(point_t* ltop, 
+                           point_t* lbottom, 
+                           point_t* rtop, 
+                           point_t* rbottom,
+                           point_t* ctop, 
+                           point_t* cbottom
                            );
 
         bool ApplyDynamicROI(gsl_matrix* src);
