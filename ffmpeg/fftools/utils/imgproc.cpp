@@ -504,3 +504,71 @@ bool CImgProc::CopyBackMarix(gsl_matrix* src,
 
     return true;
 }
+
+bool CImgProc::GenIntegralImage(gsl_matrix* src, gsl_matrix* dst)
+{
+    uint32_t r, c;
+    double sum;
+
+    if (!src || !dst || src->size1 != dst->size1 || src->size2 != dst->size2) {
+        dbg();
+        return false;
+    }
+
+    // Generate integral image for retrive average value of a rectange quickly.
+    for (c=0 ; c<src->size2 ; ++c) {
+        sum = 0;
+        for (r=0 ; r<src->size1 ; ++r) {
+            sum += gsl_matrix_get(src, r, c);
+
+            if (c == 0)
+                gsl_matrix_set(dst, r, c, sum);
+            else
+                gsl_matrix_set(dst, r, c, gsl_matrix_get(dst, r, c-1) + sum);
+        }
+    }
+
+    return true;
+}
+
+bool CImgProc::ThresholdingByIntegralImage(gsl_matrix* src, 
+                                           gsl_matrix* intimg, 
+                                           gsl_matrix* dst, 
+                                           uint32_t s, 
+                                           float p)
+{
+    uint32_t r, c;
+    uint32_t r1, c1, r2, c2;
+    uint32_t count;
+    double sum;
+
+    if (!src || !intimg || !dst) {
+        dbg();
+        return false;
+    }
+
+    // Move a sxs sliding window pixel by pixel. The center pixel of this sliding window is (r, c).
+    // If center pixel is p percentage lower than average value of sliding window, set it as black. Otherwise, set as white.
+    for (r=0 ; r<src->size1 ; ++r) {
+        for (c=0 ; c<src->size2 ; ++c) {
+            if (r >= s/2+1 && r<src->size1 - s/2 - 1 && c>=s/2+1 && c<src->size2 - s/2 -1) { // boundary checking.
+                r1 = r - s/2;
+                c1 = c - s/2;
+                r2 = r + s/2;
+                c2 = c + s/2;
+
+                count = (r2 - r1) * (c2 - c1);
+                sum = gsl_matrix_get(intimg, r2, c2) - gsl_matrix_get(intimg, r1-1, c2) - gsl_matrix_get(intimg, r2, c1-1) + gsl_matrix_get(intimg, r1-1, c1-1);
+
+                if ((gsl_matrix_get(src, r, c) * count) <= (sum * p))
+                    gsl_matrix_set(dst, r, c, 0);
+                else
+                    gsl_matrix_set(dst, r, c, 255);
+            }
+            else
+                gsl_matrix_set(dst, r, c, 255);
+        }
+    }
+
+    return true;
+}

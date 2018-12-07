@@ -4,6 +4,11 @@
 static CLDWS* ldws_obj = NULL;
 static lane *left = NULL, *right = NULL, *center = NULL;
 
+CLDWS* LDW_GetObj(void)
+{
+    return ldws_obj;
+}
+
 void LDW_Init()
 {
     if (ldws_obj == NULL) {

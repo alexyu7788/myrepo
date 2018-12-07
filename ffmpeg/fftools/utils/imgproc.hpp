@@ -86,5 +86,12 @@ class CImgProc {
                            uint32_t linesize, 
                            uint32_t rowoffset = 0);
 
+        bool GenIntegralImage(gsl_matrix* src, gsl_matrix* dst);
+
+        bool ThresholdingByIntegralImage(gsl_matrix* src, 
+                                         gsl_matrix* intimg, 
+                                         gsl_matrix* dst, 
+                                         uint32_t s, 
+                                         float p);
 };
 #endif
