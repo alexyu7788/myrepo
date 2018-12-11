@@ -356,23 +356,25 @@ BOOL CFCWS::VehicleCheckByVerticalEdge(const gsl_matrix* vedgeimg,
     }
 
     for (auto& cand:cands) {
-        area = cand.m_w * cand.m_h;
-        submatrix = gsl_matrix_submatrix((gsl_matrix*)vedgeimg, cand.m_r, cand.m_c, cand.m_h, cand.m_w);
+        if (cand.m_valid == TRUE) {
+            area = cand.m_w * cand.m_h;
+            submatrix = gsl_matrix_submatrix((gsl_matrix*)vedgeimg, cand.m_r, cand.m_c, cand.m_h, cand.m_w);
 
-        for (r=0 ; r<submatrix.matrix.size1 ; ++r) {
-            for (c=0 ; c<submatrix.matrix.size2 ; ++c) {
-                if (gsl_matrix_get(&submatrix.matrix, r, c)) {
-                    pixel_cnt++;
+            for (r=0 ; r<submatrix.matrix.size1 ; ++r) {
+                for (c=0 ; c<submatrix.matrix.size2 ; ++c) {
+                    if (gsl_matrix_get(&submatrix.matrix, r, c)) {
+                        pixel_cnt++;
+                    }
                 }
             }
+
+            percentage = pixel_cnt / (float)area;
+
+            //fcwsdbg("VerticalEdge: %d / %d = %.04f", pixel_cnt, area, percentage);
+
+            if (percentage < 0.2)
+                cand.m_valid = FALSE;
         }
-
-        percentage = pixel_cnt / (float)area;
-
-        //fcwsdbg("VerticalEdge: %d / %d = %.04f", pixel_cnt, area, percentage);
-
-        if (percentage < 0.2)
-            cand.m_valid = FALSE;
     }
 
     return TRUE;
@@ -597,7 +599,9 @@ BOOL CFCWS::HypothesisGenerate(const gsl_matrix* imgy,
     CheckOrReallocVector(&temp_horizonproject, horizonproject->size, TRUE);
     gsl_vector_memcpy(temp_horizonproject, horizonproject);
 
-    if ((max_peak = gsl_vector_max(temp_horizonproject)) == 0)
+    max_peak = gsl_vector_max(temp_horizonproject);
+
+    if (max_peak == 0)
         return FALSE;
 
     blobs.clear();
@@ -607,7 +611,7 @@ BOOL CFCWS::HypothesisGenerate(const gsl_matrix* imgy,
         cur_peak = gsl_vector_max(temp_horizonproject);
         cur_peak_idx = gsl_vector_max_index(temp_horizonproject);
 
-        if (cur_peak < (max_peak / 2))
+        if (cur_peak < (max_peak * 0.5))
             break;
 
         gsl_vector_set(temp_horizonproject, cur_peak_idx, 0);
@@ -623,12 +627,16 @@ BOOL CFCWS::HypothesisGenerate(const gsl_matrix* imgy,
 
         VehicleCheck(imgy, vedgeimg, cands);
 
-        for (auto& cand:cands) {
-            if (cand.m_valid == TRUE) {
+        for (list<candidate_t>::iterator it = cands.begin() ; it != cands.end(); ) {
+            if (it->m_valid == TRUE) {
 
-                cand.m_r        = (cand.m_r == 0 ? 1 : cand.m_r);
-                cand.m_h        = (cand.m_r == 0 ? cand.m_h - 1 : cand.m_h);
-                cand.m_st       = _Disappear;
+                it->m_r        = (it->m_r == 0 ? 1 : it->m_r);
+                it->m_h        = (it->m_r == 0 ? it->m_h - 1 : it->m_h);
+                it->m_st       = _Disappear;
+
+                ++it;
+            } else {
+                it = cands.erase(it);
             }
         }
     }
