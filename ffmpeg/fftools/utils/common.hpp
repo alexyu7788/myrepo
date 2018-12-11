@@ -56,16 +56,16 @@
 #define fcwsdbg(format, args...)
 #endif
 
-#ifndef bool
-#define bool unsigned char
+#ifndef BOOL
+#define BOOL unsigned char
 #endif
 
-#ifndef true
-#define true (1)
+#ifndef TRUE 
+#define TRUE (1)
 #endif
 
-#ifndef false
-#define false (0)
+#ifndef FALSE
+#define FALSE (0)
 #endif
 
 

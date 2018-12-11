@@ -11,7 +11,7 @@ extern "C" {
 
 CLDWS::CLDWS()
 {
-    m_terminate     = false;
+    m_terminate     = FALSE;
 
     m_left_coloffset    =
     m_right_coloffset   = 0;
@@ -37,18 +37,18 @@ CLDWS::CLDWS()
 
 CLDWS::~CLDWS()
 {
-    m_terminate     = true;
+    m_terminate     = TRUE;
 
     DeInit();
 }
 
-bool CLDWS::Init()
+BOOL CLDWS::Init()
 {
-    bool ret = true;
+    BOOL ret = TRUE;
     uint32_t i;
     pthread_attr_t attr;
 
-    m_terminate = false;
+    m_terminate = FALSE;
 
     m_rows              =
     m_cols              =
@@ -88,7 +88,7 @@ bool CLDWS::Init()
     return ret;
 }
 
-bool CLDWS::DeInit()
+BOOL CLDWS::DeInit()
 {
     uint32_t i;
 
@@ -120,89 +120,89 @@ bool CLDWS::DeInit()
     for (i = 0 ; i < LANE_NUM ; ++i)
         LaneDeinit(&m_lane_stat.l[i]);
 
-    return true;
+    return TRUE;
 }
 
 
-bool CLDWS::DoDetection(uint8_t* src, 
+BOOL CLDWS::DoDetection(uint8_t* src, 
                         int w, 
                         int h, 
                         int linesize, 
                         int rowoffset,
-                        bool crop)
+                        BOOL crop)
 {
     if (!src) {
         ldwsdbg();
-        return false;
+        return FALSE;
     }
   
     if (!m_ip) {
         ldwsdbg();
-        return false;
+        return FALSE;
     }
 
     if (w <= 0 || h <= 0 || linesize <= 0 || h <= rowoffset) {
         dbg("Incorrect geometric parameters.");
-        return false;
+        return FALSE;
     }
 
-    m_rows      = (crop == true ? (h - rowoffset) : h);
+    m_rows      = (crop == TRUE ? (h - rowoffset) : h);
     m_cols      = w;
     m_rowoffset = rowoffset;
 
-    CheckOrReallocMatrix(&m_imgy, m_rows, m_cols, true);
-    CheckOrReallocMatrix(&m_edged_imgy, m_rows, m_cols, true);
+    CheckOrReallocMatrix(&m_imgy, m_rows, m_cols, TRUE);
+    CheckOrReallocMatrix(&m_edged_imgy, m_rows, m_cols, TRUE);
 
     if (crop)
-        m_ip->CropMatrix(src, m_imgy, w, h, linesize, m_rowoffset);
+        m_ip->CropImage(src, m_imgy, w, h, linesize, m_rowoffset);
     else
-        m_ip->CopyMatrix(src, m_imgy, w, h, linesize);
+        m_ip->CopyImage(src, m_imgy, w, h, linesize);
 
-    m_ip->EdgeDetectForLDWS(m_imgy, m_edged_imgy, 60, NULL, 0);
+    m_ip->EdgeDetectForLDW(m_imgy, m_edged_imgy, 60, NULL, 0);
 
     FindLane(m_edged_imgy, 0, 0, m_lane_stat.p, m_lane_stat.l);
 
-    return true;
+    return TRUE;
 }
 
-bool CLDWS::GetEdgedImg(uint8_t* dst, int w, int h, int linesize)
+BOOL CLDWS::GetEdgedImg(uint8_t* dst, int w, int h, int linesize)
 {
    if (!dst || !m_edged_imgy /*|| m_edged_imgy->size1 != h || m_edged_imgy->size2 != w*/) {
        ldwsdbg();
-       return false;
+       return FALSE;
    }
 
     if (m_ip)
-        return m_ip->CopyBackMarix(m_edged_imgy, dst, w, h, linesize, m_rowoffset);
+        return m_ip->CopyBackImage(m_edged_imgy, dst, w, h, linesize, m_rowoffset);
 
-    return false;
+    return FALSE;
 }
 
 // For drawing
-bool CLDWS::GetLane(lane** left, lane** right, lane** center)
+BOOL CLDWS::GetLane(lane** left, lane** right, lane** center)
 {
     if (!left || !right || !center) {
         ldwsdbg();
-        return false;
+        return FALSE;
     }
 
     *left   = LaneInit(m_lane_stat.l[LANE_LEFT]);
     *right  = LaneInit(m_lane_stat.l[LANE_RIGHT]);
     *center = LaneInit(m_lane_stat.l[LANE_CENTER]);
 
-    return true;
+    return TRUE;
 }
 
-bool CLDWS::DestroyLane(lane** left, lane** right, lane** center)
+BOOL CLDWS::DestroyLane(lane** left, lane** right, lane** center)
 {
     LaneDeinit(left);
     LaneDeinit(right);
     LaneDeinit(center);
 
-    return true;
+    return TRUE;
 }
 
-bool CLDWS::GetLanePoints(point_t* ltop, 
+BOOL CLDWS::GetLanePoints(point_t* ltop, 
                           point_t* lbottom, 
                           point_t* rtop, 
                           point_t* rbottom,
@@ -214,7 +214,7 @@ bool CLDWS::GetLanePoints(point_t* ltop,
 
     if (!ltop || !lbottom || !rtop || !rbottom || !ctop || !cbottom) {
         ldwsdbg();
-        return false;
+        return FALSE;
     }
 
     left    = m_lane_stat.l[LANE_LEFT];
@@ -223,7 +223,7 @@ bool CLDWS::GetLanePoints(point_t* ltop,
 
     if (!left || !right || !center) {
         ldwsdbg();
-        return false;
+        return FALSE;
     }
 
     pthread_mutex_lock(&left->mutex);
@@ -273,12 +273,12 @@ bool CLDWS::GetLanePoints(point_t* ltop,
     pthread_mutex_unlock(&right->mutex);
     pthread_mutex_unlock(&center->mutex);
 
-    return true;
+    return TRUE;
 }
 
-bool CLDWS::ApplyDynamicROI(gsl_matrix* src)
+BOOL CLDWS::ApplyDynamicROI(gsl_matrix* src)
 {
-    bool ret = false;
+    BOOL ret = FALSE;
     uint32_t r, c;
     lane *left = NULL, *right = NULL, *center = NULL;
 
@@ -302,9 +302,9 @@ bool CLDWS::ApplyDynamicROI(gsl_matrix* src)
             }
         }
 
-        ret = true;
+        ret = TRUE;
     } else
-        ret = false;
+        ret = FALSE;
 
     pthread_mutex_unlock(&left->mutex);
     pthread_mutex_unlock(&right->mutex);
@@ -539,9 +539,9 @@ void CLDWS::kp_solve(lanepoint* pp[3], lane* l)
     gsl_vector* x = NULL;
     gsl_vector* b = NULL;
 
-    CheckOrReallocMatrix(&m, 3, 3, true);
-    CheckOrReallocVector(&x, 3, true);
-    CheckOrReallocVector(&b, 3, true);
+    CheckOrReallocMatrix(&m, 3, 3, TRUE);
+    CheckOrReallocVector(&x, 3, TRUE);
+    CheckOrReallocVector(&b, 3, TRUE);
 
     gsl_vector_set(b, 0, (double)pp[0]->c);
     gsl_vector_set(b, 1, (double)pp[1]->c);
@@ -746,11 +746,11 @@ void CLDWS::WaitThreadDone()
     pthread_mutex_unlock(&m_jobdone_mutex);
 }
 
-bool CLDWS::UpdateLaneStatus(uint32_t rows, uint32_t cols, lane* left, lane* right, lane* center)
+BOOL CLDWS::UpdateLaneStatus(uint32_t rows, uint32_t cols, lane* left, lane* right, lane* center)
 {
     if (!left || !right || !center) {
         ldwsdbg();
-        return false;
+        return FALSE;
     }
 
     center->exist = (left->exist & right->exist ? 1 : 0);
@@ -760,13 +760,13 @@ bool CLDWS::UpdateLaneStatus(uint32_t rows, uint32_t cols, lane* left, lane* rig
     else
         kp_rel_point(center);
 
-    return true;
+    return TRUE;
 }
 
 /*
  * Tranform spline of kluge polynomial into simple straight line polynomial.
  */
-bool CLDWS::CalStraightLanesPoly(void)
+BOOL CLDWS::CalStraightLanesPoly(void)
 {
     int32_t r1, r2, c1, c2;
     lane *left = NULL, *right = NULL;
@@ -776,7 +776,7 @@ bool CLDWS::CalStraightLanesPoly(void)
 
     if (!left || !right) {
         ldwsdbg();
-        return false;
+        return FALSE;
     }
 
     pthread_mutex_lock(&left->mutex);
@@ -813,13 +813,13 @@ bool CLDWS::CalStraightLanesPoly(void)
     pthread_mutex_unlock(&left->mutex);
     pthread_mutex_unlock(&right->mutex);
 
-    return true;
+    return TRUE;
 }
  
 /*
  * Vanishing point is the intersection of left- & right straight lane.
  */
-bool CLDWS::CalVanishingPoint(void)
+BOOL CLDWS::CalVanishingPoint(void)
 {
     uint32_t r;
     int32_t c1, c2;
@@ -830,7 +830,7 @@ bool CLDWS::CalVanishingPoint(void)
 
     if (!left || !right) {
         ldwsdbg();
-        return false;
+        return FALSE;
     }
 
     pthread_mutex_lock(&left->mutex);
@@ -853,7 +853,7 @@ bool CLDWS::CalVanishingPoint(void)
     pthread_mutex_unlock(&left->mutex);
     pthread_mutex_unlock(&right->mutex);
 
-    return true;
+    return TRUE;
 }
 
 void* CLDWS::FindPartialLane(void* args)
@@ -1089,7 +1089,7 @@ void* CLDWS::FindPartialLane(void* args)
     return NULL;
 
 fail2:
-    partial->m_terminate = true;
+    partial->m_terminate = TRUE;
     pthread_mutex_unlock(&partial->m_mutex[id]);
 
     pthread_mutex_lock(&partial->m_jobdone_mutex);
@@ -1103,7 +1103,7 @@ fail1:
     return NULL;
 }
 
-bool CLDWS::FindLane(gsl_matrix* src,
+BOOL CLDWS::FindLane(gsl_matrix* src,
                     int start_row,
                     int start_col,
                     lanepoint* p,
@@ -1117,7 +1117,7 @@ bool CLDWS::FindLane(gsl_matrix* src,
 
     if (!src || !left || !right || !center) {
         ldwsdbg();
-        return false;
+        return FALSE;
     }
 
     ldwsdbg(LIGHT_RED "=============New Frame=============" NONE);
@@ -1141,7 +1141,7 @@ bool CLDWS::FindLane(gsl_matrix* src,
     WaitThreadDone();
 
     if (m_terminate)
-        return false;
+        return FALSE;
 
     // Update status of center lane
     UpdateLaneStatus(src->size1 - start_row,
@@ -1153,7 +1153,7 @@ bool CLDWS::FindLane(gsl_matrix* src,
     CalStraightLanesPoly();
     CalVanishingPoint();
 
-    return true;
+    return TRUE;
 }
 
 

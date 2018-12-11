@@ -19,7 +19,7 @@ void LDW_Init()
     }
 }
  
-void LDW_DoDetection(uint8_t* src, int w, int h, int linesize, int rowoffset, bool crop)
+void LDW_DoDetection(uint8_t* src, int w, int h, int linesize, int rowoffset, BOOL crop)
 {
     if (!ldws_obj) {
         dbg();
@@ -42,32 +42,32 @@ void LDW_DeInit(void)
     }
 }
 
-bool LDW_GetEdgeImg(uint8_t* dst, int w, int h, int linesize)
+BOOL LDW_GetEdgeImg(uint8_t* dst, int w, int h, int linesize)
 {
     if (ldws_obj) 
         return ldws_obj->GetEdgedImg(dst, w, h, linesize);
 
-    return false;
+    return FALSE;
 }
 
-bool LDW_ApplyDynamicROI(gsl_matrix* src)
+BOOL LDW_ApplyDynamicROI(gsl_matrix* src)
 {
     if (!ldws_obj || !src) {
         ldwsdbg();
-        return false;
+        return FALSE;
     }
 
     return ldws_obj->ApplyDynamicROI(src);
 }
 
-bool LDW_DrawSplines(SDL_Renderer* const render, SDL_Rect* const rect, uint32_t width, enum adas_color color)
+BOOL LDW_DrawSplines(SDL_Renderer* const render, SDL_Rect* const rect, uint32_t width, enum adas_color color)
 {
     uint32_t idx;
     SDL_Color *Color;
 
     if (!ldws_obj || !render || !rect) {
         ldwsdbg();
-        return false;
+        return FALSE;
     }
 
     Color = &COLOR[color];
@@ -107,17 +107,17 @@ bool LDW_DrawSplines(SDL_Renderer* const render, SDL_Rect* const rect, uint32_t 
 
     ldws_obj->DestroyLane(&left, &right, &center);
 
-    return true;
+    return TRUE;
 }
 
-bool LDW_DrawLanes(SDL_Renderer* const render, SDL_Rect* const rect, enum adas_color color)
+BOOL LDW_DrawLanes(SDL_Renderer* const render, SDL_Rect* const rect, enum adas_color color)
 {
     point_t lanepoint[6];
     SDL_Color *Color;
 
     if (!ldws_obj || !render || !rect) {
         ldwsdbg();
-        return false;
+        return FALSE;
     }
 
     memset(lanepoint, 0x0, sizeof(point_t) * 6);
@@ -150,5 +150,5 @@ bool LDW_DrawLanes(SDL_Renderer* const render, SDL_Rect* const rect, enum adas_c
                        rect->x + lanepoint[5].c, 
                        rect->y + lanepoint[5].r);
 
-    return true;
+    return TRUE;
 }

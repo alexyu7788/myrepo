@@ -1039,9 +1039,9 @@ static int upload_texture(SDL_Texture **tex, AVFrame *frame, struct SwsContext *
                                                        frame->data[2], frame->linesize[2]);
 #if 1
                 //---------------------FCW------------------
-                CheckOrReallocVector(&vertical_hist, frame->width, true);
-                CheckOrReallocVector(&hori_hist, frame->height, true);
-                CheckOrReallocVector(&grayscale_hist, 256, true);
+                CheckOrReallocVector(&vertical_hist, frame->width, TRUE);
+                CheckOrReallocVector(&hori_hist, frame->height, TRUE);
+                CheckOrReallocVector(&grayscale_hist, 256, TRUE);
 
                 if (!roi_img) 
                     roi_img = av_malloc(frame->linesize[0] * frame->height + 16 + 16/*STRIDE_ALIGN*/ - 1);
@@ -1181,7 +1181,7 @@ static int upload_texture(SDL_Texture **tex, AVFrame *frame, struct SwsContext *
                                 frame->height,
                                 frame->linesize[0],
                                 frame->height * LDWSPositionPercentage,
-                                true
+                                TRUE
                                 );
  
                 memset(edged_img, 0xff, sizeof(uint8_t) * frame->linesize[0] * frame->height + 16 + 16/*STRIDE_ALIGN*/ - 1);
@@ -1419,7 +1419,7 @@ static void video_image_display(VideoState *is)
         //SDL_RenderDrawLine(fcw_renderer[FCW_WINDOW_VEHICLE], 0, rect.h / 2, rect.w, rect.h / 2);
 
         for (i=0 ; i<vcs.vc_count ; i++) {
-            if (vcs.vc[i].m_valid == true) {
+            if (vcs.vc[i].m_valid == TRUE) {
                 color = &COLOR[i%COLOR_TOTAL];
 
                 //SDL_SetRenderDrawColor(fcw_renderer[FCW_WINDOW_SHADOW], color->r, color->g, color->b, color->a);
@@ -1438,7 +1438,7 @@ static void video_image_display(VideoState *is)
         }
 
         for (i=0 ; i<vcs2.vc_count ; i++) {
-            if (vcs2.vc[i].m_valid == true) {
+            if (vcs2.vc[i].m_valid == TRUE) {
                 color = &COLOR[i%COLOR_TOTAL];
 
                 SDL_SetRenderDrawColor(fcw_renderer[FCW_WINDOW_RESULT], color->r, color->g, color->b, color->a);

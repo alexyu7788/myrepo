@@ -119,7 +119,7 @@ typedef struct param_s {
 
 class CLDWS {
     protected:
-        bool        m_terminate;
+        BOOL        m_terminate;
 
         uint32_t    m_rows;
         uint32_t    m_cols;
@@ -162,25 +162,25 @@ class CLDWS {
 
         ~CLDWS();
 
-        bool Init();
+        BOOL Init();
 
-        bool DeInit();
+        BOOL DeInit();
 
-        bool DoDetection(uint8_t* src, 
+        BOOL DoDetection(uint8_t* src, 
                          int w, 
                          int h, 
                          int linesize, 
                          int rowoffset,
-                         bool crop = false);
+                         BOOL crop = false);
 
-        bool GetEdgedImg(uint8_t* dst, int w, int h, int linesize);
+        BOOL GetEdgedImg(uint8_t* dst, int w, int h, int linesize);
 
         // For drawing
-        bool GetLane(lane** left, lane** right, lane** center);
+        BOOL GetLane(lane** left, lane** right, lane** center);
 
-        bool DestroyLane(lane** left, lane** right, lane** center);
+        BOOL DestroyLane(lane** left, lane** right, lane** center);
 
-        bool GetLanePoints(point_t* ltop, 
+        BOOL GetLanePoints(point_t* ltop, 
                            point_t* lbottom, 
                            point_t* rtop, 
                            point_t* rbottom,
@@ -188,7 +188,7 @@ class CLDWS {
                            point_t* cbottom
                            );
 
-        bool ApplyDynamicROI(gsl_matrix* src);
+        BOOL ApplyDynamicROI(gsl_matrix* src);
 
     protected:
         static lane* LaneInit(void);
@@ -241,19 +241,19 @@ class CLDWS {
 
         void WaitThreadDone();
 
-        bool UpdateLaneStatus(uint32_t rows, 
+        BOOL UpdateLaneStatus(uint32_t rows, 
                               uint32_t cols, 
                               lane* left, 
                               lane* right, 
                               lane* center);
 
-        bool CalStraightLanesPoly(void);
+        BOOL CalStraightLanesPoly(void);
 
-        bool CalVanishingPoint(void);
+        BOOL CalVanishingPoint(void);
 
         static void* FindPartialLane(void* args);
 
-        bool FindLane(gsl_matrix* src,
+        BOOL FindLane(gsl_matrix* src,
                     int start_row,
                     int start_col,
                     lanepoint* p,

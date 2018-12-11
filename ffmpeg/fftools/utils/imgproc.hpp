@@ -12,14 +12,14 @@ extern "C" {
 class CImgProc {
     protected:
         // Gaussian Blur
-        bool            m_gb_init;
+        BOOL            m_gb_init;
         double          m_gk_weight;
         gsl_matrix_view m_gk; //Gaussian kernel
         gsl_matrix*     m_gb_src;
         gsl_matrix*     m_gb_dst;
         
         // Sobel
-        bool                m_sobel_init;
+        BOOL                m_sobel_init;
         gsl_matrix_view     m_dx;
         gsl_matrix_view     m_dy;
         gsl_vector_view     m_dx1d;
@@ -29,26 +29,28 @@ class CImgProc {
 
     protected:
         // Gaussian Blur
-        bool InitGB(int size = 5);   
+        BOOL InitGB(int size = 5);   
         
-        bool DeinitGB();
+        BOOL DeinitGB();
 
-        bool GaussianBlue(gsl_matrix* src, gsl_matrix* dst, int kernel_size);
+        BOOL GaussianBlue(const gsl_matrix* src, 
+                          gsl_matrix* dst, 
+                          int kernel_size);
 
         // Sobel
-        bool InitSobel();
+        BOOL InitSobel();
 
         int GetRoundedDirection(int gx, int gy);
 
-        bool NonMaximumSuppression(gsl_matrix* dst,
+        BOOL NonMaximumSuppression(gsl_matrix* dst,
                                    gsl_matrix_char* dir,
-                                   gsl_matrix_ushort* src);
+                                   gsl_matrix* gradient);
 
-        bool Sobel(gsl_matrix* grad, 
+        BOOL Sobel(gsl_matrix* grad, 
                    gsl_matrix_char* dir, 
-                   gsl_matrix* src,
+                   const gsl_matrix* src,
                    int direction, 
-                   bool double_edge,
+                   BOOL double_edge,
                    int crop_r = 0, 
                    int crop_c = 0, 
                    int crop_w = 0, 
@@ -58,40 +60,49 @@ class CImgProc {
 
         ~CImgProc();
 
-        bool Init();
+        BOOL Init();
 
-        bool EdgeDetectForLDWS(gsl_matrix* src, 
+        BOOL EdgeDetectForLDW(const gsl_matrix* src, 
                                gsl_matrix* dst,
                                int threshold,
                                double* dir,
                                int double_edge);
 
-        bool CropMatrix(uint8_t* src, 
-                        gsl_matrix* dst, 
-                        uint32_t w, 
-                        uint32_t h, 
-                        uint32_t linesize,
-                        uint32_t rowoffset);
+        BOOL EdgeDetectForFCW(const gsl_matrix* src,
+                              gsl_matrix* dst,
+                              gsl_matrix* gradient,
+                              gsl_matrix_char* dir,
+                              int direction);
 
-        bool CopyMatrix(uint8_t* src, 
-                        gsl_matrix* dst, 
-                        uint32_t w, 
-                        uint32_t h, 
-                        uint32_t linesize);
+        BOOL CropImage(uint8_t* src, 
+                       gsl_matrix* dst, 
+                       uint32_t w, 
+                       uint32_t h, 
+                       uint32_t linesize,
+                       uint32_t rowoffset);
 
-        bool CopyBackMarix(gsl_matrix* src, 
+        BOOL CopyImage(uint8_t* src, 
+                       gsl_matrix* dst, 
+                       uint32_t w, 
+                       uint32_t h, 
+                       uint32_t linesize);
+
+        BOOL CopyBackImage(gsl_matrix* src, 
                            uint8_t* dst, 
                            uint32_t w, 
                            uint32_t h, 
                            uint32_t linesize, 
                            uint32_t rowoffset = 0);
 
-        bool GenIntegralImage(gsl_matrix* src, gsl_matrix* dst);
+        BOOL GenIntegralImage(gsl_matrix* src, gsl_matrix* dst);
 
-        bool ThresholdingByIntegralImage(gsl_matrix* src, 
+        BOOL ThresholdingByIntegralImage(gsl_matrix* src, 
                                          gsl_matrix* intimg, 
                                          gsl_matrix* dst, 
                                          uint32_t s, 
                                          float p);
+
+        BOOL CalHorizonProject(const gsl_matrix* const src,
+                               gsl_vector* proj);
 };
 #endif

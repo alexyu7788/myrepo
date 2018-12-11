@@ -11,12 +11,12 @@ void FreeMatrixUshort(gsl_matrix_ushort** m);
 
 void FreeMatrixChar(gsl_matrix_char** m);
 
-bool CheckOrReallocVector(gsl_vector** v, int size, bool reset);
+BOOL CheckOrReallocVector(gsl_vector** v, int size, BOOL reset);
 
-bool CheckOrReallocMatrix(gsl_matrix** m, int h, int w, bool reset);
+BOOL CheckOrReallocMatrix(gsl_matrix** m, int h, int w, BOOL reset);
 
-bool CheckOrReallocMatrixUshort(gsl_matrix_ushort** m, int h, int w, bool reset);
+BOOL CheckOrReallocMatrixUshort(gsl_matrix_ushort** m, int h, int w, BOOL reset);
 
-bool CheckOrReallocMatrixChar(gsl_matrix_char** m, int h, int w, bool reset);
+BOOL CheckOrReallocMatrixChar(gsl_matrix_char** m, int h, int w, BOOL reset);
 
 #endif

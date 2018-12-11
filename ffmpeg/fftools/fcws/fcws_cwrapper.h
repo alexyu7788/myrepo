@@ -31,7 +31,7 @@ typedef struct PEAK_GROUP {
 }PEAK_GROUP;
 
 typedef struct blob {
-    bool valid;
+    BOOL valid;
     int number;
     int r;
     int c;
@@ -57,13 +57,13 @@ typedef struct roi_s {
 #ifdef __cplusplus
 extern "C" {
 #endif
-bool FCW_Init(void);
+BOOL FCW_Init(void);
 
-bool FCW_DeInit(void);
+BOOL FCW_DeInit(void);
 
-bool FCW_PixelInROI(uint32_t r, uint32_t c, const roi_t* roi);
+BOOL FCW_PixelInROI(uint32_t r, uint32_t c, const roi_t* roi);
 
-bool FCW_DoDetection(
+BOOL FCW_DoDetection(
         uint8_t* img, 
         int linesize, 
         uint8_t* imgu, 
@@ -93,7 +93,7 @@ bool FCW_DoDetection(
         const roi_t* roi
         );
 
-bool FCW_Thresholding(
+BOOL FCW_Thresholding(
         gsl_matrix* src, 
         gsl_matrix* dst, 
         gsl_vector* grayscale_hist,
@@ -102,7 +102,7 @@ bool FCW_Thresholding(
         uint8_t* final_th
         );
 
-bool FCW_ThresholdingByIntegralImage(
+BOOL FCW_ThresholdingByIntegralImage(
         gsl_matrix* src,
         gsl_matrix* intimg,
         gsl_matrix* dst,
@@ -112,39 +112,39 @@ bool FCW_ThresholdingByIntegralImage(
 
 int  FCW_GetRounded_Direction(int gx, int gy);
 
-bool FCW_NonMaximum_Suppression(gsl_matrix* dst, gsl_matrix_char* dir, gsl_matrix_ushort* src);
+BOOL FCW_NonMaximum_Suppression(gsl_matrix* dst, gsl_matrix_char* dir, gsl_matrix_ushort* src);
 
-bool FCW_GaussianBlur(gsl_matrix* dst, const gsl_matrix* src);
+BOOL FCW_GaussianBlur(gsl_matrix* dst, const gsl_matrix* src);
 
-bool FCW_CalGrayscaleHist(const gsl_matrix* imgy, gsl_matrix* result_imgy, gsl_vector* grayscale_hist);
+BOOL FCW_CalGrayscaleHist(const gsl_matrix* imgy, gsl_matrix* result_imgy, gsl_vector* grayscale_hist);
 
 uint8_t FCW_OtsuThreshold(gsl_vector* grayscale_hist, int pixel_count);
 
-bool FCW_CalVerticalHist(const gsl_matrix* imgy, gsl_vector* vertical_hist);
+BOOL FCW_CalVerticalHist(const gsl_matrix* imgy, gsl_vector* vertical_hist);
 
-bool FCW_CalVerticalHist2(const gsl_matrix* imgy, int start_r, int start_c, int w, int h, gsl_vector* vertical_hist);
+BOOL FCW_CalVerticalHist2(const gsl_matrix* imgy, int start_r, int start_c, int w, int h, gsl_vector* vertical_hist);
 
-bool FCW_CalHorizontalHist(const gsl_matrix* imgy, gsl_vector* horizontal_hist);
+BOOL FCW_CalHorizontalHist(const gsl_matrix* imgy, gsl_vector* horizontal_hist);
 
-bool FCW_CalGradient(gsl_matrix_ushort* dst, gsl_matrix_char* dir, const gsl_matrix* src, int direction, int crop_r, int crop_c, int crop_w, int crop_h);
+BOOL FCW_CalGradient(gsl_matrix_ushort* dst, gsl_matrix_char* dir, const gsl_matrix* src, int direction, int crop_r, int crop_c, int crop_w, int crop_h);
 
-bool FCW_BlobFindIdentical(blob** bhead, blob* nblob);
+BOOL FCW_BlobFindIdentical(blob** bhead, blob* nblob);
 
-bool FCW_BlobRearrange(blob** bhead);
+BOOL FCW_BlobRearrange(blob** bhead);
 
-bool FCW_BlobAdd(blob** bhead, blob* blob);
+BOOL FCW_BlobAdd(blob** bhead, blob* blob);
 
 void FCW_BlobClear(blob** bhead);
 
-bool FCW_BlobGenerator(const gsl_matrix* imgy, uint32_t peak_idx, blob** bhead);
+BOOL FCW_BlobGenerator(const gsl_matrix* imgy, uint32_t peak_idx, blob** bhead);
 
-bool FCW_BlobRemoveLiteralShadow(
+BOOL FCW_BlobRemoveLiteralShadow(
         const gsl_matrix* imgy,
         const gsl_matrix* intimg,
         const gsl_matrix* shadow_imgy,
         const blob* bhead);
 
-bool FCW_VehicleCandidateGenerate(
+BOOL FCW_VehicleCandidateGenerate(
         const gsl_matrix* imgy,
         const gsl_matrix* intimg,
         const gsl_matrix* shadow_imgy, 
@@ -152,21 +152,21 @@ bool FCW_VehicleCandidateGenerate(
         const gsl_vector* horizontal_hist, 
         VehicleCandidates* vcs);
 
-bool FCW_UpdateBlobByStrongVEdge(const gsl_matrix* imgy, blob*  blob);
+BOOL FCW_UpdateBlobByStrongVEdge(const gsl_matrix* imgy, blob*  blob);
 
-bool FCW_CheckBlobByArea(const gsl_matrix* imgy, blob* cur);
+BOOL FCW_CheckBlobByArea(const gsl_matrix* imgy, blob* cur);
 
-bool FCW_CheckBlobByVerticalEdge(const gsl_matrix* edged_imgy, blob* cur);
+BOOL FCW_CheckBlobByVerticalEdge(const gsl_matrix* edged_imgy, blob* cur);
 
-bool FCW_CheckBlobAR(blob* blob);
+BOOL FCW_CheckBlobAR(blob* blob);
 
-bool FCW_CheckBlobValid(const gsl_matrix* imgy, const gsl_matrix* edged_imgy, blob* cur);
+BOOL FCW_CheckBlobValid(const gsl_matrix* imgy, const gsl_matrix* edged_imgy, blob* cur);
 
-bool FCW_CheckSymmProperty(const gsl_matrix* imgy, VehicleCandidates* vcs, float th_pairwise, float th_symm);
+BOOL FCW_CheckSymmProperty(const gsl_matrix* imgy, VehicleCandidates* vcs, float th_pairwise, float th_symm);
 
-bool FCW_UpdateVehicleHeatMap(gsl_matrix* heatmap, gsl_matrix_char* heatmap_id, VehicleCandidates* vcs); 
+BOOL FCW_UpdateVehicleHeatMap(gsl_matrix* heatmap, gsl_matrix_char* heatmap_id, VehicleCandidates* vcs); 
 
-bool FCW_GetContour(
+BOOL FCW_GetContour(
     const gsl_matrix_char* m,
     char id,
     const point_t* start,
@@ -175,14 +175,14 @@ bool FCW_GetContour(
 
 Candidate* FCW_NewCandidate(void);
 
-bool FCW_UpdateVCStatus(
+BOOL FCW_UpdateVCStatus(
     gsl_matrix* heatmap, 
     gsl_matrix_char* heatmap_id, 
     Candidate** vc_tracker,
     VehicleCandidates* vcs
     );
 
-bool FCW_EdgeDetection(gsl_matrix* src, gsl_matrix* dst, gsl_matrix_ushort* gradient, gsl_matrix_char* dir, int direction);
+BOOL FCW_EdgeDetection(gsl_matrix* src, gsl_matrix* dst, gsl_matrix_ushort* gradient, gsl_matrix_char* dir, int direction);
 
 double FCW_GetObjDist(double pixel);
 
@@ -196,31 +196,31 @@ void FCW_ConvertRGB2XYZ(uint8_t r, uint8_t g, uint8_t b, double* x, double* y, d
 
 void FCW_ConvertXYZ2Lab(double x, double y, double z, double* l, double* a, double* b);
 
-bool FCW_ConvertIYUV2RGB(
-        bool night_mode,
+BOOL FCW_ConvertIYUV2RGB(
+        BOOL night_mode,
         const gsl_matrix* imgy,
         const gsl_matrix* imgu,
         const gsl_matrix* imgv,
         const Candidate* vc_tracker,
         gsl_matrix* rgb[3]);
 
-bool FCW_ConvertIYUV2HSV(
-        bool night_mode,
+BOOL FCW_ConvertIYUV2HSV(
+        BOOL night_mode,
         const gsl_matrix* imgy,
         const gsl_matrix* imgu,
         const gsl_matrix* imgv,
         const Candidate* vc_tracker,
         gsl_matrix* hsv[3]);
 
-bool FCW_ConvertIYUV2Lab(
-        bool night_mode,
+BOOL FCW_ConvertIYUV2Lab(
+        BOOL night_mode,
         const gsl_matrix* imgy,
         const gsl_matrix* imgu,
         const gsl_matrix* imgv,
         const Candidate* vc_tracker,
         gsl_matrix* lab[3]);
 
-bool FCW_SegmentTaillightByHSV(
+BOOL FCW_SegmentTaillightByHSV(
         const gsl_matrix* src_y, 
         const gsl_matrix* src_u, 
         const gsl_matrix* src_v, 
@@ -234,7 +234,7 @@ bool FCW_SegmentTaillightByHSV(
         double sat_th,
         double val_th);
 
-bool FCW_SegmentTaillightByRGB(
+BOOL FCW_SegmentTaillightByRGB(
         const gsl_matrix* src_y, 
         const gsl_matrix* src_u, 
         const gsl_matrix* src_v, 
@@ -247,7 +247,7 @@ bool FCW_SegmentTaillightByRGB(
         double rb_th
         );
 
-bool FCW_SegmentTaillightByLab(
+BOOL FCW_SegmentTaillightByLab(
         const gsl_matrix* src_y, 
         const gsl_matrix* src_u, 
         const gsl_matrix* src_v, 
@@ -286,7 +286,7 @@ bool FCW_SegmentTaillightByLab(
 //
 //        ~CFCWS();
 //
-//        bool DoDetection(uint8_t* img, int w, int h, gsl_vector* vertical_hist, gsl_vector* hori_hist, gsl_vector* grayscale_hist, Candidates& vcs);
+//        BOOL DoDetection(uint8_t* img, int w, int h, gsl_vector* vertical_hist, gsl_vector* hori_hist, gsl_vector* grayscale_hist, Candidates& vcs);
 //
 //
 //
@@ -301,28 +301,28 @@ bool FCW_SegmentTaillightByLab(
 //
 //        int  GetRounded_Direction2(int gx, int gy);
 //
-//        bool NonMaximum_Suppression(gsl_matrix* dst, gsl_matrix_char* dir, gsl_matrix_ushort* src);
+//        BOOL NonMaximum_Suppression(gsl_matrix* dst, gsl_matrix_char* dir, gsl_matrix_ushort* src);
 //
-//        bool DoubleThreshold(int low, int high, gsl_matrix* dst, const gsl_matrix* src);
+//        BOOL DoubleThreshold(int low, int high, gsl_matrix* dst, const gsl_matrix* src);
 //
-//        bool Sobel(gsl_matrix_ushort* dst, gsl_matrix_char* dir, const gsl_matrix* src, int crop_r = 0, int crop_c = 0, int crop_w = 0, int crop_h = 0);
+//        BOOL Sobel(gsl_matrix_ushort* dst, gsl_matrix_char* dir, const gsl_matrix* src, int crop_r = 0, int crop_c = 0, int crop_w = 0, int crop_h = 0);
 //
-//        bool GaussianBlur(gsl_matrix* dst, const gsl_matrix* src);
+//        BOOL GaussianBlur(gsl_matrix* dst, const gsl_matrix* src);
 //
-//        bool EdgeDetect(const gsl_matrix* src, gsl_matrix* temp_buf, gsl_matrix* edged, gsl_matrix_ushort* gradients, gsl_matrix_char* directions);
+//        BOOL EdgeDetect(const gsl_matrix* src, gsl_matrix* temp_buf, gsl_matrix* edged, gsl_matrix_ushort* gradients, gsl_matrix_char* directions);
 //
 //
-//        bool CalGrayscaleHist(const gsl_matrix* imgy, gsl_matrix* result_imgy, gsl_vector* grayscale_hist);
+//        BOOL CalGrayscaleHist(const gsl_matrix* imgy, gsl_matrix* result_imgy, gsl_vector* grayscale_hist);
 //
-//        bool CalVerticalHist(const gsl_matrix* imgy, gsl_vector* vertical_hist);
+//        BOOL CalVerticalHist(const gsl_matrix* imgy, gsl_vector* vertical_hist);
 //
-//        bool CalVerticalHist(const gsl_matrix* imgy, int start_r, int start_c, int w, int h, gsl_vector* vertical_hist);
+//        BOOL CalVerticalHist(const gsl_matrix* imgy, int start_r, int start_c, int w, int h, gsl_vector* vertical_hist);
 //
-//        bool CalHorizontalHist(const gsl_matrix* imgy, gsl_vector* horizontal_hist);
+//        BOOL CalHorizontalHist(const gsl_matrix* imgy, gsl_vector* horizontal_hist);
 //
-//        bool CalGradient(gsl_matrix_ushort* dst, gsl_matrix_char* dir, const gsl_matrix* src, int crop_r = 0, int crop_c = 0, int crop_w = 0, int crop_h = 0);
+//        BOOL CalGradient(gsl_matrix_ushort* dst, gsl_matrix_char* dir, const gsl_matrix* src, int crop_r = 0, int crop_c = 0, int crop_w = 0, int crop_h = 0);
 //
-//        bool VehicleCandidateGenerate(
+//        BOOL VehicleCandidateGenerate(
 //                const gsl_matrix* imgy, 
 //                const gsl_matrix* edged_imgy, 
 //                const gsl_vector* horizontal_hist, 
@@ -331,7 +331,7 @@ bool FCW_SegmentTaillightByLab(
 //                const gsl_matrix_char* direction,
 //                Candidates& vcs);
 //
-//        bool UpdateVehicleCanidateByEdge(
+//        BOOL UpdateVehicleCanidateByEdge(
 //                const gsl_matrix* imgy,
 //                const gsl_matrix_ushort* gradient,
 //                const gsl_matrix_char* direction,

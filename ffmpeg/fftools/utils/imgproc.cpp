@@ -39,11 +39,11 @@ static double dy_ary[] = {
 
 //--------------------------------------------------------------------------
 // Gaussian Blur
-bool CImgProc::InitGB(int size)
+BOOL CImgProc::InitGB(int size)
 {
     uint32_t r, c;
 
-    if (m_gb_init == false) {
+    if (m_gb_init == FALSE) {
 
         m_gk_weight = 0;
 
@@ -53,7 +53,7 @@ bool CImgProc::InitGB(int size)
             m_gk = gsl_matrix_view_array(gk_5by5, 5, 5);
         else {
             dbg("GB: size %d is not implemented yet.", size);
-            return false;
+            return FALSE;
         }
 
         for (r=0 ; r<m_gk.matrix.size1 ; ++r) {
@@ -62,23 +62,25 @@ bool CImgProc::InitGB(int size)
             }
         }
 
-        m_gb_init = true;
+        m_gb_init = TRUE;
     }
 
-    return true;
+    return TRUE;
 }
 
-bool CImgProc::DeinitGB()
+BOOL CImgProc::DeinitGB()
 {
     FreeMatrix(&m_gb_src);
     FreeMatrix(&m_gb_dst);
 
-    m_gb_init = false;
+    m_gb_init = FALSE;
 
-    return true;
+    return TRUE;
 }
 
-bool CImgProc::GaussianBlue(gsl_matrix* src, gsl_matrix* dst, int kernel_size)
+BOOL CImgProc::GaussianBlue(const gsl_matrix* src, 
+                            gsl_matrix* dst, 
+                            int kernel_size)
 {
     uint32_t r, c, i, j;
     uint32_t size;
@@ -88,12 +90,12 @@ bool CImgProc::GaussianBlue(gsl_matrix* src, gsl_matrix* dst, int kernel_size)
 
     if (!src || !dst || (src->size1 != dst->size1 || src->size2 != dst->size2)) {
         dbg();
-        return false;
+        return FALSE;
     }
 
-    if (InitGB(kernel_size) == false || m_gk.matrix.size1 != m_gk.matrix.size2 || m_gk_weight == 0) {
+    if (InitGB(kernel_size) == FALSE || m_gk.matrix.size1 != m_gk.matrix.size2 || m_gk_weight == 0) {
         dbg();
-        return false;
+        return FALSE;
     }
 
     row = src->size1;
@@ -116,13 +118,13 @@ bool CImgProc::GaussianBlue(gsl_matrix* src, gsl_matrix* dst, int kernel_size)
         }
     }
 
-    return true;
+    return TRUE;
 }
 
 // Sobel
-bool CImgProc::InitSobel()
+BOOL CImgProc::InitSobel()
 {
-    if (m_sobel_init == false) {
+    if (m_sobel_init == FALSE) {
         m_dx    = gsl_matrix_view_array(dx_ary, 3, 3);
         m_dy    = gsl_matrix_view_array(dy_ary, 3, 3);
         m_dx1d  = gsl_vector_view_array(dx1d_ary, 3);
@@ -131,10 +133,10 @@ bool CImgProc::InitSobel()
         m_gradient = NULL;
         m_dir   = NULL;
 
-        m_sobel_init = true;
+        m_sobel_init = TRUE;
     }
 
-    return true;
+    return TRUE;
 }
 
 int CImgProc::GetRoundedDirection(int gx, int gy)
@@ -165,27 +167,27 @@ int CImgProc::GetRoundedDirection(int gx, int gy)
     return DIRECTION_VERTICAL;
 }
 
-bool CImgProc::NonMaximumSuppression(gsl_matrix* dst,
+BOOL CImgProc::NonMaximumSuppression(gsl_matrix* dst,
                                    gsl_matrix_char* dir,
-                                   gsl_matrix_ushort* src)
+                                   gsl_matrix* gradient)
 {
     uint32_t r, c;
     uint32_t row, col;
     uint32_t size;
 
-    if (!src || !dst || !dir) {
+    if (!gradient || !dst || !dir) {
         dbg();
-        return false;
+        return FALSE;
     }
 
 #define COPY_MAXIMA(ay, ax, by, bx) do {                                                    \
-    if (gsl_matrix_ushort_get(src, r, c) > gsl_matrix_ushort_get(src, r+(ay), c+ax) &&      \
-        gsl_matrix_ushort_get(src, r, c) > gsl_matrix_ushort_get(src, r+(by), c+bx))        \
-        gsl_matrix_set(dst, r, c, (uint8_t)gsl_matrix_ushort_get(src, r, c));                \
+    if (gsl_matrix_get(gradient, r, c) > gsl_matrix_get(gradient, r+(ay), c+ax) &&      \
+        gsl_matrix_get(gradient, r, c) > gsl_matrix_get(gradient, r+(by), c+bx))        \
+        gsl_matrix_set(dst, r, c, (uint8_t)gsl_matrix_get(gradient, r, c));                \
 } while (0)
 
-    row = src->size1;
-    col = src->size2;
+    row = gradient->size1;
+    col = gradient->size2;
 
     for (r=1 ; r < row - 1; r++) {
         for (c=1 ; c < col - 1; c++) {
@@ -206,14 +208,14 @@ bool CImgProc::NonMaximumSuppression(gsl_matrix* dst,
         }
     }
 
-    return true;
+    return TRUE;
 }
 
-bool CImgProc::Sobel(gsl_matrix* grad, 
+BOOL CImgProc::Sobel(gsl_matrix* grad, 
         gsl_matrix_char* dir, 
-        gsl_matrix* src,
+        const gsl_matrix* src,
         int direction, 
-        bool double_edge,
+        BOOL double_edge,
         int crop_r, 
         int crop_c, 
         int crop_w, 
@@ -229,12 +231,12 @@ bool CImgProc::Sobel(gsl_matrix* grad,
 
     if (!src || !grad || !dir) {
         dbg();
-        return false;
+        return FALSE;
     }
 
-    if (InitSobel() == false) {
+    if (InitSobel() == FALSE) {
         dbg();
-        return false;
+        return FALSE;
     }
 
     if (crop_r && crop_c && crop_w && crop_h) {
@@ -263,8 +265,8 @@ bool CImgProc::Sobel(gsl_matrix* grad,
         else
             cw = crop_w;
 
-        CheckOrReallocMatrix(&grad, ch, cw, true);
-        CheckOrReallocMatrixChar(&dir, ch, cw, true);
+        CheckOrReallocMatrix(&grad, ch, cw, TRUE);
+        CheckOrReallocMatrixChar(&dir, ch, cw, TRUE);
 
         cropmatrix_src = gsl_matrix_submatrix((gsl_matrix*)src, cr, cc, ch, cw);
         pmatrix = &cropmatrix_src.matrix;
@@ -313,7 +315,7 @@ bool CImgProc::Sobel(gsl_matrix* grad,
         }
     }
 
-    return true;
+    return TRUE;
 }
 
 
@@ -355,14 +357,14 @@ bool CImgProc::Sobel(gsl_matrix* grad,
 //--------------------------------------------------------------------------
 CImgProc::CImgProc() {
     // Gaussian Blur
-    m_gb_init   = false;
+    m_gb_init   = FALSE;
     m_gk_weight = 0;
 
     m_gb_src    =
     m_gb_dst    = NULL;
     
     // Sobel 
-    m_sobel_init    = false;
+    m_sobel_init    = FALSE;
     m_gradient      = NULL;
     m_dir           = NULL;
 }
@@ -376,37 +378,37 @@ CImgProc::~CImgProc()
     FreeMatrixChar(&m_dir);
 }
 
-bool CImgProc::Init() 
+BOOL CImgProc::Init() 
 {
 
-    return true;
+    return TRUE;
 }
 
-bool CImgProc::EdgeDetectForLDWS(gsl_matrix* src, 
-        gsl_matrix* dst,
-        int threshold,
-        double* dir,
-        int double_edge)
+BOOL CImgProc::EdgeDetectForLDW(const gsl_matrix* src, 
+                                gsl_matrix* dst,
+                                int threshold,
+                                double* dir,
+                                int double_edge)
 {
     size_t r, c;
     gsl_matrix* temp = NULL; 
 
     if (!src || !dst) {
         dbg();
-        return false;
+        return FALSE;
     }
 
-    if (InitSobel() == false) {
+    if (InitSobel() == FALSE) {
         dbg("Fail to init sobel");
-        return false;
+        return FALSE;
     }
 
-    CheckOrReallocMatrix(&temp, src->size1, src->size2, true);
-    CheckOrReallocMatrix(&m_gradient, src->size1, src->size2, true);
-    CheckOrReallocMatrixChar(&m_dir, src->size1, src->size2, true);
+    CheckOrReallocMatrix(&temp, src->size1, src->size2, TRUE);
+    CheckOrReallocMatrix(&m_gradient, src->size1, src->size2, TRUE);
+    CheckOrReallocMatrixChar(&m_dir, src->size1, src->size2, TRUE);
 
     GaussianBlue(src, temp, 3);
-    Sobel(m_gradient, m_dir, temp, 1, false);
+    Sobel(m_gradient, m_dir, temp, 1, FALSE);
 
     for (r=0 ; r < m_gradient->size1 ; ++r) {
         for (c=0 ; c < m_gradient->size2 ; ++c) {
@@ -419,10 +421,28 @@ bool CImgProc::EdgeDetectForLDWS(gsl_matrix* src,
 
     FreeMatrix(&temp);
 
-    return true;
+    return TRUE;
 }
 
-bool CImgProc::CropMatrix(uint8_t* src, 
+BOOL CImgProc::EdgeDetectForFCW(const gsl_matrix* src,
+                                gsl_matrix* dst,
+                                gsl_matrix* gradient,
+                                gsl_matrix_char* dir,
+                                int direction)
+{
+    if (!src || !dst || !gradient || !dir) {
+        dbg();
+        return FALSE;
+    }
+
+    Sobel(gradient, dir, src, direction, TRUE);
+    gsl_matrix_set_zero(dst);
+    NonMaximumSuppression(dst, dir, gradient);
+
+    return TRUE;
+}
+
+BOOL CImgProc::CropImage(uint8_t* src, 
                        gsl_matrix* dst, 
                        uint32_t w, 
                        uint32_t h, 
@@ -433,12 +453,12 @@ bool CImgProc::CropMatrix(uint8_t* src,
 
     if (!src || !dst) {
         dbg();
-        return false;
+        return FALSE;
     }
 
     if ((dst->size1 + rowoffset) != h || dst->size2 != w) {
         dbg("Incorrect size of matrix.");
-        return false;
+        return FALSE;
     }
 
     for (r=0 ; r < h - rowoffset ; ++r) {
@@ -447,10 +467,10 @@ bool CImgProc::CropMatrix(uint8_t* src,
         }
     }
 
-    return true;
+    return TRUE;
 }
 
-bool CImgProc::CopyMatrix(uint8_t* src, 
+BOOL CImgProc::CopyImage(uint8_t* src, 
                           gsl_matrix* dst, 
                           uint32_t w, 
                           uint32_t h, 
@@ -460,12 +480,12 @@ bool CImgProc::CopyMatrix(uint8_t* src,
 
     if (!src || !dst) {
         dbg();
-        return false;
+        return FALSE;
     }
 
     if (dst->size1 != h || dst->size2 != w) {
         dbg("Incorrect size of matrix.");
-        return false;
+        return FALSE;
     }
 
     for (r=0 ; r < h ; ++r) {
@@ -474,10 +494,10 @@ bool CImgProc::CopyMatrix(uint8_t* src,
         }
     }
 
-    return true;
+    return TRUE;
 }
 
-bool CImgProc::CopyBackMarix(gsl_matrix* src, 
+BOOL CImgProc::CopyBackImage(gsl_matrix* src, 
                              uint8_t* dst, 
                              uint32_t w, 
                              uint32_t h, 
@@ -488,12 +508,12 @@ bool CImgProc::CopyBackMarix(gsl_matrix* src,
 
     if (!src || !dst) {
         dbg();
-        return false;
+        return FALSE;
     }
 
     if ((src->size1 + rowoffset) != h || src->size2 != w) {
         dbg("Incorrect size of matrix.");
-        return false;
+        return FALSE;
     }
 
     for (r=0 ; r < src->size1 ; ++r) {
@@ -502,17 +522,17 @@ bool CImgProc::CopyBackMarix(gsl_matrix* src,
         }
     }
 
-    return true;
+    return TRUE;
 }
 
-bool CImgProc::GenIntegralImage(gsl_matrix* src, gsl_matrix* dst)
+BOOL CImgProc::GenIntegralImage(gsl_matrix* src, gsl_matrix* dst)
 {
     uint32_t r, c;
     double sum;
 
     if (!src || !dst || src->size1 != dst->size1 || src->size2 != dst->size2) {
         dbg();
-        return false;
+        return FALSE;
     }
 
     // Generate integral image for retrive average value of a rectange quickly.
@@ -528,10 +548,10 @@ bool CImgProc::GenIntegralImage(gsl_matrix* src, gsl_matrix* dst)
         }
     }
 
-    return true;
+    return TRUE;
 }
 
-bool CImgProc::ThresholdingByIntegralImage(gsl_matrix* src, 
+BOOL CImgProc::ThresholdingByIntegralImage(gsl_matrix* src, 
                                            gsl_matrix* intimg, 
                                            gsl_matrix* dst, 
                                            uint32_t s, 
@@ -544,7 +564,7 @@ bool CImgProc::ThresholdingByIntegralImage(gsl_matrix* src,
 
     if (!src || !intimg || !dst) {
         dbg();
-        return false;
+        return FALSE;
     }
 
     // Move a sxs sliding window pixel by pixel. The center pixel of this sliding window is (r, c).
@@ -570,5 +590,35 @@ bool CImgProc::ThresholdingByIntegralImage(gsl_matrix* src,
         }
     }
 
-    return true;
+    return TRUE;
+}
+
+BOOL CImgProc::CalHorizonProject(const gsl_matrix* const src,
+                                 gsl_vector* proj)
+{
+    uint32_t r, c;
+    double val = 0;
+    gsl_vector_view row_view;
+
+    if (!src || !proj || src->size1 != proj->size) {
+        dbg();
+        return FALSE;
+    }
+
+    gsl_vector_set_zero(proj);
+
+    // skip border
+    for (r=1 ; r<src->size1 - 1 ; ++r) {
+        row_view = gsl_matrix_row((gsl_matrix*)src, r);
+
+        for (c=1 ; c<row_view.vector.size - 1 ; c++) {
+            if (gsl_vector_get(&row_view.vector, c) != 255)
+            {
+                val = gsl_vector_get(proj, r);
+                gsl_vector_set(proj, r, ++val);
+            }
+        }
+    }
+
+    return TRUE;
 }

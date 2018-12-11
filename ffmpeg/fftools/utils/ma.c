@@ -32,7 +32,7 @@ void FreeMatrixChar(gsl_matrix_char** m)
     }
 }
 
-bool CheckOrReallocVector(gsl_vector** v, int size, bool reset)
+BOOL CheckOrReallocVector(gsl_vector** v, int size, BOOL reset)
 {
     if (!(*v) || (*v)->size != size) {
         if (*v) {
@@ -41,16 +41,16 @@ bool CheckOrReallocVector(gsl_vector** v, int size, bool reset)
         }
 
         if ((*v = gsl_vector_alloc(size)) == NULL)
-            return false;
+            return FALSE;
     }
 
     if (reset)
         gsl_vector_set_zero(*v);
 
-    return true;
+    return TRUE;
 }
 
-bool CheckOrReallocMatrix(gsl_matrix** m, int h, int w, bool reset)
+BOOL CheckOrReallocMatrix(gsl_matrix** m, int h, int w, BOOL reset)
 {
     if (!*m || (*m)->size1 != h || (*m)->size2 != w) {
         if (*m) {
@@ -59,16 +59,16 @@ bool CheckOrReallocMatrix(gsl_matrix** m, int h, int w, bool reset)
         }
 
         if ((*m = gsl_matrix_alloc(h, w)) == NULL)
-            return false;
+            return FALSE;
     }
 
     if (reset)
         gsl_matrix_set_zero(*m);
 
-    return true;
+    return TRUE;
 }
 
-bool CheckOrReallocMatrixUshort(gsl_matrix_ushort** m, int h, int w, bool reset)
+BOOL CheckOrReallocMatrixUshort(gsl_matrix_ushort** m, int h, int w, BOOL reset)
 {
     if (!*m || (*m)->size1 != h || (*m)->size2 != w) {
         if (*m) {
@@ -77,16 +77,16 @@ bool CheckOrReallocMatrixUshort(gsl_matrix_ushort** m, int h, int w, bool reset)
         }
 
         if ((*m = gsl_matrix_ushort_alloc(h, w)) == NULL)
-            return false;
+            return FALSE;
     }
 
     if (reset)
         gsl_matrix_ushort_set_zero(*m);
 
-    return true;
+    return TRUE;
 }
 
-bool CheckOrReallocMatrixChar(gsl_matrix_char** m, int h, int w, bool reset)
+BOOL CheckOrReallocMatrixChar(gsl_matrix_char** m, int h, int w, BOOL reset)
 {
     if (!*m || (*m)->size1 != h || (*m)->size2 != w) {
         if (*m) {
@@ -95,11 +95,11 @@ bool CheckOrReallocMatrixChar(gsl_matrix_char** m, int h, int w, bool reset)
         }
 
         if ((*m = gsl_matrix_char_alloc(h, w)) == NULL)
-            return false;
+            return FALSE;
     }
 
     if (reset)
         gsl_matrix_char_set_zero(*m);
 
-    return true;
+    return TRUE;
 }
