@@ -325,7 +325,7 @@ BOOL FCW_ThresholdingByIntegralImage(
 
     return TRUE;
 }
-
+ 
 BOOL FCW_DoDetection(
         uint8_t* img, 
         int linesize, 
@@ -340,6 +340,7 @@ BOOL FCW_DoDetection(
         gsl_vector* grayscale_hist, 
         VehicleCandidates *vcs,
         VehicleCandidates *vcs2,
+        VehicleCandidates *vcs3,
         uint8_t* roi_img,
         uint8_t* vedge,
         uint8_t* shadow,
@@ -545,11 +546,11 @@ BOOL FCW_DoDetection(
     // Copy matrix to data buffer for display.
     for (r=0 ; r<m_imgy->size1 ; r++) {
         for (c=0 ; c<m_imgy->size2 ; c++) {
-            img     [r * linesize + c] = (uint8_t)gsl_matrix_get(m_imgy, r,c); 
-            shadow  [r * linesize + c] = (uint8_t)gsl_matrix_get(m_shadow, r,c); 
-            roi_img [r * linesize + c] = (uint8_t)gsl_matrix_get(m_temp_imgy, r,c); 
-            vedge   [r * linesize + c] = (uint8_t)gsl_matrix_get(m_vedge_imgy, r,c); 
-            heatmap [r * linesize + c] = (uint8_t)gsl_matrix_get(m_heatmap, r,c); 
+            //img     [r * linesize + c] = (uint8_t)gsl_matrix_get(m_imgy, r,c); 
+            //shadow  [r * linesize + c] = (uint8_t)gsl_matrix_get(m_shadow, r,c); 
+            //roi_img [r * linesize + c] = (uint8_t)gsl_matrix_get(m_temp_imgy, r,c); 
+            //vedge   [r * linesize + c] = (uint8_t)gsl_matrix_get(m_vedge_imgy, r,c); 
+            //heatmap [r * linesize + c] = (uint8_t)gsl_matrix_get(m_heatmap, r,c); 
             hsv_imgy[r * linesize + c] = (uint8_t)gsl_matrix_get(m_hsv_imgy, r,c); 
             rgb_imgy[r * linesize + c] = (uint8_t)gsl_matrix_get(m_rgb_imgy, r,c); 
             lab_imgy[r * linesize + c] = (uint8_t)gsl_matrix_get(m_lab_imgy, r,c); 
@@ -568,13 +569,34 @@ BOOL FCW_DoDetection(
     }
 
     // --------------------------------------------------
-    if (fcws_obj)
+    if (fcws_obj) {
         fcws_obj->DoDetection(img,
                               w,
                               h,
                               linesize,
-                              LDW_GetObj()
+                              LDW_GetObj(),
+                              roi
                               );
+
+        // For debug prupose.
+        memset(vcs3, 0x0, sizeof(VehicleCandidates));
+
+        fcws_obj->GetInternalData(w,
+                                  h,
+                                  linesize,
+                                  img,
+                                  shadow,
+                                  roi_img,
+                                  vedge,
+                                  heatmap,
+                                  vcs3
+                                  );
+
+
+
+    }
+    // --------------------------------------------------
+
     return TRUE;
 }
 
@@ -2917,6 +2939,7 @@ BOOL FCW_UpdateVCStatus(
                         contour_sp.r    = r;
                         contour_sp.c    = c;
                         vc_id           = cur_vc->m_id; 
+                        break;
                     }
                 }
 

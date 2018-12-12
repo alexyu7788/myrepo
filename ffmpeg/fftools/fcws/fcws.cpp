@@ -3,6 +3,55 @@
 #define BLOB_MARGIN 3
 
 // ------------------protected function---------
+BOOL CFCWS::PixelInROI(uint32_t r, uint32_t c, const roi_t* roi)
+{
+    float slopl, slopr;
+
+    if (!roi) {
+        fcwsdbg();
+        return FALSE;
+    }
+
+    if (r < roi->point[ROI_LEFTTOP].r || r > roi->point[ROI_LEFTBOTTOM].r)
+        return FALSE;
+
+    if (c < roi->point[ROI_LEFTBOTTOM].c || c > roi->point[ROI_RIGHTBOTTOM].c)
+        return FALSE;
+    
+    slopl = (roi->point[ROI_LEFTTOP].r - roi->point[ROI_LEFTBOTTOM].r) / (float)(roi->point[ROI_LEFTTOP].c - roi->point[ROI_LEFTBOTTOM].c);
+    slopr = (roi->point[ROI_RIGHTTOP].r - roi->point[ROI_RIGHTBOTTOM].r) / (float)(roi->point[ROI_RIGHTTOP].c - roi->point[ROI_RIGHTBOTTOM].c);
+
+    if (c >= roi->point[ROI_LEFTBOTTOM].c && c <= roi->point[ROI_LEFTTOP].c && 
+        (((int)c - roi->point[ROI_LEFTBOTTOM].c == 0) || (((int)r - roi->point[ROI_LEFTBOTTOM].r) / (float)((int)c - roi->point[ROI_LEFTBOTTOM].c)) < slopl))
+        return FALSE;
+
+    if (c >= roi->point[ROI_RIGHTTOP].c && c <= roi->point[ROI_RIGHTBOTTOM].c && 
+        (((int)c - roi->point[ROI_RIGHTBOTTOM].c == 0) || (((int)r - roi->point[ROI_RIGHTBOTTOM].r) / (float)((int)c - roi->point[ROI_RIGHTBOTTOM].c)) > slopr))
+        return FALSE;
+
+    return TRUE;
+    
+}
+
+BOOL CFCWS::ApplyStaticROI(gsl_matrix* src, const roi_t* roi)
+{
+    uint32_t r, c;
+
+    if (!src || !roi) {
+        fcwsdbg();
+        return FALSE;
+    }
+
+    for (r = 0 ; r < src->size1 ; ++r) {
+        for (c=0 ; c< src->size2 ; ++c) {
+           if (PixelInROI(r, c, roi) == FALSE)
+               gsl_matrix_set(src, r, c, 255);
+        }
+    }
+
+    return TRUE;
+}
+
 void CFCWS::BlobDump(string description, list<blob_t>& blobs)
 {
     fcwsdbg("%s", description.c_str());
@@ -16,12 +65,13 @@ void CFCWS::BlobDump(string description, list<blob_t>& blobs)
     }
 }
 
-BOOL CFCWS::BlobConvertToVehicleShape(uint32_t cols, list<blob_t>& blobs, list<candidate_t>& cands)
+BOOL CFCWS::BlobConvertToVC(uint32_t cols, list<blob_t>& blobs, list<candidate_t>& cands)
 {
     candidate_t cand;
     int left_idx, right_idx, bottom_idx;
     int vehicle_startr, vehicle_startc;
     int vehicle_width, vehicle_height;
+    int id = 0;
 
     if (!blobs.size()) {
         fcwsdbg();
@@ -58,12 +108,12 @@ BOOL CFCWS::BlobConvertToVehicleShape(uint32_t cols, list<blob_t>& blobs, list<c
 
             memset(&cand, 0x0, sizeof(candidate_t));
 
-            cand.m_valid = blob.valid;
-            cand.m_id= blob.number;
-            cand.m_r = vehicle_startr;
-            cand.m_c = vehicle_startc;
-            cand.m_w = vehicle_width;
-            cand.m_h = vehicle_height;
+            cand.m_valid    = TRUE;
+            cand.m_id       = id++;
+            cand.m_r        = vehicle_startr;
+            cand.m_c        = vehicle_startc;
+            cand.m_w        = vehicle_width;
+            cand.m_h        = vehicle_height;
 
             cands.push_back(cand);
         }
@@ -101,8 +151,9 @@ redo:
                 if ((/*(a)*/next->c >= cur->c && next->c <= cur->c + cur->w) ||
                     (/*(b)*/next->c < cur->c && next->c + next->w > cur->c && next->c + next->w <= cur->c + cur->w)) {
                     next =  blobs.erase(next);
+                    goto redo;
                 } else if (/*(c)*/cur->c > next->c && cur->c + cur->w <= next->c + next->w) {
-                    if ((cur->r - next->r) < (cur->w / 2)) {
+                    if ((cur->r - next->r) < (cur->w * 0.5)) {
 
                         cur->valid  = next->valid;
                         cur->number = next->number;
@@ -163,12 +214,12 @@ redo:
                     /*(i)*/(cur->c < next->c && cur->c + cur->w < next->c && abs(cur->c + cur->w - next->c) < 3)) {
                     // Merge cur & next
                     if (cur->c > next->c) {
-                        diff = next->c + next->w - cur->c;
-                        cur->c = next->c;
-                        cur->w = cur->w + next->w - diff;
+                        diff    = next->c + next->w - cur->c;
+                        cur->c  = next->c;
+                        cur->w  = cur->w + next->w - diff;
                     } else {
-                        diff = cur->c + cur->w - next->c;
-                        cur->w = cur->w + next->w - diff;
+                        diff    = cur->c + cur->w - next->c;
+                        cur->w  = cur->w + next->w - diff;
                     }
 
                     next = blobs.erase(next);
@@ -310,21 +361,24 @@ examine:
     return TRUE;
 }
 
-void CFCWS::VehicleDump(string description, list<candidate_t>& cands)
+void CFCWS::VCDump(string description, list<candidate_t>& cands)
 {
-    fcwsdbg("%s", description.c_str());
-    for (auto& cand:cands) {
-        if (cand.m_valid == TRUE) {
-            fcwsdbg("cand at (%d, %d) with (%d, %d)",
-                    cand.m_r,
-                    cand.m_c,
-                    cand.m_w,
-                    cand.m_h);
+    if (cands.size()) {
+        fcwsdbg("%s", description.c_str());
+        for (auto& cand:cands) {
+            if (cand.m_valid == TRUE) {
+                fcwsdbg("vc[%d] at (%d, %d) with (%d, %d)",
+                        cand.m_id,
+                        cand.m_r,
+                        cand.m_c,
+                        cand.m_w,
+                        cand.m_h);
+            }
         }
     }
 }
 
-BOOL CFCWS::VehicleCheckByAR(list<candidate_t>& cands)
+BOOL CFCWS::VCCheckByAR(list<candidate_t>& cands)
 {
     double ar;
 
@@ -342,7 +396,7 @@ BOOL CFCWS::VehicleCheckByAR(list<candidate_t>& cands)
     return TRUE;
 }
 
-BOOL CFCWS::VehicleCheckByVerticalEdge(const gsl_matrix* vedgeimg,
+BOOL CFCWS::VCCheckByVerticalEdge(const gsl_matrix* vedgeimg,
                                        list<candidate_t>& cands)
 {
     uint32_t r, c;
@@ -380,7 +434,7 @@ BOOL CFCWS::VehicleCheckByVerticalEdge(const gsl_matrix* vedgeimg,
     return TRUE;
 }
 
-BOOL CFCWS::VehicleCheck(const gsl_matrix* imgy,
+BOOL CFCWS::VCCheck(const gsl_matrix* imgy,
                          const gsl_matrix* vedgeimg,
                          list<candidate_t>& cands)
 {
@@ -389,14 +443,14 @@ BOOL CFCWS::VehicleCheck(const gsl_matrix* imgy,
         return FALSE;
     }
 
-    VehicleCheckByVerticalEdge(vedgeimg, cands);
+    VCCheckByVerticalEdge(vedgeimg, cands);
 
-    VehicleCheckByAR(cands);
+    VCCheckByAR(cands);
 
     return TRUE;
 }
 
-BOOL CFCWS::VehicleUpdateShapeByStrongVerticalEdge(const gsl_matrix* vedgeimg, list<candidate_t>& cands)
+BOOL CFCWS::VCUpdateShapeByStrongVerticalEdge(const gsl_matrix* vedgeimg, list<candidate_t>& cands)
 {
     uint32_t r, c;
     uint32_t rr, cc;
@@ -484,7 +538,6 @@ BOOL CFCWS::VehicleUpdateShapeByStrongVerticalEdge(const gsl_matrix* vedgeimg, l
 
             if (max_edge_idx == 0) {
                 cand.m_valid = FALSE;
-                fcwsdbg();
                 continue;
             }
 
@@ -505,7 +558,6 @@ BOOL CFCWS::VehicleUpdateShapeByStrongVerticalEdge(const gsl_matrix* vedgeimg, l
 
             if (max_edge_idx == 0) {
                 cand.m_valid = FALSE;
-                fcwsdbg();
                 continue;
             }
 
@@ -521,7 +573,7 @@ BOOL CFCWS::VehicleUpdateShapeByStrongVerticalEdge(const gsl_matrix* vedgeimg, l
     return TRUE;
 }
 
-BOOL CFCWS::VehicleUpdateHeatMap(gsl_matrix* map,
+BOOL CFCWS::VCUpdateHeatMap(gsl_matrix* map,
                                  gsl_matrix_char* id,
                                  list<candidate_t>& cands)
 {
@@ -547,7 +599,7 @@ BOOL CFCWS::VehicleUpdateHeatMap(gsl_matrix* map,
                     continue;        
 
                 if (r >= cand.m_r && r < (cand.m_r + cand.m_h) &&
-                    c > cand.m_c && c < (cand.m_c + cand.m_w)) {
+                    c >= cand.m_c && c < (cand.m_c + cand.m_w)) {
                     pixel_hit = TRUE;
                     break;
                 }
@@ -572,6 +624,524 @@ BOOL CFCWS::VehicleUpdateHeatMap(gsl_matrix* map,
             }
         }
     }
+
+    return TRUE;
+}
+
+BOOL CFCWS::HeatMapGetContour(const gsl_matrix_char* m,
+                               char  id,
+                               const point_t& start,
+                               rect& rect)
+{
+    BOOL ret = FALSE;
+    BOOL find_pixel;
+    uint32_t r, c;
+    uint32_t left, right, top, bottom;
+    uint32_t find_fail_cnt;
+    uint32_t count;
+    DIR nextdir;
+    float aspect_ratio;
+    point_t tp; // test point to avoid infinite loop.
+
+    if (!m || id < 0) {
+        fcwsdbg();
+        return ret;
+    }
+
+    if (start.r == 0) 
+        return ret;
+
+    nextdir = DIR_RIGHTUP;
+    find_pixel = FALSE;
+    find_fail_cnt = 0;
+
+    r = top = bottom = start.r;
+    c = left = right = start.c;
+
+    memset(&tp, 0, sizeof(tp));
+
+    count = 0;
+    while (1) {// Get contour of VC. (start point is equal to end point)
+        while (1) {// Scan different direction to get neighbour.
+            switch (nextdir) {
+                case DIR_RIGHTUP:
+                    if (gsl_matrix_char_get(m, r-1, c+1) == id) {
+                        --r;
+                        ++c;
+                        find_pixel = TRUE;
+                        nextdir = DIR_LEFTUP;
+
+                        top     = top > r ? r : top;
+                        right   = right < c ? c : right; 
+                    } else {
+                        find_fail_cnt++;
+                        nextdir = DIR_RIGHT;
+                    }
+                    break;
+                case DIR_RIGHT:
+                    if (gsl_matrix_char_get(m, r, c+1) == id) {
+                        ++c;
+                        find_pixel = TRUE;
+                        nextdir = DIR_RIGHTUP;
+
+                        right   = right < c ? c : right;
+                    } else {
+                        find_fail_cnt++;
+                        nextdir = DIR_RIGHTDOWN;
+                    }
+                    break;
+                case DIR_RIGHTDOWN:
+                    if (gsl_matrix_char_get(m, r+1, c+1) == id) {
+                        ++r;
+                        ++c;
+                        find_pixel = TRUE;
+                        nextdir = DIR_RIGHTUP;
+
+                        bottom  = bottom < r ? r : bottom;
+                        right   = right < c ? c : right;
+                    } else {
+                        find_fail_cnt++;
+                        nextdir = DIR_DOWN;
+                    }
+                    break;
+                case DIR_DOWN:
+                    if (gsl_matrix_char_get(m, r+1, c) == id) {
+                        ++r;
+                        find_pixel = TRUE;
+                        nextdir = DIR_RIGHTDOWN;
+
+                        bottom  = bottom < r ? r : bottom;
+                    } else {
+                        find_fail_cnt++;
+                        nextdir = DIR_LEFTDOWN;
+                    }
+                    break;
+                case DIR_LEFTDOWN:
+                    if (gsl_matrix_char_get(m, r+1, c-1) == id) {
+                        ++r;
+                        --c;
+                        find_pixel = TRUE;
+                        nextdir = DIR_RIGHTDOWN;
+
+                        bottom  = bottom < r ? r : bottom;
+                        left    = left > c ? c : left;
+                    } else { 
+                        find_fail_cnt++;
+                        nextdir = DIR_LEFT;
+                    }
+                    break;
+                case DIR_LEFT:
+                    if (gsl_matrix_char_get(m, r, c-1) == id) {
+                        --c;
+                        find_pixel = TRUE;
+                        nextdir = DIR_LEFTDOWN;
+
+                        left    = left > c ? c : left;
+                    } else {
+                        find_fail_cnt++;
+                        nextdir = DIR_LEFTUP;
+                    }
+                    break;
+                case DIR_LEFTUP:
+                    if (gsl_matrix_char_get(m, r-1, c-1) == id) {
+                        --r;
+                        --c;
+                        find_pixel = TRUE;
+                        nextdir = DIR_LEFTDOWN;
+
+                        top     = top > r ? r : top;
+                        left    = left > c ? c : left;
+                    } else {
+                        find_fail_cnt++;
+                        nextdir = DIR_UP;
+                    }
+                    break;
+                case DIR_UP:
+                    if (gsl_matrix_char_get(m, r-1, c) == id) {
+                        --r;
+                        find_pixel = TRUE;
+                        nextdir = DIR_LEFTUP;
+
+                        top     = top > r ? r : top;
+                    } else {
+                        find_fail_cnt++;
+                        nextdir = DIR_RIGHTUP;
+                    }
+                    break;
+            } // switch
+
+            if (find_pixel) {
+                find_pixel = FALSE;
+                find_fail_cnt = 0;
+                break;
+            }
+
+            if (find_fail_cnt >= DIR_TOTAL) {
+                fcwsdbg();
+                break;
+            }
+        }// Scan different direction to get neighbour.
+
+        if (r == start.r && c == start.c) {
+           rect.r  = top; 
+           rect.c  = left;
+           rect.w  = right - left + 1;
+           rect.h  = bottom - top + 1;
+
+           // *** Assume previously height is half of weight. *** 
+           // aspect ratio checking (VHW_RATIO * 3/4 < ar < VHW_RATIO * 5/4)
+           aspect_ratio = (rect.w / (float)rect.h);
+
+           //fcwsdbg("ratio of aspect is %.02f", rect.w / (float)rect.h);
+           if (AR_LB < aspect_ratio && aspect_ratio < AR_HB)
+               ret = TRUE;
+
+           break;
+        } else {
+            if (r != start.r && c != start.c) {
+                if (tp.r == 0 && tp.c == 0) {
+                    tp.r = r;
+                    tp.c = c;
+                } else {
+                    if (r == tp.r && c == tp.c) {
+                        //fcwsdbg("start(%d,%d), tp(%d,%d) <.(%d,%d)",
+                        //        start.r,
+                        //        start.c,
+                        //        tp.r,
+                        //        tp.c,
+                        //        r,
+                        //        c);
+                        fcwsdbg("Get incorrect contour.");
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (++count >= (m->size1 * m->size2) >> 4) { // (w/2 * h/2)
+            fcwsdbg("Can not generate appropriate contour.");
+            break;
+        }
+    }// Get contour of VC. (start point is equal to end point)
+
+    return ret;
+}
+
+BOOL CFCWS::VCTrackerAddOrUpdateExistTarget(const gsl_matrix* heatmap,
+                                            gsl_matrix_char* heatmap_id,
+                                            list<candidate_t>& tracker,
+                                            list<candidate_t>& cands)
+{
+    char vc_id, max_vc_id;
+    uint32_t r, c, rr, cc;
+    BOOL gen_new_vc;
+    BOOL find_pixel;
+    point_t midpoint_newcand;
+    point_t contour_sp;
+    rect contour_rect;
+    gsl_matrix_view heatmap_sm;
+    gsl_matrix_char_view heatmapid_sm;
+    candidate_t newtarget;
+    list<candidate_t>::iterator cand, target;
+
+    if (!heatmap || !heatmap_id) {
+        fcwsdbg();
+        return FALSE;
+    }
+
+    //Assign an ID to each pixel which exceeds the threshold and does not have an ID yet.
+    for (r = 0 ; r < heatmap->size1 ; ++r) {
+        for (c = 0 ; c < heatmap->size2 ; ++c) {
+            if (gsl_matrix_get(heatmap, r, c) < HeatMapAppearThreshold)
+                continue;
+
+            if (gsl_matrix_char_get(heatmap_id, r, c) != -1)
+                continue;
+
+            // which new candidate it belongs to.
+            for (cand = cands.begin() ; cand != cands.end() ; ++cand) {
+                if (r >= cand->m_r && r < (cand->m_r + cand->m_h) &&
+                    c >= cand->m_c && c < (cand->m_c + cand->m_w))
+                    break;
+            }
+
+            if (cand == cands.end())
+                continue;
+
+            if (cand->m_valid == FALSE)
+                continue;
+
+            fcwsdbg("New point at (%d,%d) belongs to new vc[%d]", r, c, cand->m_id);
+            gen_new_vc = FALSE;
+
+            // Find the nearest existed candidate(target).
+            midpoint_newcand.r = cand->m_r + cand->m_h * .5;
+            midpoint_newcand.c = cand->m_c + cand->m_w * .5;
+
+            for (target = tracker.begin() ; target != tracker.end() ; ++target) {
+                if (midpoint_newcand.r > target->m_r && midpoint_newcand.r < (target->m_r + target->m_h) &&
+                    midpoint_newcand.c > target->m_c && midpoint_newcand.c < (target->m_c + target->m_w)) {
+                    break;
+                }
+            }
+
+            if (target != tracker.end()) {
+                // Find a target that is most near to new vc.
+                vc_id = target->m_id;    
+                fcwsdbg("Find nearest target[%d]", vc_id);
+
+                heatmap_sm = gsl_matrix_submatrix((gsl_matrix*)heatmap,
+                                                  cand->m_r,
+                                                  cand->m_c,
+                                                  cand->m_h,
+                                                  cand->m_w);
+
+                heatmapid_sm = gsl_matrix_char_submatrix(heatmap_id,
+                                                  cand->m_r,
+                                                  cand->m_c,
+                                                  cand->m_h,
+                                                  cand->m_w);
+
+                // Update heatmap id within cand region.
+                for (rr = 0 ; rr < heatmap_sm.matrix.size1 ; ++rr) {
+                    for (cc = 0 ; cc < heatmap_sm.matrix.size2 ; ++cc) {
+                        if (gsl_matrix_get(&heatmap_sm.matrix, rr, cc) < HeatMapAppearThreshold)
+                            continue;
+
+                        //if (gsl_matrix_char_get(&heatmapid_sm.matrix, rr, cc) != -1)
+                        //    continue;
+
+                        gsl_matrix_char_set(&heatmapid_sm.matrix, rr, cc, vc_id);
+                    }
+                }
+
+                // set start position of contour.
+                if (r > target->m_r && c > target->m_c) {
+                    find_pixel = FALSE;
+                    for (rr = target->m_r ; rr < target->m_r + target->m_h ; ++rr) {
+                        for (cc = target->m_c ; cc < target->m_c + target->m_w ; ++cc) {
+                            if (gsl_matrix_char_get(heatmap_id, rr, cc) == target->m_id && gsl_matrix_get(heatmap, rr, cc) >= HeatMapAppearThreshold) {
+                                find_pixel = TRUE;
+                                break;
+                            }
+                        }
+
+                        if (find_pixel)
+                            break;
+                    }
+
+                    //fcwsdbg("rr %d cc %d", rr, cc);
+                    contour_sp.r = rr;
+                    contour_sp.c = cc;
+                    fcwsdbg("new top_left is inside cur top_left, using (%d,%d) instead of (%d,%d) as start point of contour.", rr, cc, r, c);
+                } else {
+                    contour_sp.r = r;
+                    contour_sp.c = c;
+                    fcwsdbg("new top_left is outside cur top_left, using (%d,%d) as start point of contour.", r, c);
+                }
+            } else {
+                // New candidate needs a new ID.
+                vc_id = 0;
+                gen_new_vc = TRUE;
+
+                if (tracker.size()) {
+                    max_vc_id = 0;
+
+                    for (auto& t:tracker) {
+                        if (t.m_id > max_vc_id)
+                            max_vc_id = t.m_id;
+                    }
+
+                    vc_id = max_vc_id + 1;
+                }
+
+                fcwsdbg("Create a new candidate at (%d,%d) with id %d for new vc[%d]", r, c, vc_id, cand->m_id);
+                fcwsdbg("vc %d at (%d,%d) with (%d,%d)", cand->m_id,
+                                                         cand->m_r,
+                                                         cand->m_c,
+                                                         cand->m_w,
+                                                         cand->m_h);
+
+                heatmap_sm = gsl_matrix_submatrix((gsl_matrix*)heatmap, 
+                                                  cand->m_r,
+                                                  cand->m_c,
+                                                  cand->m_h,
+                                                  cand->m_w);
+
+                heatmapid_sm = gsl_matrix_char_submatrix(heatmap_id, 
+                                                         cand->m_r,
+                                                         cand->m_c,
+                                                         cand->m_h,
+                                                         cand->m_w);
+
+                // Update heatmap id within new vc region.
+                for (rr=0 ; rr<heatmap_sm.matrix.size1 ; ++rr) {
+                    for (cc=0 ; cc<heatmap_sm.matrix.size2 ; ++cc) {
+                        if (gsl_matrix_get(&heatmap_sm.matrix, rr, cc) < HeatMapAppearThreshold)
+                            continue;
+
+                        gsl_matrix_char_set(&heatmapid_sm.matrix, rr, cc, vc_id);
+                    }
+                }
+
+                // set start position of contour.
+                contour_sp.r = r;
+                contour_sp.c = c;
+            }
+
+            if (HeatMapGetContour(heatmap_id, vc_id, contour_sp, contour_rect) == TRUE) {
+                if (gen_new_vc) {
+                    // Add new target.
+                    memset(&newtarget, 0x0, sizeof(candidate_t));
+
+                    newtarget.m_updated     = TRUE;
+                    newtarget.m_valid       = TRUE;
+                    newtarget.m_id          = vc_id;
+                    newtarget.m_r           = contour_rect.r;
+                    newtarget.m_c           = contour_rect.c;
+                    newtarget.m_w           = contour_rect.w;
+                    newtarget.m_h           = contour_rect.h;
+                    //newtarget.m_dist        = FCW_GetObjDist(newtarget.m_w);
+
+                    tracker.push_back(newtarget);
+                } else {
+                    if (target != tracker.end()) {
+                        // Update existed target.
+                        target->m_updated     = TRUE;
+                        target->m_valid       = TRUE;
+                        target->m_id          = vc_id;
+                        target->m_r           = contour_rect.r;
+                        target->m_c           = contour_rect.c;
+                        target->m_w           = contour_rect.w;
+                        target->m_h           = contour_rect.h;
+                        //target->m_dist        = FCW_GetObjDist(target->m_w);
+                    } else
+                        fcwsdbg();
+                }
+
+                for (auto& t:tracker) {
+                    if (t.m_id == vc_id) {
+                        fcwsdbg("vc[%d] locates at (%d,%d) with (%d,%d)",
+                                t.m_id,
+                                t.m_r,
+                                t.m_c,
+                                t.m_w,
+                                t.m_h
+                           );
+
+                        heatmapid_sm = gsl_matrix_char_submatrix(heatmap_id,
+                                                                 t.m_r,
+                                                                 t.m_c,
+                                                                 t.m_h,
+                                                                 t.m_w);
+
+                        gsl_matrix_char_set_all(&heatmapid_sm.matrix, t.m_id);
+                        break;
+                    }
+                }
+            } else {
+                if (gen_new_vc) 
+                    fcwsdbg("Fail to generate new vc.");
+            }
+        }
+    }
+
+    return TRUE;
+}
+
+BOOL CFCWS::VCTrackerUpdateExistTarget(const gsl_matrix_char* heatmap_id,
+                                       list<candidate_t>& tracker)
+{
+    char vc_id;
+    uint32_t r, c;
+    BOOL find_pixel;
+    point_t contour_sp;
+    rect contour_rect;
+
+    if (!heatmap_id || !tracker.size()) {
+        fcwsdbg();
+        return FALSE;
+    }
+
+    for (list<candidate_t>::iterator t = tracker.begin() ; t != tracker.end() ; ) {
+        if (t->m_updated == FALSE) {
+            // Find a pixel inside existed target which still has an id.
+            find_pixel = FALSE;
+
+            for (r = t->m_r ; r < (t->m_r + t->m_h) ; ++r) {
+                for (c = t->m_c ; c < (t->m_c + t->m_w) ; ++c) {
+                    if (gsl_matrix_char_get(heatmap_id, r, c) == t->m_id) {
+                        find_pixel      = TRUE;
+                        contour_sp.r    = r;
+                        contour_sp.c    = c;
+                        vc_id           = t->m_id;
+                        break;
+                    }
+                }
+
+                if (find_pixel)
+                    break;
+            }
+
+            if (find_pixel && HeatMapGetContour(heatmap_id, vc_id, contour_sp, contour_rect) == TRUE) {
+                t->m_updated     = TRUE;
+                t->m_valid       = TRUE;
+                t->m_id          = vc_id;
+                t->m_r           = contour_rect.r;
+                t->m_c           = contour_rect.c;
+                t->m_w           = contour_rect.w;
+                t->m_h           = contour_rect.h;
+                //t->m_dist        = FCW_GetObjDist(t->m_w);
+            }
+
+            if (t->m_updated == TRUE) {
+                fcwsdbg("vc[%d] locates at (%d,%d) with (%d,%d) is self-updated.",
+                        t->m_id,
+                        t->m_r,
+                        t->m_c,
+                        t->m_w,
+                        t->m_h);
+                ++t;
+            } else {
+                fcwsdbg("vc[%d] is removed.", t->m_id);
+                // This existed candidate has not been updated anymore. Remove it from the list.
+                t = tracker.erase(t);
+            }
+        } else
+            ++t;
+    }
+
+    return TRUE;
+}
+
+BOOL CFCWS::VCTrackerUpdate(gsl_matrix* heatmap,
+                            gsl_matrix_char* heatmap_id,
+                            list<candidate_t>& tracker,
+                            list<candidate_t>& cands)
+{
+    if (!heatmap || !heatmap_id) {
+        fcwsdbg();
+        return FALSE;
+    }
+
+    // Reset each existed candidate as need to update.
+    for (auto& target:tracker) {
+        fcwsdbg("Tracker: target[%d] at (%d, %d) with (%d, %d)",
+                target.m_id,
+                target.m_r,
+                target.m_c,
+                target.m_w,
+                target.m_h);
+
+        target.m_updated = FALSE;
+    }
+
+    // Dump new vc
+    VCDump("New vc", cands);
+
+    VCTrackerAddOrUpdateExistTarget(heatmap, heatmap_id, tracker, cands);
+
+    VCTrackerUpdateExistTarget(heatmap_id, tracker);
 
     return TRUE;
 }
@@ -621,29 +1191,28 @@ BOOL CFCWS::HypothesisGenerate(const gsl_matrix* imgy,
     if (blobs.size()) {
         BlobRearrange(blobs);
 
-        BlobConvertToVehicleShape(imgy->size2, blobs, cands);
+        BlobConvertToVC(imgy->size2, blobs, cands);
 
-        VehicleUpdateShapeByStrongVerticalEdge(vedgeimg, cands);
+        VCUpdateShapeByStrongVerticalEdge(vedgeimg, cands);
 
-        VehicleCheck(imgy, vedgeimg, cands);
+        VCCheck(imgy, vedgeimg, cands);
 
-        for (list<candidate_t>::iterator it = cands.begin() ; it != cands.end(); ) {
-            if (it->m_valid == TRUE) {
+        for (list<candidate_t>::iterator cand = cands.begin() ; cand != cands.end() ; ) {
+            if (cand->m_valid == TRUE) {
 
-                it->m_r        = (it->m_r == 0 ? 1 : it->m_r);
-                it->m_h        = (it->m_r == 0 ? it->m_h - 1 : it->m_h);
-                it->m_st       = _Disappear;
+                cand->m_r        = (cand->m_r == 0 ? 1 : cand->m_r);
+                cand->m_h        = (cand->m_r == 0 ? cand->m_h - 1 : cand->m_h);
+                cand->m_st       = _Disappear;
+                ++cand;
 
-                ++it;
-            } else {
-                it = cands.erase(it);
-            }
+            } else 
+                cand = cands.erase(cand);
         }
     }
 
-    VehicleUpdateHeatMap(heatmap, heatmapid, cands);
+    VCUpdateHeatMap(heatmap, heatmapid, cands);
 
-
+    VCTrackerUpdate(heatmap, heatmapid, tracker, cands);
 
     return TRUE;
 }
@@ -767,7 +1336,8 @@ BOOL CFCWS::DoDetection(uint8_t* imgy,
                         int w,
                         int h,
                         int linesize,
-                        CLDWS* ldws_obj
+                        CLDWS* ldws_obj,
+                        const roi_t* roi
                         )
 {
     if (!m_ip || !imgy || !w || !h || !linesize) {
@@ -807,8 +1377,8 @@ BOOL CFCWS::DoDetection(uint8_t* imgy,
     m_ip->ThresholdingByIntegralImage(m_imgy, m_intimg, m_shadowimg, 50, 0.7);
  
     // ROI
-    if (ldws_obj && ldws_obj->ApplyDynamicROI(m_shadowimg) == FALSE) {
-        fcwsdbg();
+    if (!ldws_obj || (ldws_obj && ldws_obj->ApplyDynamicROI(m_shadowimg) == FALSE)) {
+        ApplyStaticROI(m_shadowimg, roi);
     }
  
     m_ip->CalHorizonProject(m_shadowimg, m_horizonproject);
@@ -830,7 +1400,44 @@ BOOL CFCWS::DoDetection(uint8_t* imgy,
 
 
     // Hypothesis Verfication
+    // TODO
 
+    pthread_mutex_unlock(&m_mutex);
+
+    return TRUE;
+}
+
+BOOL CFCWS::GetInternalData(uint32_t w, 
+                            uint32_t h,
+                            int linesize,
+                            uint8_t* img,
+                            uint8_t* shadow,
+                            uint8_t* roi,
+                            uint8_t* vedge,
+                            uint8_t* heatmap,
+                            VehicleCandidates* vcs
+                            )
+{
+    pthread_mutex_lock(&m_mutex);
+
+    m_ip->CopyBackImage(m_imgy      , img       , w, h, linesize);
+    m_ip->CopyBackImage(m_shadowimg , shadow    , w, h, linesize);
+    m_ip->CopyBackImage(m_shadowimg , roi       , w, h, linesize);
+    m_ip->CopyBackImage(m_vedgeimg  , vedge     , w, h, linesize);
+    m_ip->CopyBackImage(m_heatmap   , heatmap   , w, h, linesize);
+
+    for (auto& cand:m_candidates) {
+        vcs->vc[vcs->vc_count].m_updated    = cand.m_updated;
+        vcs->vc[vcs->vc_count].m_valid      = cand.m_valid;
+        vcs->vc[vcs->vc_count].m_id         = cand.m_id;
+        vcs->vc[vcs->vc_count].m_r          = cand.m_r;
+        vcs->vc[vcs->vc_count].m_c          = cand.m_c;
+        vcs->vc[vcs->vc_count].m_w          = cand.m_w;
+        vcs->vc[vcs->vc_count].m_h          = cand.m_h;
+        vcs->vc[vcs->vc_count].m_dist       = cand.m_dist;
+        vcs->vc[vcs->vc_count].m_next       = NULL;
+        vcs->vc_count++;
+    }
 
     pthread_mutex_unlock(&m_mutex);
 

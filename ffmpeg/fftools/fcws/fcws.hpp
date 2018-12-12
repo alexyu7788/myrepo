@@ -11,6 +11,8 @@
 #ifdef __cplusplus
 extern "C" {
 #include "../utils/ma.h"
+#include "fcws_cwrapper.h"
+#include "candidate.h"
 }
 #endif
 
@@ -66,6 +68,19 @@ typedef struct candidate_s {
     _CandidateStatus m_st;
 }candidate_t;
 
+//enum {
+//    ROI_LEFTTOP = 0,
+//    ROI_RIGHTTOP,
+//    ROI_RIGHTBOTTOM,
+//    ROI_LEFTBOTTOM,
+//    ROI_TOTAL,
+//};
+//
+//typedef struct roi_s {
+//    point_t point[ROI_TOTAL];
+//    int size;
+//}roi_t;
+
 class CFCWS {
     protected:
         BOOL                m_terminate;
@@ -98,9 +113,13 @@ class CFCWS {
         list<candidate_t>   m_vc_tracker;
 
     protected:
+        BOOL PixelInROI(uint32_t r, uint32_t c, const roi_t* roi);
+
+        BOOL ApplyStaticROI(gsl_matrix* src, const roi_t* roi);
+
         void BlobDump(string description, list<blob_t>& blobs);
 
-        BOOL BlobConvertToVehicleShape(uint32_t cols, list<blob_t>& blobs, list<candidate_t>& cands);
+        BOOL BlobConvertToVC(uint32_t cols, list<blob_t>& blobs, list<candidate_t>& cands);
 
         BOOL BlobRearrange(list<blob_t>& blobs);
 
@@ -111,22 +130,40 @@ class CFCWS {
                           uint32_t peak_idx,
                           list<blob_t>& blobs);
 
-        void VehicleDump(string description, list<candidate_t>& cands);
+        void VCDump(string description, list<candidate_t>& cands);
 
-        BOOL VehicleCheckByAR(list<candidate_t>& cands);
+        BOOL VCCheckByAR(list<candidate_t>& cands);
 
-        BOOL VehicleCheckByVerticalEdge(const gsl_matrix* vedgeimg,
+        BOOL VCCheckByVerticalEdge(const gsl_matrix* vedgeimg,
                                         list<candidate_t>& cands);
 
-        BOOL VehicleCheck(const gsl_matrix* imgy,
+        BOOL VCCheck(const gsl_matrix* imgy,
                           const gsl_matrix* vedgeimg,
                           list<candidate_t>& cands);
 
-        BOOL VehicleUpdateShapeByStrongVerticalEdge(const gsl_matrix* vedgeimg, list<candidate_t>& cands);
+        BOOL VCUpdateShapeByStrongVerticalEdge(const gsl_matrix* vedgeimg, list<candidate_t>& cands);
 
-        BOOL VehicleUpdateHeatMap(gsl_matrix* map,
+        BOOL VCUpdateHeatMap(gsl_matrix* map,
                                   gsl_matrix_char* id,
                                   list<candidate_t>& cands);
+
+        BOOL HeatMapGetContour(const gsl_matrix_char* m,
+                               char  id,
+                               const point_t& start,
+                               rect& rect);
+
+        BOOL VCTrackerAddOrUpdateExistTarget(const gsl_matrix* heatmap,
+                                             gsl_matrix_char* heatmap_id,
+                                             list<candidate_t>& tracker,
+                                             list<candidate_t>& cands);
+
+        BOOL VCTrackerUpdateExistTarget(const gsl_matrix_char* heatmap_id,
+                                        list<candidate_t>& tracker);
+
+        BOOL VCTrackerUpdate(gsl_matrix* heatmap,
+                             gsl_matrix_char* heatmap_id,
+                             list<candidate_t>& tracker,
+                             list<candidate_t>& cands);
 
         BOOL HypothesisGenerate(const gsl_matrix* imgy,
                                 const gsl_matrix* intimg,
@@ -154,7 +191,19 @@ class CFCWS {
                          int w,
                          int h,
                          int linesize,
-                         CLDWS* ldws_obj
+                         CLDWS* ldws_obj,
+                         const roi_t* roi
                          );
+
+        BOOL GetInternalData(uint32_t w, 
+                             uint32_t h,
+                             int linesize,
+                             uint8_t* img,
+                             uint8_t* shadow,
+                             uint8_t* roi,
+                             uint8_t* vedge,
+                             uint8_t* heatmap,
+                             VehicleCandidates* vcs
+                            );
 };
 #endif

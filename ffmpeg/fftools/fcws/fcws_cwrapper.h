@@ -77,6 +77,7 @@ BOOL FCW_DoDetection(
         gsl_vector* grayscale_hist, 
         VehicleCandidates *vcs,     // result of each frame
         VehicleCandidates *vcs2,    // result of heatmap
+        VehicleCandidates *vcs3,    // result of fcws object
         uint8_t* roi_img,
         uint8_t* vedge,
         uint8_t* shadow,
