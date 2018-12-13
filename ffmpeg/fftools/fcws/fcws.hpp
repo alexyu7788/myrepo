@@ -25,6 +25,10 @@ extern "C" {
 #define HeatMapDecrease 10.0
 #define HeatMapAppearThreshold   100 
 
+#define VehicleWidth 1650   //mm
+#define EFL          2.7    //mm
+#define PixelSize    2.8    //um = 10^-3 mm
+
 using namespace std;
 
 class CFCWS;
@@ -132,6 +136,8 @@ class CFCWS {
 
         void VCDump(string description, list<candidate_t>& cands);
 
+        double VCGetDist(double pixel);
+
         BOOL VCCheckByAR(list<candidate_t>& cands);
 
         BOOL VCCheckByVerticalEdge(const gsl_matrix* vedgeimg,
@@ -144,8 +150,13 @@ class CFCWS {
         BOOL VCUpdateShapeByStrongVerticalEdge(const gsl_matrix* vedgeimg, list<candidate_t>& cands);
 
         BOOL VCUpdateHeatMap(gsl_matrix* map,
-                                  gsl_matrix_char* id,
-                                  list<candidate_t>& cands);
+                             gsl_matrix_char* id,
+                             list<candidate_t>& cands);
+
+        BOOL HeatMapUpdateID(const gsl_matrix* heatmap,
+                             gsl_matrix_char* heatmap_id,
+                             list<candidate_t>::iterator it,
+                             char id);
 
         BOOL HeatMapGetContour(const gsl_matrix_char* m,
                                char  id,
@@ -203,7 +214,8 @@ class CFCWS {
                              uint8_t* roi,
                              uint8_t* vedge,
                              uint8_t* heatmap,
-                             VehicleCandidates* vcs
+                             VehicleCandidates* vcs,
+                             VehicleCandidates* vcs2
                             );
 };
 #endif

@@ -86,7 +86,7 @@ static uint8_t* lab_imgy = NULL;
 static uint8_t* lab_imgu = NULL;
 static uint8_t* lab_imgv = NULL;
 
-static VehicleCandidates vcs, vcs2, vcs3;
+static VehicleCandidates vcs, vcs2;
 static gsl_vector* vertical_hist = NULL;
 static gsl_vector* hori_hist = NULL;
 static gsl_vector* grayscale_hist = NULL;
@@ -1116,7 +1116,6 @@ static int upload_texture(SDL_Texture **tex, AVFrame *frame, struct SwsContext *
                                 grayscale_hist,
                                 &vcs,
                                 &vcs2,
-                                &vcs3,
                                 roi_img,
                                 vedge,
                                 shadow,
@@ -1454,21 +1453,6 @@ static void video_image_display(VideoState *is)
                 SDL_RenderDrawRect(fcw_renderer[FCW_WINDOW_RESULT], &vrect);
                 SDL_RenderDrawRect(fcw_renderer[FCW_WINDOW_TAILLIGHT], &vrect);
                 SDL_RenderDrawRect(fcw_renderer[FCW_WINDOW_TAILLIGHT2], &vrect);
-            }
-        }
-
-        for (i=0 ; i<vcs3.vc_count ; i++) {
-            if (vcs3.vc[i].m_valid == TRUE) {
-                color = &COLOR[i%COLOR_TOTAL];
-
-                SDL_SetRenderDrawColor(renderer, color->r, color->g, color->b, color->a);
-
-                vrect.x = rect.x + vcs3.vc[i].m_c;
-                vrect.y = rect.y + vcs3.vc[i].m_r;
-                vrect.w = vcs3.vc[i].m_w;
-                vrect.h = vcs3.vc[i].m_h;
-
-                SDL_RenderDrawRect(renderer, &vrect);
             }
         }
 

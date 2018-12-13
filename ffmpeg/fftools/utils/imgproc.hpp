@@ -9,6 +9,9 @@ extern "C" {
 }
 #endif
 
+#define WHITE   255
+#define BLACK   0
+
 class CImgProc {
     protected:
         // Gaussian Blur

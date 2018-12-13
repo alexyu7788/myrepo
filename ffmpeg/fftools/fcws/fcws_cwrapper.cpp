@@ -340,7 +340,6 @@ BOOL FCW_DoDetection(
         gsl_vector* grayscale_hist, 
         VehicleCandidates *vcs,
         VehicleCandidates *vcs2,
-        VehicleCandidates *vcs3,
         uint8_t* roi_img,
         uint8_t* vedge,
         uint8_t* shadow,
@@ -365,6 +364,7 @@ BOOL FCW_DoDetection(
         return FALSE;
     }
 
+#if 0
     CheckOrReallocMatrix(&m_imgy, h, w, TRUE);
     CheckOrReallocMatrix(&m_imgu, h/2, w/2, TRUE);
     CheckOrReallocMatrix(&m_imgv, h/2, w/2, TRUE);
@@ -567,9 +567,12 @@ BOOL FCW_DoDetection(
             lab_imgv[r * linesize_v + c] = gsl_matrix_get(m_lab_imgv, r, c);
         }
     }
+#endif
 
     // --------------------------------------------------
     if (fcws_obj) {
+        fcwsdbg(LIGHT_RED "=============New Frame=============" NONE);
+
         fcws_obj->DoDetection(img,
                               w,
                               h,
@@ -579,7 +582,8 @@ BOOL FCW_DoDetection(
                               );
 
         // For debug prupose.
-        memset(vcs3, 0x0, sizeof(VehicleCandidates));
+        memset(vcs, 0x0, sizeof(VehicleCandidates));
+        memset(vcs2, 0x0, sizeof(VehicleCandidates));
 
         fcws_obj->GetInternalData(w,
                                   h,
@@ -589,11 +593,9 @@ BOOL FCW_DoDetection(
                                   roi_img,
                                   vedge,
                                   heatmap,
-                                  vcs3
+                                  vcs,
+                                  vcs2
                                   );
-
-
-
     }
     // --------------------------------------------------
 

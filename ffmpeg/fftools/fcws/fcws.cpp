@@ -151,7 +151,6 @@ redo:
                 if ((/*(a)*/next->c >= cur->c && next->c <= cur->c + cur->w) ||
                     (/*(b)*/next->c < cur->c && next->c + next->w > cur->c && next->c + next->w <= cur->c + cur->w)) {
                     next =  blobs.erase(next);
-                    goto redo;
                 } else if (/*(c)*/cur->c > next->c && cur->c + cur->w <= next->c + next->w) {
                     if ((cur->r - next->r) < (cur->w * 0.5)) {
 
@@ -329,16 +328,16 @@ examine:
 
                             if (blob_h > 1 &&
                                 ((peak_idx <= src->size1 / 3.0 && blob_w >= 10 && blob_pixel_density >= 0.2) ||
-                                 (peak_idx > src->size1 / 3.0 && blob_w >= 20 && blob_pixel_density >= 0.55))) {
+                                (peak_idx > src->size1 / 3.0 && blob_w >= 20 && blob_pixel_density >= 0.55))) {
                                 tblob.valid = TRUE;
                                 tblob.r     = peak_idx;
                                 tblob.c     = sm_c + blob_c;
                                 tblob.w     = blob_w;
                                 tblob.h     = blob_h;
 
-                                if (BlobFindIdentical(blobs, tblob) == FALSE) {
+                                if (BlobFindIdentical(blobs, tblob) == FALSE)
                                     blobs.push_back(tblob);
-                                } else
+                                else
                                     memset(&tblob, 0x0, sizeof(blob_t));
                             }
                         }
@@ -376,6 +375,12 @@ void CFCWS::VCDump(string description, list<candidate_t>& cands)
             }
         }
     }
+}
+
+double CFCWS::VCGetDist(double pixel)
+{
+    // d = W * f / w 
+    return (VehicleWidth * (EFL / 2.0)) / (pixel * PixelSize);
 }
 
 BOOL CFCWS::VCCheckByAR(list<candidate_t>& cands)
@@ -574,8 +579,8 @@ BOOL CFCWS::VCUpdateShapeByStrongVerticalEdge(const gsl_matrix* vedgeimg, list<c
 }
 
 BOOL CFCWS::VCUpdateHeatMap(gsl_matrix* map,
-                                 gsl_matrix_char* id,
-                                 list<candidate_t>& cands)
+                            gsl_matrix_char* id,
+                            list<candidate_t>& cands)
 {
     BOOL pixel_hit = FALSE;
     uint32_t i, r, c;
@@ -622,6 +627,48 @@ BOOL CFCWS::VCUpdateHeatMap(gsl_matrix* map,
             if (val < HeatMapAppearThreshold) {
                 gsl_matrix_char_set(id, r, c, -1);
             }
+        }
+    }
+
+    return TRUE;
+}
+
+BOOL CFCWS::HeatMapUpdateID(const gsl_matrix* heatmap,
+                             gsl_matrix_char* heatmap_id,
+                             list<candidate_t>::iterator it,
+                             char id)
+{
+    uint32_t r, c;
+    gsl_matrix_view heatmap_sm;
+    gsl_matrix_char_view heatmapid_sm;
+
+    if (!heatmap || !heatmap_id) {
+        fcwsdbg();
+        return FALSE;
+    }
+
+    heatmap_sm = gsl_matrix_submatrix((gsl_matrix*)heatmap,
+                                      it->m_r,
+                                      it->m_c,
+                                      it->m_h,
+                                      it->m_w);
+
+    heatmapid_sm = gsl_matrix_char_submatrix(heatmap_id,
+                                             it->m_r,
+                                             it->m_c,
+                                             it->m_h,
+                                             it->m_w);
+
+    // Update heatmap id within cand region.
+    for (r = 0 ; r < heatmap_sm.matrix.size1 ; ++r) {
+        for (c = 0 ; c < heatmap_sm.matrix.size2 ; ++c) {
+            if (gsl_matrix_get(&heatmap_sm.matrix, r, c) < HeatMapAppearThreshold)
+                continue;
+
+            //if (gsl_matrix_char_get(&heatmapid_sm.matrix, rr, cc) != -1)
+            //    continue;
+
+            gsl_matrix_char_set(&heatmapid_sm.matrix, r, c, id);
         }
     }
 
@@ -795,6 +842,8 @@ BOOL CFCWS::HeatMapGetContour(const gsl_matrix_char* m,
            //fcwsdbg("ratio of aspect is %.02f", rect.w / (float)rect.h);
            if (AR_LB < aspect_ratio && aspect_ratio < AR_HB)
                ret = TRUE;
+           else
+               fcwsdbg("Get inappropriate aspect ratio contour.");
 
            break;
         } else {
@@ -839,7 +888,6 @@ BOOL CFCWS::VCTrackerAddOrUpdateExistTarget(const gsl_matrix* heatmap,
     point_t midpoint_newcand;
     point_t contour_sp;
     rect contour_rect;
-    gsl_matrix_view heatmap_sm;
     gsl_matrix_char_view heatmapid_sm;
     candidate_t newtarget;
     list<candidate_t>::iterator cand, target;
@@ -848,6 +896,9 @@ BOOL CFCWS::VCTrackerAddOrUpdateExistTarget(const gsl_matrix* heatmap,
         fcwsdbg();
         return FALSE;
     }
+
+    if (!cands.size())
+        return FALSE;
 
     //Assign an ID to each pixel which exceeds the threshold and does not have an ID yet.
     for (r = 0 ; r < heatmap->size1 ; ++r) {
@@ -865,10 +916,7 @@ BOOL CFCWS::VCTrackerAddOrUpdateExistTarget(const gsl_matrix* heatmap,
                     break;
             }
 
-            if (cand == cands.end())
-                continue;
-
-            if (cand->m_valid == FALSE)
+            if ((cand == cands.end()) || (cand->m_valid == FALSE))
                 continue;
 
             fcwsdbg("New point at (%d,%d) belongs to new vc[%d]", r, c, cand->m_id);
@@ -890,30 +938,10 @@ BOOL CFCWS::VCTrackerAddOrUpdateExistTarget(const gsl_matrix* heatmap,
                 vc_id = target->m_id;    
                 fcwsdbg("Find nearest target[%d]", vc_id);
 
-                heatmap_sm = gsl_matrix_submatrix((gsl_matrix*)heatmap,
-                                                  cand->m_r,
-                                                  cand->m_c,
-                                                  cand->m_h,
-                                                  cand->m_w);
-
-                heatmapid_sm = gsl_matrix_char_submatrix(heatmap_id,
-                                                  cand->m_r,
-                                                  cand->m_c,
-                                                  cand->m_h,
-                                                  cand->m_w);
-
-                // Update heatmap id within cand region.
-                for (rr = 0 ; rr < heatmap_sm.matrix.size1 ; ++rr) {
-                    for (cc = 0 ; cc < heatmap_sm.matrix.size2 ; ++cc) {
-                        if (gsl_matrix_get(&heatmap_sm.matrix, rr, cc) < HeatMapAppearThreshold)
-                            continue;
-
-                        //if (gsl_matrix_char_get(&heatmapid_sm.matrix, rr, cc) != -1)
-                        //    continue;
-
-                        gsl_matrix_char_set(&heatmapid_sm.matrix, rr, cc, vc_id);
-                    }
-                }
+                HeatMapUpdateID(heatmap,
+                                heatmap_id,
+                                cand,
+                                vc_id);
 
                 // set start position of contour.
                 if (r > target->m_r && c > target->m_c) {
@@ -930,14 +958,13 @@ BOOL CFCWS::VCTrackerAddOrUpdateExistTarget(const gsl_matrix* heatmap,
                             break;
                     }
 
-                    //fcwsdbg("rr %d cc %d", rr, cc);
                     contour_sp.r = rr;
                     contour_sp.c = cc;
-                    fcwsdbg("new top_left is inside cur top_left, using (%d,%d) instead of (%d,%d) as start point of contour.", rr, cc, r, c);
+                    //fcwsdbg("new top_left is inside cur top_left, using (%d,%d) instead of (%d,%d) as start point of contour.", rr, cc, r, c);
                 } else {
                     contour_sp.r = r;
                     contour_sp.c = c;
-                    fcwsdbg("new top_left is outside cur top_left, using (%d,%d) as start point of contour.", r, c);
+                    //fcwsdbg("new top_left is outside cur top_left, using (%d,%d) as start point of contour.", r, c);
                 }
             } else {
                 // New candidate needs a new ID.
@@ -956,33 +983,16 @@ BOOL CFCWS::VCTrackerAddOrUpdateExistTarget(const gsl_matrix* heatmap,
                 }
 
                 fcwsdbg("Create a new candidate at (%d,%d) with id %d for new vc[%d]", r, c, vc_id, cand->m_id);
-                fcwsdbg("vc %d at (%d,%d) with (%d,%d)", cand->m_id,
-                                                         cand->m_r,
-                                                         cand->m_c,
-                                                         cand->m_w,
-                                                         cand->m_h);
+                //fcwsdbg("vc %d at (%d,%d) with (%d,%d)", cand->m_id,
+                //                                         cand->m_r,
+                //                                         cand->m_c,
+                //                                         cand->m_w,
+                //                                         cand->m_h);
 
-                heatmap_sm = gsl_matrix_submatrix((gsl_matrix*)heatmap, 
-                                                  cand->m_r,
-                                                  cand->m_c,
-                                                  cand->m_h,
-                                                  cand->m_w);
-
-                heatmapid_sm = gsl_matrix_char_submatrix(heatmap_id, 
-                                                         cand->m_r,
-                                                         cand->m_c,
-                                                         cand->m_h,
-                                                         cand->m_w);
-
-                // Update heatmap id within new vc region.
-                for (rr=0 ; rr<heatmap_sm.matrix.size1 ; ++rr) {
-                    for (cc=0 ; cc<heatmap_sm.matrix.size2 ; ++cc) {
-                        if (gsl_matrix_get(&heatmap_sm.matrix, rr, cc) < HeatMapAppearThreshold)
-                            continue;
-
-                        gsl_matrix_char_set(&heatmapid_sm.matrix, rr, cc, vc_id);
-                    }
-                }
+                HeatMapUpdateID(heatmap,
+                                heatmap_id,
+                                cand,
+                                vc_id);
 
                 // set start position of contour.
                 contour_sp.r = r;
@@ -1001,7 +1011,7 @@ BOOL CFCWS::VCTrackerAddOrUpdateExistTarget(const gsl_matrix* heatmap,
                     newtarget.m_c           = contour_rect.c;
                     newtarget.m_w           = contour_rect.w;
                     newtarget.m_h           = contour_rect.h;
-                    //newtarget.m_dist        = FCW_GetObjDist(newtarget.m_w);
+                    newtarget.m_dist        = VCGetDist(newtarget.m_w);
 
                     tracker.push_back(newtarget);
                 } else {
@@ -1014,14 +1024,14 @@ BOOL CFCWS::VCTrackerAddOrUpdateExistTarget(const gsl_matrix* heatmap,
                         target->m_c           = contour_rect.c;
                         target->m_w           = contour_rect.w;
                         target->m_h           = contour_rect.h;
-                        //target->m_dist        = FCW_GetObjDist(target->m_w);
+                        target->m_dist        = VCGetDist(target->m_w);
                     } else
                         fcwsdbg();
                 }
 
                 for (auto& t:tracker) {
                     if (t.m_id == vc_id) {
-                        fcwsdbg("vc[%d] locates at (%d,%d) with (%d,%d)",
+                        fcwsdbg("target[%d] locates at (%d,%d) with (%d,%d)",
                                 t.m_id,
                                 t.m_r,
                                 t.m_c,
@@ -1058,10 +1068,13 @@ BOOL CFCWS::VCTrackerUpdateExistTarget(const gsl_matrix_char* heatmap_id,
     point_t contour_sp;
     rect contour_rect;
 
-    if (!heatmap_id || !tracker.size()) {
+    if (!heatmap_id) {
         fcwsdbg();
         return FALSE;
     }
+
+    if (!tracker.size())
+        return FALSE;
 
     for (list<candidate_t>::iterator t = tracker.begin() ; t != tracker.end() ; ) {
         if (t->m_updated == FALSE) {
@@ -1091,11 +1104,11 @@ BOOL CFCWS::VCTrackerUpdateExistTarget(const gsl_matrix_char* heatmap_id,
                 t->m_c           = contour_rect.c;
                 t->m_w           = contour_rect.w;
                 t->m_h           = contour_rect.h;
-                //t->m_dist        = FCW_GetObjDist(t->m_w);
+                t->m_dist        = VCGetDist(t->m_w);
             }
 
             if (t->m_updated == TRUE) {
-                fcwsdbg("vc[%d] locates at (%d,%d) with (%d,%d) is self-updated.",
+                fcwsdbg("target[%d] locates at (%d,%d) with (%d,%d) is self-updated.",
                         t->m_id,
                         t->m_r,
                         t->m_c,
@@ -1103,7 +1116,7 @@ BOOL CFCWS::VCTrackerUpdateExistTarget(const gsl_matrix_char* heatmap_id,
                         t->m_h);
                 ++t;
             } else {
-                fcwsdbg("vc[%d] is removed.", t->m_id);
+                fcwsdbg("target[%d] is removed.", t->m_id);
                 // This existed candidate has not been updated anymore. Remove it from the list.
                 t = tracker.erase(t);
             }
@@ -1213,6 +1226,18 @@ BOOL CFCWS::HypothesisGenerate(const gsl_matrix* imgy,
     VCUpdateHeatMap(heatmap, heatmapid, cands);
 
     VCTrackerUpdate(heatmap, heatmapid, tracker, cands);
+
+    if (tracker.size()) {
+        for (auto& t:tracker) {
+            fcwsdbg(YELLOW "target %d at (%d,%d) with (%d,%d), dist %.2lf" NONE,
+                    t.m_id,
+                    t.m_r,
+                    t.m_c,
+                    t.m_w,
+                    t.m_h,
+                    t.m_dist);
+        }
+    }
 
     return TRUE;
 }
@@ -1415,7 +1440,8 @@ BOOL CFCWS::GetInternalData(uint32_t w,
                             uint8_t* roi,
                             uint8_t* vedge,
                             uint8_t* heatmap,
-                            VehicleCandidates* vcs
+                            VehicleCandidates* vcs,
+                            VehicleCandidates* vcs2
                             )
 {
     pthread_mutex_lock(&m_mutex);
@@ -1426,6 +1452,7 @@ BOOL CFCWS::GetInternalData(uint32_t w,
     m_ip->CopyBackImage(m_vedgeimg  , vedge     , w, h, linesize);
     m_ip->CopyBackImage(m_heatmap   , heatmap   , w, h, linesize);
 
+    // instant vc.
     for (auto& cand:m_candidates) {
         vcs->vc[vcs->vc_count].m_updated    = cand.m_updated;
         vcs->vc[vcs->vc_count].m_valid      = cand.m_valid;
@@ -1437,6 +1464,20 @@ BOOL CFCWS::GetInternalData(uint32_t w,
         vcs->vc[vcs->vc_count].m_dist       = cand.m_dist;
         vcs->vc[vcs->vc_count].m_next       = NULL;
         vcs->vc_count++;
+    }
+
+    // stable vc
+    for (auto& cand:m_vc_tracker) {
+        vcs2->vc[vcs2->vc_count].m_updated    = cand.m_updated;
+        vcs2->vc[vcs2->vc_count].m_valid      = cand.m_valid;
+        vcs2->vc[vcs2->vc_count].m_id         = cand.m_id;
+        vcs2->vc[vcs2->vc_count].m_r          = cand.m_r;
+        vcs2->vc[vcs2->vc_count].m_c          = cand.m_c;
+        vcs2->vc[vcs2->vc_count].m_w          = cand.m_w;
+        vcs2->vc[vcs2->vc_count].m_h          = cand.m_h;
+        vcs2->vc[vcs2->vc_count].m_dist       = cand.m_dist;
+        vcs2->vc[vcs2->vc_count].m_next       = NULL;
+        vcs2->vc_count++;
     }
 
     pthread_mutex_unlock(&m_mutex);
