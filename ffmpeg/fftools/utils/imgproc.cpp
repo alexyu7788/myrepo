@@ -622,3 +622,17 @@ BOOL CImgProc::CalHorizonProject(const gsl_matrix* const src,
 
     return TRUE;
 }
+        
+BOOL CImgProc::RemoveNoisyBlob(const gsl_matrix* src, 
+                            gsl_matrix* dst)
+{
+
+    if (!src || !dst) {
+        ldwsdbg();
+        return FALSE;
+    }
+
+
+
+    return TRUE;
+}

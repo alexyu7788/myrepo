@@ -107,5 +107,8 @@ class CImgProc {
 
         BOOL CalHorizonProject(const gsl_matrix* const src,
                                gsl_vector* proj);
+        
+        BOOL RemoveNoisyBlob(const gsl_matrix* src, 
+                             gsl_matrix* dst);
 };
 #endif

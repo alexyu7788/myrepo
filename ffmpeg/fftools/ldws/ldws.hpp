@@ -142,7 +142,8 @@ class CLDWS {
 
         gsl_matrix* m_imgy;
         gsl_matrix* m_edged_imgy;
-        
+        gsl_matrix* m_intimg;
+
         lane_stat_t m_lane_stat;
 
         param_t         m_param[LANE_THREADS];

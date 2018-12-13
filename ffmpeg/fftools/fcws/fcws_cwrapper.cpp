@@ -2308,7 +2308,7 @@ BOOL FCW_CheckSymmProperty(const gsl_matrix* imgy, VehicleCandidates* vcs, float
 
     return ret;
 }
-
+  
 BOOL FCW_UpdateVehicleHeatMap(gsl_matrix* heatmap, gsl_matrix_char* heatmap_id, VehicleCandidates* vcs)
 {
     BOOL pixel_hit = FALSE;

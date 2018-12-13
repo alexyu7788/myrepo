@@ -33,8 +33,8 @@
 
 
 #define DEBUG
-//#define DEBUG_LDWS
-#define DEBUG_FCWS
+#define DEBUG_LDWS
+//#define DEBUG_FCWS
 
 #ifdef DEBUG
 //#define dbg(format, args...) printf("[%s][%s][%d] " format "\n", __FILE__, __func__, __LINE__, ##args)

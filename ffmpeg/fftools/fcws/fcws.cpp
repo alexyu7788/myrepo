@@ -632,7 +632,7 @@ BOOL CFCWS::VCUpdateHeatMap(gsl_matrix* map,
 
     return TRUE;
 }
-
+ 
 BOOL CFCWS::HeatMapUpdateID(const gsl_matrix* heatmap,
                              gsl_matrix_char* heatmap_id,
                              list<candidate_t>::iterator it,
