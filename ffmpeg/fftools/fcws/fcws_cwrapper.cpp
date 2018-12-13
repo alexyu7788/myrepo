@@ -601,7 +601,7 @@ BOOL FCW_DoDetection(
 
     return TRUE;
 }
-
+   
 int FCW_GetRounded_Direction(int gx, int gy)
 {
     /* reference angles:

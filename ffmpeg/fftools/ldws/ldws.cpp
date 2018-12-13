@@ -783,10 +783,10 @@ BOOL CLDWS::CalStraightLanesPoly(void)
     pthread_mutex_lock(&right->mutex);
 
     if (left->exist && right->exist) {
-        r1 = left->pix[left->pix_count / 2].r; 
-        c1 = left->pix[left->pix_count / 2].c; 
-        r2 = left->pix[left->pix_count - 1].r; 
-        c2 = left->pix[left->pix_count - 1].c; 
+        r1 = left->pix[left->pix_count / 3].r; 
+        c1 = left->pix[left->pix_count / 3].c; 
+        r2 = left->pix[left->pix_count * 2 / 3].r; 
+        c2 = left->pix[left->pix_count * 2 / 3].c; 
 
         if (c1 != c2) {
             m_slope_left = (float)(c1 - c2) / (float)(r1 - r2);

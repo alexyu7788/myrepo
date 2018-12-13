@@ -1451,7 +1451,7 @@ BOOL CFCWS::GetInternalData(uint32_t w,
     m_ip->CopyBackImage(m_shadowimg , roi       , w, h, linesize);
     m_ip->CopyBackImage(m_vedgeimg  , vedge     , w, h, linesize);
     m_ip->CopyBackImage(m_heatmap   , heatmap   , w, h, linesize);
-
+  
     // instant vc.
     for (auto& cand:m_candidates) {
         vcs->vc[vcs->vc_count].m_updated    = cand.m_updated;
@@ -1465,7 +1465,7 @@ BOOL CFCWS::GetInternalData(uint32_t w,
         vcs->vc[vcs->vc_count].m_next       = NULL;
         vcs->vc_count++;
     }
-
+ 
     // stable vc
     for (auto& cand:m_vc_tracker) {
         vcs2->vc[vcs2->vc_count].m_updated    = cand.m_updated;
