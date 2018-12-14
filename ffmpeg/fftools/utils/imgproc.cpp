@@ -367,6 +367,10 @@ CImgProc::CImgProc() {
     m_sobel_init    = FALSE;
     m_gradient      = NULL;
     m_dir           = NULL;
+
+    // Integral Image
+    m_intimg        =
+    m_iitemp        = NULL;
 }
 
 CImgProc::~CImgProc()
@@ -376,6 +380,9 @@ CImgProc::~CImgProc()
 
     FreeMatrix(&m_gradient);
     FreeMatrixChar(&m_dir);
+
+    FreeMatrix(&m_intimg);
+    FreeMatrix(&m_iitemp);
 }
 
 BOOL CImgProc::Init() 
@@ -551,6 +558,32 @@ BOOL CImgProc::GenIntegralImage(gsl_matrix* src, gsl_matrix* dst)
     return TRUE;
 }
 
+BOOL CImgProc::GenIntegralImageOfEdgeImage(const gsl_matrix* src, gsl_matrix* dst)
+{
+    uint32_t r, c;
+
+    if (!src || !dst || src->size1 != dst->size1 || src->size2 != dst->size2) {
+        dbg();
+        return FALSE;
+    }
+
+    CheckOrReallocMatrix(&m_iitemp, src->size1, src->size2, TRUE);
+
+    // white->black, black->white
+    for (r = 0 ; r < src->size1 ; ++r) {
+        for (c = 0 ; c< src->size2 ; ++c) {
+            if (gsl_matrix_get(src, r, c) == 255)
+                gsl_matrix_set(m_iitemp, r, c, 0);
+            else
+                gsl_matrix_set(m_iitemp, r, c, 255);
+        }
+    }   
+
+    GenIntegralImage(m_iitemp, dst);
+
+    return TRUE;
+}
+
 BOOL CImgProc::ThresholdingByIntegralImage(gsl_matrix* src, 
                                            gsl_matrix* intimg, 
                                            gsl_matrix* dst, 
@@ -571,14 +604,17 @@ BOOL CImgProc::ThresholdingByIntegralImage(gsl_matrix* src,
     // If center pixel is p percentage lower than average value of sliding window, set it as black. Otherwise, set as white.
     for (r=0 ; r<src->size1 ; ++r) {
         for (c=0 ; c<src->size2 ; ++c) {
-            if (r >= s/2+1 && r<src->size1 - s/2 - 1 && c>=s/2+1 && c<src->size2 - s/2 -1) { // boundary checking.
+            if (r >= (s / 2 + 1) && r < (src->size1 - s/2 - 1) && c >= (s / 2 + 1) && c < (src->size2 - s/2 -1)) { // boundary checking.
                 r1 = r - s/2;
                 c1 = c - s/2;
                 r2 = r + s/2;
                 c2 = c + s/2;
 
                 count = (r2 - r1) * (c2 - c1);
-                sum = gsl_matrix_get(intimg, r2, c2) - gsl_matrix_get(intimg, r1-1, c2) - gsl_matrix_get(intimg, r2, c1-1) + gsl_matrix_get(intimg, r1-1, c1-1);
+                sum = (gsl_matrix_get(intimg,   r2,   c2) - 
+                       gsl_matrix_get(intimg, r1-1,   c2) - 
+                       gsl_matrix_get(intimg,   r2, c1-1) + 
+                       gsl_matrix_get(intimg, r1-1, c1-1));
 
                 if ((gsl_matrix_get(src, r, c) * count) <= (sum * p))
                     gsl_matrix_set(dst, r, c, 0);
@@ -623,16 +659,68 @@ BOOL CImgProc::CalHorizonProject(const gsl_matrix* const src,
     return TRUE;
 }
         
-BOOL CImgProc::RemoveNoisyBlob(const gsl_matrix* src, 
-                            gsl_matrix* dst)
+BOOL CImgProc::RemoveNoisyBlob(gsl_matrix* src, 
+                             uint32_t outer_window,
+                             uint32_t inner_window)
 {
+    uint32_t r, c, rr, cc;
+    uint32_t outer_r1, outer_c1, outer_r2, outer_c2;
+    uint32_t inner_r1, inner_c1, inner_r2, inner_c2;
+    double outer_sum, inner_sum;
 
-    if (!src || !dst) {
-        ldwsdbg();
+    if (!src) {
+        dbg();
         return FALSE;
     }
 
+    if (inner_window >= outer_window) {
+        dbg("Inner window should be samller than outer window.");
+        return FALSE;
+    }
 
+    CheckOrReallocMatrix(&m_intimg, src->size1, src->size2, TRUE);
+
+    GenIntegralImageOfEdgeImage(src, m_intimg);
+
+    for (r = 0 ; r < m_intimg->size1 ; ++r) {
+        for (c = 0 ; c < m_intimg->size2 ; ++c) {
+            if (r >= (outer_window / 2 + 1) && r < (m_intimg->size1 - outer_window / 2 - 1) && 
+                c >= (outer_window / 2 + 1) && c < (m_intimg->size2 - outer_window / 2 - 1)) { // boundary checking.
+                outer_r1 = r - outer_window / 2;
+                outer_c1 = c - outer_window / 2;
+                outer_r2 = r + outer_window / 2;
+                outer_c2 = c + outer_window / 2;
+
+                inner_r1 = r - inner_window / 2;
+                inner_c1 = c - inner_window / 2;
+                inner_r2 = r + inner_window / 2;
+                inner_c2 = c + inner_window / 2;
+
+                outer_sum = (gsl_matrix_get(m_intimg,   outer_r2,   outer_c2) - 
+                             gsl_matrix_get(m_intimg, outer_r1-1,   outer_c2) - 
+                             gsl_matrix_get(m_intimg,   outer_r2, outer_c1-1) + 
+                             gsl_matrix_get(m_intimg, outer_r1-1, outer_c1-1));
+
+                inner_sum = (gsl_matrix_get(m_intimg,   inner_r2,   inner_c2) - 
+                             gsl_matrix_get(m_intimg, inner_r1-1,   inner_c2) - 
+                             gsl_matrix_get(m_intimg,   inner_r2, inner_c1-1) + 
+                             gsl_matrix_get(m_intimg, inner_r1-1, inner_c1-1));
+
+                if (inner_sum > 0 && inner_sum == outer_sum) {
+                    for (rr = inner_r1 ; rr <= inner_r2 ; ++rr) {
+                        for (cc = inner_c1 ; cc <= inner_c2 ; ++cc) {
+                            gsl_matrix_set(src, rr, cc, 255);
+                        }
+                    }
+
+                    // Update integral image
+                    GenIntegralImageOfEdgeImage(src, m_intimg);
+
+                    //dbg("Remove isolated blob(%d) around (%d,%d)", (int)(inner_sum / 255), r, c);
+                }
+            }
+        }
+    }
 
     return TRUE;
 }

@@ -30,6 +30,10 @@ class CImgProc {
         gsl_matrix*         m_gradient;
         gsl_matrix_char*    m_dir;
 
+        // Integral Image
+        gsl_matrix*         m_intimg;
+        gsl_matrix*         m_iitemp;
+
     protected:
         // Gaussian Blur
         BOOL InitGB(int size = 5);   
@@ -99,6 +103,8 @@ class CImgProc {
 
         BOOL GenIntegralImage(gsl_matrix* src, gsl_matrix* dst);
 
+        BOOL GenIntegralImageOfEdgeImage(const gsl_matrix* src, gsl_matrix* dst);
+
         BOOL ThresholdingByIntegralImage(gsl_matrix* src, 
                                          gsl_matrix* intimg, 
                                          gsl_matrix* dst, 
@@ -108,7 +114,8 @@ class CImgProc {
         BOOL CalHorizonProject(const gsl_matrix* const src,
                                gsl_vector* proj);
         
-        BOOL RemoveNoisyBlob(const gsl_matrix* src, 
-                             gsl_matrix* dst);
+        BOOL RemoveNoisyBlob(gsl_matrix* src, 
+                             uint32_t outer_window = 5,
+                             uint32_t inner_window = 3);
 };
 #endif

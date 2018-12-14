@@ -19,7 +19,6 @@ CLDWS::CLDWS()
     m_ip            = NULL;
     m_imgy          = NULL;
     m_edged_imgy    = NULL;
-    m_intimg        = NULL;
 
     memset(&m_vp, 0x0, sizeof(m_vp));
 
@@ -112,7 +111,6 @@ BOOL CLDWS::DeInit()
 
     FreeMatrix(&m_imgy);
     FreeMatrix(&m_edged_imgy);
-    FreeMatrix(&m_intimg);
 
     if (m_ip) {
         delete m_ip;
@@ -152,9 +150,8 @@ BOOL CLDWS::DoDetection(uint8_t* src,
     m_cols      = w;
     m_rowoffset = rowoffset;
 
-    CheckOrReallocMatrix(&m_imgy, m_rows, m_cols, TRUE);
-    CheckOrReallocMatrix(&m_edged_imgy, m_rows, m_cols, TRUE);
-    CheckOrReallocMatrix(&m_intimg, m_rows, m_cols, TRUE);
+    CheckOrReallocMatrix(&m_imgy        , m_rows, m_cols, TRUE);
+    CheckOrReallocMatrix(&m_edged_imgy  , m_rows, m_cols, TRUE);
 
     if (crop)
         m_ip->CropImage(src, m_imgy, w, h, linesize, m_rowoffset);
@@ -162,8 +159,7 @@ BOOL CLDWS::DoDetection(uint8_t* src,
         m_ip->CopyImage(src, m_imgy, w, h, linesize);
 
     m_ip->EdgeDetectForLDW(m_imgy, m_edged_imgy, 60, NULL, 0);
-    m_ip->GenIntegralImage(m_edged_imgy, m_intimg);
-    m_ip->RemoveNoisyBlob(m_intimg, m_edged_imgy);
+    m_ip->RemoveNoisyBlob(m_edged_imgy, 16, 10);
 
     FindLane(m_edged_imgy, 0, 0, m_lane_stat.p, m_lane_stat.l);
 
