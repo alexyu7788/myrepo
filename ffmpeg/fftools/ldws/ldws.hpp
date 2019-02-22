@@ -10,6 +10,7 @@ extern "C" {
 
 #include "../utils/common.hpp"
 #include "../utils/imgproc.hpp"
+#include "../utils/mop.h"
 
 #define VALID_AGENT_TRIANGLE_AREA       30
 #define VALID_AGENT_DISTANCE            60.0
@@ -156,6 +157,10 @@ class CLDWS {
 
         gsl_matrix_view m_subimgy[LANE_THREADS];
 
+        // ------------------------DLIB---------------------------
+        smatrix         m_dlib_imgy;
+        smatrix         m_dlib_edged_imgy;
+        smatrix         m_dlib_subimgy[LANE_THREADS];
 
     public:
         CLDWS();
@@ -189,6 +194,9 @@ class CLDWS {
                            );
 
         BOOL ApplyDynamicROI(gsl_matrix* src);
+
+        // ------------------------DLIB---------------------------
+        BOOL ApplyDynamicROI(smatrix& src);
 
     protected:
         static lane* LaneInit(void);
@@ -254,6 +262,12 @@ class CLDWS {
         static void* FindPartialLane(void* args);
 
         BOOL FindLane(gsl_matrix* src,
+                    int start_row,
+                    int start_col,
+                    lanepoint* p,
+                    lane *l[LANE_NUM]);
+        // ------------------------DLIB---------------------------
+        BOOL FindLane(smatrix& src,
                     int start_row,
                     int start_col,
                     lanepoint* p,

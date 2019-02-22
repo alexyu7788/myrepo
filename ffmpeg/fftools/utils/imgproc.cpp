@@ -319,9 +319,254 @@ BOOL CImgProc::Sobel(gsl_matrix* grad,
 }
 
 
+//---------------- dlib----------------------------
+
+// Gaussian Blur
+BOOL CImgProc::GaussianBlur(const smatrix& src,
+							smatrix& dst,
+                            int kernel_size)
+{
+    long r, c;
+    long src_nr, src_nc, dst_nr, dst_nc;
+    short ret;
+
+    src_nr = src.nr();
+    src_nc = src.nc();
+    dst_nr = dst.nr();
+    dst_nc = dst.nc();
+
+    if (!src_nr || !src_nc || !dst_nr || !dst_nc) {
+        dbg();
+        return FALSE;
+    }
+
+    if (src_nr != dst_nr || src_nc != dst_nc) {
+        dbg();
+        return FALSE;
+    }
+
+    dst = src;
+
+	if (kernel_size == 3) {
+		for (r = 1 ; r < src_nr - 1 ; ++r) {
+			for (c = 1 ; c < src_nc - 1 ; ++c) {
+
+				ret = ((src.operator()(r-1, c-1) + src.operator()(r+1, c-1))
+						   + (src.operator()(r-1,   c) + src.operator()(r+1,   c)) * 2
+						   + (src.operator()(r-1, c+1) + src.operator()(r+1, c+1))
+
+						   + src.operator()(  r, c-1) 	* 2
+						   + src.operator()(  r,   c) 	* 4
+						   + src.operator()(  r, c+1) 	* 2) / 16;
+
+				// < 6%
+				 dst.operator()(r, c) = ret;
+				// < 9%
+			}
+		}
+	} else if (kernel_size == 5) {
+
+	}
+
+    return TRUE;
+}
+
+void CImgProc::GaussianBlur(const uint8_t* src_data,
+		                    uint8_t* dst_data,
+							int src_w,
+							int src_h,
+							int src_stride,
+							int matrix_size)
+{
+	int i,j;
+
+	if (matrix_size != 3 && matrix_size != 5)
+		matrix_size = 3;
+
+	if (matrix_size == 3)
+	{
+		memcpy(dst_data, src_data, src_w); dst_data += src_stride; src_data += src_stride;
+
+		for (j = 1; j < src_h - 1; j++)
+		{
+			dst_data[0] = src_data[0];
+			for (i = 1; i < src_w - 1; i++)
+			{
+				/* Gaussian mask of size 3x3*/
+				dst_data[i] = (    (src_data[-src_stride + i - 1] + src_data[-src_stride + i + 1])
+								+  (src_data[-src_stride + i    ] + src_data[ src_stride + i    ]) * 2
+								+  (src_data[ src_stride + i - 1] + src_data[ src_stride + i + 1])
+								+  (src_data[              i - 1] + src_data[              i + 1]) * 2
+								+  (src_data[              i    ]) * 4
+								)/ 16;
+			}
+			dst_data[i] = src_data[i];
+
+			dst_data += src_stride;
+			src_data += src_stride;
+		}
+
+		memcpy(dst_data, src_data, src_w);
+	}
+	else if (matrix_size == 5)
+	{
+		memcpy(dst_data, src_data, src_w); dst_data += src_stride; src_data += src_stride;
+		memcpy(dst_data, src_data, src_w); dst_data += src_stride; src_data += src_stride;
+
+		for (j = 2; j < src_h - 2; j++)
+		{
+			dst_data[0] = src_data[0];
+			dst_data[1] = src_data[1];
+			for (i = 2; i < src_w - 2; i++)
+			{
+				/* Gaussian mask of size 5x5*/
+				dst_data[i] = ((src_data[-2*src_stride + i-2] + src_data[2*src_stride + i-2]) * 2
+							 + (src_data[-2*src_stride + i-1] + src_data[2*src_stride + i-1]) * 4
+							 + (src_data[-2*src_stride + i	] + src_data[2*src_stride + i  ]) * 5
+							 + (src_data[-2*src_stride + i+1] + src_data[2*src_stride + i+1]) * 4
+							 + (src_data[-2*src_stride + i+2] + src_data[2*src_stride + i+2]) * 2
+
+							 + (src_data[  -src_stride + i-2] + src_data[  src_stride + i-2]) *  4
+							 + (src_data[  -src_stride + i-1] + src_data[  src_stride + i-1]) *  9
+							 + (src_data[  -src_stride + i	] + src_data[  src_stride + i  ]) * 12
+							 + (src_data[  -src_stride + i+1] + src_data[  src_stride + i+1]) *  9
+							 + (src_data[  -src_stride + i+2] + src_data[  src_stride + i+2]) *  4
+
+							 + src_data[i-2] *	5
+							 + src_data[i-1] * 12
+							 + src_data[i  ] * 15
+							 + src_data[i+1] * 12
+							 + src_data[i+2] *	5) / 159;
+			}
+			dst_data[i	  ] = src_data[i	];
+			dst_data[i + 1] = src_data[i + 1];
+
+			dst_data += src_stride;
+			src_data += src_stride;
+		}
+
+		memcpy(dst_data, src_data, src_w); dst_data += src_stride; src_data += src_stride;
+		memcpy(dst_data, src_data, src_w);
+	}
+}
+
+BOOL CImgProc::Sobel(smatrix& grad,
+           cmatrix& dir,
+           const smatrix& src,
+           int direction,
+           BOOL double_edge,
+           int crop_r,
+           int crop_c,
+           int crop_w,
+           int crop_h)
+{
+	long r, c;
+	long src_nr, src_nc;
+	long grad_nr, grad_nc;
+	long dir_nr, dir_nc;
+	int gx, gy;
+
+	src_nr 	= src.nr();
+	src_nc 	= src.nc();
+	grad_nr = grad.nr();
+	grad_nc = grad.nc();
+	dir_nr 	= dir.nr();
+	dir_nc 	= dir.nc();
+
+	if (!src_nr || !src_nc || !grad_nr || !grad_nc || !dir_nr || !dir_nc) {
+		dbg();
+		return FALSE;
+	}
 
 
 
+    // Convolution operation
+	for (r = 1 ; r < src_nr - 1 ; ++r) {
+		for (c = 1 ; c < src_nc - 1 ; ++c) {
+			gx=0; gy=0;
+
+            // direction :
+            // 0 : vertical & horizontal edge
+            // 1 : vertical edge
+            // 2 : horizontal edge
+			if (direction != 2) {
+				gx = -1*src.operator()(r-1, c-1) + 1*src.operator()(r-1, c+1)
+					 -2*src.operator()(  r, c-1) + 2*src.operator()(  r, c+1)
+					 -1*src.operator()(r+1, c-1) + 1*src.operator()(r+1, c+1);
+			}
+
+			if (direction != 1) {
+				gy = -1*src.operator()(r-1, c-1) + 1*src.operator()(r+1, c-1)
+					 -2*src.operator()(r-1,   c) + 2*src.operator()(r+1,   c)
+					 -1*src.operator()(r-1, c+1) + 1*src.operator()(r+1, c+1);
+			}
+
+			if (double_edge)
+				grad.operator()(r, c) = abs(gx) + abs(gy);
+			else
+				grad.operator()(r, c) = gx + gy;
+
+//			dir(r, c) = GetRoundedDirection(gx, gy);
+		}
+	}
+
+	return TRUE;
+}
+
+BOOL CImgProc::SobelAndThreshoding(
+								const uint8_t* src_data,
+								smatrix& dst_data,
+								int src_w,
+								int src_h,
+								int src_stride,
+								int threshold,
+								int direction,
+								int double_edge)
+{
+	size_t r, c;
+	int gx, gy, sum;
+
+	if (!src_data || !dst_data.nr() || !dst_data.nc()) {
+		dbg();
+		return FALSE;
+	}
+
+	for (r = 1 ; r < src_h - 1 ; ++r) {
+		src_data+=src_stride;
+
+		for (c = 1 ; c < src_w - 1 ; ++c) {
+			gx=0; gy=0;
+
+            // direction :
+            // 0 : vertical & horizontal edge
+            // 1 : vertical edge
+            // 2 : horizontal edge
+			if (direction != 2) {
+				gx = (src_data[-src_stride + c+1] + 2 * src_data[c+1] + src_data[src_stride + c+1]) -
+					 (src_data[-src_stride + c-1] + 2 * src_data[c-1] + src_data[src_stride + c-1]);
+			}
+
+			if (direction != 1) {
+				gy = (src_data[ src_stride + c-1] + 2 * src_data[ src_stride + c] + src_data[ src_stride + c+1]) -
+					 (src_data[-src_stride + c-1] + 2 * src_data[-src_stride + c] + src_data[-src_stride + c+1]);
+			}
+
+			if (double_edge)
+				sum = abs(gx) + abs(gy);
+			else
+				sum = gx + gy;
+
+			if (sum < threshold)
+				dst_data(r, c) = 255;
+			else
+				dst_data(r, c) = 0;
+
+//			dir(r, c) = GetRoundedDirection(gx, gy);
+		}
+	}
+
+	return TRUE;
+}
 
 
 
@@ -715,6 +960,392 @@ BOOL CImgProc::RemoveNoisyBlob(gsl_matrix* src,
 
                     // Update integral image
                     GenIntegralImageOfEdgeImage(src, m_intimg);
+
+                    //dbg("Remove isolated blob(%d) around (%d,%d)", (int)(inner_sum / 255), r, c);
+                }
+            }
+        }
+    }
+
+    return TRUE;
+}
+
+//---------------- dlib----------------------------
+BOOL CImgProc::EdgeDetectForLDW(const smatrix& src, 
+                                smatrix& dst,
+                                int threshold,
+                                double* dir,
+                                int double_edge)
+{
+    long r, c;
+    long src_nr = src.nr();
+    long src_nc = src.nc();
+    long dst_nr = dst.nr();
+    long dst_nc = dst.nc();
+//    smatrix temp;
+
+    if (!src_nr || !src_nc || !dst_nr || !dst_nc) {
+        dbg();
+        return FALSE;
+    }
+
+    if (src_nr != dst_nr || src_nc != dst_nc) {
+        dbg();
+        return FALSE;
+    }
+
+    // < 5%
+//    if (!m_temp2.nr() || !m_temp2.nc())
+	m_dlib_temp2.set_size(src_nr, src_nc);
+//    m_temp2 = 0;
+//    set_all_elements(m_temp2, 0);
+
+//    if (!m_gradient.nr() || !m_gradient.nc())
+	m_dlib_gradient.set_size(src_nr, src_nc);
+//    m_gradient = 0;
+//    set_all_elements(m_gradient, 0);
+
+//    if (!m_dir.nr() || !m_dir.nc())
+	m_dlib_dir.set_size(src_nr, src_nc);
+//    m_dir = 0;
+//    set_all_elements(m_dir, 0);
+
+	// 5%
+    GaussianBlur(src, m_dlib_temp2, 3);
+    // 8%
+    Sobel(m_dlib_gradient, m_dlib_dir, m_dlib_temp2, 1, FALSE);
+    // 10%
+    for (r=0 ; r < src_nr ; ++r) {
+        for (c=0 ; c < src_nc ; ++c) {
+            if (m_dlib_gradient.operator()(r, c) < threshold)
+                dst.operator()(r, c) =  255;
+            else
+                dst.operator()(r, c) =  0;
+        }
+    }
+    // 15%
+    return TRUE;
+}
+
+BOOL CImgProc::EdgeDetectForLDW(const uint8_t* src,
+		              smatrix& dst,
+					  int src_w,
+					  int src_h,
+					  int src_stride,
+					  int threshold,
+					  int grandient,
+					  int double_edge)
+{
+	unsigned int size = src_w * src_h;
+
+	if (!src) {
+		dbg();
+		return FALSE;
+	}
+
+	if (m_dlib_temp && m_dlib_temp_size != size) {
+		free(m_dlib_temp);
+		m_dlib_temp = NULL;
+	}
+
+	if (m_dlib_temp == NULL) {
+		m_dlib_temp = (uint8_t *)malloc(sizeof(uint8_t)*size);
+		m_dlib_temp_size = size;
+	}
+
+	if (m_dlib_temp == NULL) {
+		dbg("MemBroker_GetMemory fail");
+		return FALSE;
+	}
+
+	GaussianBlur(src, m_dlib_temp, src_w, src_h, src_stride, 3);
+	// < 7%
+	SobelAndThreshoding(m_dlib_temp, dst, src_w, src_h, src_stride, 60, 1, 0);
+
+	return TRUE;
+}
+
+//BOOL CImgProc::EdgeDetectForFCW(const gsl_matrix* src,
+//                                gsl_matrix* dst,
+//                                gsl_matrix* gradient,
+//                                gsl_matrix_char* dir,
+//                                int direction)
+//{
+//    if (!src || !dst || !gradient || !dir) {
+//        dbg();
+//        return FALSE;
+//    }
+//
+//    Sobel(gradient, dir, src, direction, TRUE);
+//    gsl_matrix_set_zero(dst);
+//    NonMaximumSuppression(dst, dir, gradient);
+//
+//    return TRUE;
+//}
+
+BOOL CImgProc::CropImage(uint8_t* src, 
+                       smatrix& dst, 
+                       uint32_t w, 
+                       uint32_t h, 
+                       uint32_t linesize,
+                       uint32_t rowoffset)
+{
+    uint32_t r, c;
+
+    if (!src) {
+        dbg();
+        return FALSE;
+    }
+
+    if ((dst.nr() + rowoffset) != h || dst.nc() != w) {
+        dbg("Incorrect size of matrix.");
+        return FALSE;
+    }
+
+    for (r=0 ; r < h - rowoffset ; ++r) {
+        for (c=0 ; c < w ; ++c) {
+            dst.operator()( r, c) = static_cast<short>(src[(r + rowoffset) * linesize + c]);
+        }
+    }
+
+    return TRUE;
+}
+
+BOOL CImgProc::CopyImage(uint8_t* src, 
+                          smatrix& dst, 
+                          uint32_t w, 
+                          uint32_t h, 
+                          uint32_t linesize)
+{
+    long r, c;
+
+    if (!src || dst.nr() != h || dst.nc() != w) {
+        dbg();
+        return FALSE;
+    }
+
+    for (r=0 ; r < h ; ++r) {
+        for (c=0 ; c < w ; ++c) {
+            dst.operator()( r, c) = static_cast<short>(src[r * linesize + c]);
+        }
+    }
+
+    return TRUE;
+}
+
+BOOL CImgProc::CopyBackImage(smatrix& src, 
+                             uint8_t* dst, 
+                             uint32_t w, 
+                             uint32_t h, 
+                             uint32_t linesize, 
+                             uint32_t rowoffset)
+{
+    size_t r, c;
+
+    if (!dst) {
+        dbg();
+        return FALSE;
+    }
+
+    if ((src.nr() + rowoffset) != h || src.nc() != w) {
+        dbg("Incorrect size of matrix.");
+        return FALSE;
+    }
+
+    for (r=0 ; r < src.nr() ; ++r) {
+        for (c=0 ; c < src.nc() ; ++c) {
+            dst[(r + rowoffset) * linesize + c] = (uint8_t)src(r, c);
+        }
+    }
+
+    return TRUE;
+}
+
+BOOL CImgProc::GenIntegralImage(smatrix& src, smatrix& dst)
+{
+    size_t r, c;
+    double sum;
+
+    if (src.nr() != dst.nr() || src.nc() != dst.nc()) {
+        dbg();
+        return FALSE;
+    }
+
+    // Generate integral image for retrieving average value of a rectangle quickly.
+    for (c=0 ; c<src.nc() ; ++c) {
+        sum = 0;
+        for (r=0 ; r<src.nr() ; ++r) {
+            sum += src(r, c);
+
+            if (c == 0)
+                dst(r, c) = sum;
+            else
+                dst(r, c) = dst(r, c-1) + sum;
+        }
+    }
+
+    return TRUE;
+}
+
+BOOL CImgProc::GenIntegralImageOfEdgeImage(const smatrix& src, smatrix& dst)
+{
+    uint32_t r, c;
+
+    if (src.nr() != dst.nr() || src.nc() != dst.nc()) {
+        dbg();
+        return FALSE;
+    }
+
+    m_dlib_iitemp.set_size(src.nr(), src.nc());
+    set_all_elements(m_dlib_iitemp, 0);
+
+    // white->black, black->white
+    for (r = 0 ; r < src.nr() ; ++r) {
+        for (c = 0 ; c< src.nc() ; ++c) {
+            if (src(r, c) == 255)
+                m_dlib_iitemp(r, c) = 0;
+            else
+                m_dlib_iitemp(r, c) = 255;
+        }
+    }   
+
+    GenIntegralImage(m_dlib_iitemp, dst);
+
+    return TRUE;
+}
+
+//BOOL CImgProc::ThresholdingByIntegralImage(gsl_matrix* src,
+//                                           gsl_matrix* intimg,
+//                                           gsl_matrix* dst,
+//                                           uint32_t s,
+//                                           float p)
+//{
+//    uint32_t r, c;
+//    uint32_t r1, c1, r2, c2;
+//    uint32_t count;
+//    double sum;
+//
+//    if (!src || !intimg || !dst) {
+//        dbg();
+//        return FALSE;
+//    }
+//
+//    // Move a sxs sliding window pixel by pixel. The center pixel of this sliding window is (r, c).
+//    // If center pixel is p percentage lower than average value of sliding window, set it as black. Otherwise, set as white.
+//    for (r=0 ; r<src->size1 ; ++r) {
+//        for (c=0 ; c<src->size2 ; ++c) {
+//            if (r >= (s / 2 + 1) && r < (src->size1 - s/2 - 1) && c >= (s / 2 + 1) && c < (src->size2 - s/2 -1)) { // boundary checking.
+//                r1 = r - s/2;
+//                c1 = c - s/2;
+//                r2 = r + s/2;
+//                c2 = c + s/2;
+//
+//                count = (r2 - r1) * (c2 - c1);
+//                sum = (gsl_matrix_get(intimg,   r2,   c2) -
+//                       gsl_matrix_get(intimg, r1-1,   c2) -
+//                       gsl_matrix_get(intimg,   r2, c1-1) +
+//                       gsl_matrix_get(intimg, r1-1, c1-1));
+//
+//                if ((gsl_matrix_get(src, r, c) * count) <= (sum * p))
+//                    gsl_matrix_set(dst, r, c, 0);
+//                else
+//                    gsl_matrix_set(dst, r, c, 255);
+//            }
+//            else
+//                gsl_matrix_set(dst, r, c, 255);
+//        }
+//    }
+//
+//    return TRUE;
+//}
+//
+//BOOL CImgProc::CalHorizonProject(const gsl_matrix* const src,
+//                                 gsl_vector* proj)
+//{
+//    uint32_t r, c;
+//    double val = 0;
+//    gsl_vector_view row_view;
+//
+//    if (!src || !proj || src->size1 != proj->size) {
+//        dbg();
+//        return FALSE;
+//    }
+//
+//    gsl_vector_set_zero(proj);
+//
+//    // skip border
+//    for (r=1 ; r<src->size1 - 1 ; ++r) {
+//        row_view = gsl_matrix_row((gsl_matrix*)src, r);
+//
+//        for (c=1 ; c<row_view.vector.size - 1 ; c++) {
+//            if (gsl_vector_get(&row_view.vector, c) != 255)
+//            {
+//                val = gsl_vector_get(proj, r);
+//                gsl_vector_set(proj, r, ++val);
+//            }
+//        }
+//    }
+//
+//    return TRUE;
+//}
+         
+BOOL CImgProc::RemoveNoisyBlob(smatrix& src, 
+                             uint32_t outer_window,
+                             uint32_t inner_window)
+{
+    uint32_t r, c, rr, cc;
+    uint32_t outer_r1, outer_c1, outer_r2, outer_c2;
+    uint32_t inner_r1, inner_c1, inner_r2, inner_c2;
+    double outer_sum, inner_sum;
+
+    if (!src) {
+        dbg();
+        return FALSE;
+    }
+
+    if (inner_window >= outer_window) {
+        dbg("Inner window should be samller than outer window.");
+        return FALSE;
+    }
+
+    m_dlib_intimg.set_size(src.nr(), src.nc());
+    set_all_elements(m_dlib_intimg, 0);
+
+    GenIntegralImageOfEdgeImage(src, m_dlib_intimg);
+
+    for (r = 0 ; r < m_dlib_intimg.nr() ; ++r) {
+        for (c = 0 ; c < m_dlib_intimg.nc() ; ++c) {
+            if (r >= (outer_window / 2 + 1) && r < (m_dlib_intimg.nr() - outer_window / 2 - 1) && 
+                c >= (outer_window / 2 + 1) && c < (m_dlib_intimg.nc() - outer_window / 2 - 1)) { // boundary checking.
+                outer_r1 = r - outer_window / 2;
+                outer_c1 = c - outer_window / 2;
+                outer_r2 = r + outer_window / 2;
+                outer_c2 = c + outer_window / 2;
+
+                inner_r1 = r - inner_window / 2;
+                inner_c1 = c - inner_window / 2;
+                inner_r2 = r + inner_window / 2;
+                inner_c2 = c + inner_window / 2;
+
+                outer_sum = (m_dlib_intimg(outer_r2,   outer_c2) - 
+                             m_dlib_intimg(outer_r1-1, outer_c2) - 
+                             m_dlib_intimg(outer_r2,   outer_c1-1) + 
+                             m_dlib_intimg(outer_r1-1, outer_c1-1));
+
+                inner_sum = (m_dlib_intimg(inner_r2,   inner_c2) - 
+                             m_dlib_intimg(inner_r1-1, inner_c2) - 
+                             m_dlib_intimg(inner_r2,   inner_c1-1) + 
+                             m_dlib_intimg(inner_r1-1, inner_c1-1));
+
+                if (inner_sum > 0 && inner_sum == outer_sum) {
+                    for (rr = inner_r1 ; rr <= inner_r2 ; ++rr) {
+                        for (cc = inner_c1 ; cc <= inner_c2 ; ++cc) {
+                            src(rr, cc) = 255;
+                        }
+                    }
+
+                    // Update integral image
+                    GenIntegralImageOfEdgeImage(src, m_dlib_intimg);
 
                     //dbg("Remove isolated blob(%d) around (%d,%d)", (int)(inner_sum / 255), r, c);
                 }

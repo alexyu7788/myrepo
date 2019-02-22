@@ -4283,7 +4283,7 @@ int main(int argc, char **argv)
     //------------FCW--------------
     FCW_Init();
     //------------LDW--------------
-    LDW_Init();
+    //LDW_Init();
 
     event_loop(is);
 

@@ -6,6 +6,7 @@
 #include <iterator>
 #include "../utils/common.hpp"
 #include "../utils/imgproc.hpp"
+#include "../utils/mop.h"
 #include "../ldws/ldws.hpp"
 
 #ifdef __cplusplus
@@ -112,6 +113,24 @@ class CFCWS {
         gsl_vector*         m_horizonproject;
         gsl_vector*         m_temp_horizonproject;
 
+        //-------------------------DLIB-----------------------------------------
+        dmatrix             m_dlib_imgy;
+        dmatrix             m_dlib_imgu;
+        dmatrix             m_dlib_imgv;
+        dmatrix             m_dlib_vedgeimg;
+        dmatrix             m_dlib_heatmap;
+        dmatrix             m_dlib_tempimg;
+        dmatrix             m_dlib_intimg;       // integral image
+        dmatrix             m_dlib_shadowimg;
+
+        dmatrix             m_dlib_gradient;
+
+        cmatrix             m_dlib_direction;
+        cmatrix             m_dlib_heatmapid;
+
+        dvector             m_dlib_horizonproject;
+        dvector             m_dlib_temp_horizonproject;
+
         list<blob_t>        m_blobs;   
         list<candidate_t>   m_candidates;
         list<candidate_t>   m_vc_tracker;
@@ -188,6 +207,61 @@ class CFCWS {
                                 list<candidate_t>& cands,
                                 list<candidate_t>& tracker
                                 );
+
+        //-------------------------DLIB-----------------------------------------
+        BOOL ApplyStaticROI(dmatrix& src, const roi_t* roi);
+
+        BOOL BlobGenerate(const dmatrix& src,
+                          uint32_t peak_idx,
+                          list<blob_t>& blobs);
+
+        BOOL VCCheckByVerticalEdge(const dmatrix& vedgeimg,
+                                        list<candidate_t>& cands);
+
+        BOOL VCCheck(const dmatrix& imgy,
+                          const dmatrix& vedgeimg,
+                          list<candidate_t>& cands);
+
+        BOOL VCUpdateShapeByStrongVerticalEdge(const dmatrix& vedgeimg, list<candidate_t>& cands);
+
+        BOOL VCUpdateHeatMap(dmatrix& map,
+                             cmatrix& id,
+                             list<candidate_t>& cands);
+        BOOL HeatMapUpdateID(const dmatrix& heatmap,
+                             cmatrix& heatmap_id,
+                             list<candidate_t>::iterator it,
+                             char id);
+        BOOL HeatMapGetContour(const cmatrix& m,
+                               char  id,
+                               const point_t& start,
+                               rect& rect);
+
+        BOOL VCTrackerAddOrUpdateExistTarget(const dmatrix& heatmap,
+                                             cmatrix& heatmap_id,
+                                             list<candidate_t>& tracker,
+                                             list<candidate_t>& cands);
+
+        BOOL VCTrackerUpdateExistTarget(const cmatrix& heatmap_id,
+                                        list<candidate_t>& tracker);
+
+        BOOL VCTrackerUpdate(dmatrix& heatmap,
+                             cmatrix& heatmap_id,
+                             list<candidate_t>& tracker,
+                             list<candidate_t>& cands);
+
+        BOOL HypothesisGenerate(const dmatrix& imgy,
+                                const dmatrix& intimg,
+                                const dmatrix& shadowimg,
+                                const dmatrix& vedgeimg,
+                                const dvector& horizonproject,
+                                dvector& temp_horizonproject,
+                                dmatrix& heatmap,
+                                cmatrix& heatmapid,
+                                list<blob_t>& blobs,
+                                list<candidate_t>& cands,
+                                list<candidate_t>& tracker
+                                );
+
 
     public:
         CFCWS();
