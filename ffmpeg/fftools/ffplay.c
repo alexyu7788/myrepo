@@ -130,6 +130,8 @@ static uint8_t* edged_img = NULL;
 const char program_name[] = "ffplay";
 const int program_birth_year = 2003;
 
+#include "dlib/dlib_cwrapper.h"
+
 #define MAX_QUEUE_SIZE (15 * 1024 * 1024)
 #define MIN_FRAMES 25
 #define EXTERNAL_CLOCK_MIN_FRAMES 2
