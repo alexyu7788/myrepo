@@ -31,7 +31,7 @@ void Dlib_DeInit()
         dlib_obj = NULL;
     }
 }
-
+ 
 int Dlib_DoDetection(uint8_t* src,
                      int w,
                      int h,

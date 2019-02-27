@@ -3,10 +3,7 @@
 CDlib::CDlib()
 {
     m_terminate = 0;
-<<<<<<< HEAD
-=======
     m_busy = false;
->>>>>>> 1. USe dlib instead of gsl.(not ready)
 
     memset(&m_processthread, 0x0, sizeof(pthread_t));
     memset(&m_cond, 0x0, sizeof(pthread_cond_t));
@@ -15,11 +12,8 @@ CDlib::CDlib()
 
 CDlib::~CDlib()
 {
-<<<<<<< HEAD
-=======
     m_terminate = 1;
 
->>>>>>> 1. USe dlib instead of gsl.(not ready)
     if (m_processthread) {
         pthread_cond_signal(&m_cond);
         pthread_join(m_processthread, NULL);
@@ -43,15 +37,6 @@ bool CDlib::Init(char* model)
 void CDlib::DoDetection(uint8_t* img, int w, int h, int linesize)
 {
     long r, c;
-<<<<<<< HEAD
-
-    for (r=0 ; r<h ; ++r) {
-        for (c=0 ; c<w ; ++c) {
-            m_img(r, c) = img[r * linesize + c];
-        }
-    }
-
-=======
     dlib::matrix<unsigned char> temp;
 
     if (m_busy)
@@ -67,7 +52,6 @@ void CDlib::DoDetection(uint8_t* img, int w, int h, int linesize)
 
     assign_image(m_img, temp);
 
->>>>>>> 1. USe dlib instead of gsl.(not ready)
     pthread_mutex_lock(&m_mutex);
     pthread_cond_signal(&m_cond);
     pthread_mutex_unlock(&m_mutex);
@@ -86,39 +70,26 @@ void* CDlib::ProcessThread(void* args)
             break;
         }
 
-<<<<<<< HEAD
-        for (auto&& d : pThis->m_net(pThis->m_img)) {
-            auto fd = pThis->m_sp(pThis->m_img, d);
-            dlib::rectangle rect;
-=======
         pThis->m_busy = true;
 
         for (auto&& d : pThis->m_net(pThis->m_img)) {
             auto fd = pThis->m_sp(pThis->m_img, d);
             dlib::rectangle rect;
 
->>>>>>> 1. USe dlib instead of gsl.(not ready)
             for (unsigned long j=0 ; j < fd.num_parts() ; ++j) {
                 rect += fd.part(j);
             }
 
             if (d.label == "rear") {
-<<<<<<< HEAD
-                printf("Rear at (%d, %d) with (%d, %d)",
-=======
                 printf("Rear at (%d, %d) with (%d, %d)\n",
->>>>>>> 1. USe dlib instead of gsl.(not ready)
                         rect.left(),
                         rect.top(),
                         rect.right(),
                         rect.bottom());
             }
         }
-<<<<<<< HEAD
-=======
 
         pThis->m_busy = false;
->>>>>>> 1. USe dlib instead of gsl.(not ready)
     }
 
     pthread_mutex_unlock(&pThis->m_mutex);

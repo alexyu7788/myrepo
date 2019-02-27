@@ -4295,11 +4295,8 @@ int main(int argc, char **argv)
     //FCW_Init();
     //------------LDW--------------
     //LDW_Init();
-<<<<<<< HEAD
-=======
     //------------DLIB--------------
     Dlib_Init((char*)"fftools/dlib/data/mmod_front_and_rear_end_vehicle_detector.dat");
->>>>>>> 1. USe dlib instead of gsl.(not ready)
 
     event_loop(is);
 
