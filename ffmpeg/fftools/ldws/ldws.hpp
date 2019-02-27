@@ -30,7 +30,7 @@ class CLDWS;
 
 enum {
     LANE_DETECT_CHECK_OK = 1,
-    LANE_DETECT_CHECK_AGENT_TRIANGLE_AREA_ERROR = -1,
+    LANE_DETECT_CHECK_AGENT_ANGLE = -1,
     LANE_DETECT_CHECK_AGENT_DISTANCE_ERROR = -2,
     LANE_DETECT_CHECK_HORIZONTAL_ERROR = -3,
     LANE_DETECT_CHECK_DIST_OF_K_TO_VECTOR_IJ_ERROR = -4,
@@ -214,13 +214,15 @@ class CLDWS {
                                        lanepoint** j, 
                                        lanepoint** k);
 
+        static int check_agent_angle(int id, lanepoint* i, lanepoint* j);
+
         static int check_agent_is_horizontal(lanepoint* i, lanepoint* j);
 
         static int check_dist_of_k_to_vector_ij(lanepoint* i, lanepoint* j, lanepoint* k);
 
         static int check_dist_of_k_to_ij(lanepoint* i, lanepoint* j, lanepoint* k);
 
-        static int check_agent_valid(lanepoint** p1, lanepoint** p2, lanepoint** p3);
+        static int check_agent_valid(int id, lanepoint** p1, lanepoint** p2, lanepoint** p3);
 
         // ----------------kluge polynomial relevant----------------
         static void solve_equation(gsl_matrix* a, gsl_vector* x, gsl_vector* b);

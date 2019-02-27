@@ -443,6 +443,40 @@ int CLDWS::agent_determine_ijk(lanepoint* p1, lanepoint* p2, lanepoint* p3, lane
     return rval;
 }
 
+int CLDWS::check_agent_angle(int id, lanepoint* i, lanepoint* j)
+{
+    int rval = LANE_DETECT_CHECK_AGENT_ANGLE;
+    float m;
+
+    if (!i || !j) {
+        ldwsdbg();
+        return rval;
+    }
+
+    if (i->r == j->r)
+        return rval;
+
+    m = (j->c - i->c) / (float)(j->r - i->r); 
+
+    if (id == 0 && (m <= -0.5 && m >= -3.0)) {
+//        ldwsdbg("Left: (%d, %d)<->(%d, %d), m:%f",
+//                i->r, i->c,
+//                j->r, j->c,
+//                m);
+
+        rval = LANE_DETECT_CHECK_OK;
+    } else if (id == 1 && (m >= 0.5 && m <= 3.0)) {
+//        ldwsdbg("Right: (%d, %d)<->(%d, %d), m:%f",
+//                i->r, i->c,
+//                j->r, j->c,
+//                m);
+
+        rval = LANE_DETECT_CHECK_OK;
+    }
+                    
+    return rval;
+}
+
 int CLDWS::check_agent_is_horizontal(lanepoint* i, lanepoint* j)
 {
     int rval = LANE_DETECT_CHECK_HORIZONTAL_ERROR;
@@ -496,7 +530,7 @@ int CLDWS::check_dist_of_k_to_ij(lanepoint* i, lanepoint* j, lanepoint* k)
     return rval;
 }
 
-int CLDWS::check_agent_valid(lanepoint** p1, lanepoint** p2, lanepoint** p3)
+int CLDWS::check_agent_valid(int id, lanepoint** p1, lanepoint** p2, lanepoint** p3)
 {
     int rval = 0;
     lanepoint *i = NULL,*j = NULL,*k = NULL;
@@ -508,8 +542,11 @@ int CLDWS::check_agent_valid(lanepoint** p1, lanepoint** p2, lanepoint** p3)
 
     rval = agent_determine_ijk(*p1, *p2, *p3, &i, &j, &k);
 
+    //if (rval == LANE_DETECT_CHECK_OK)
+    //    rval = check_agent_is_horizontal(i, j);
+
     if (rval == LANE_DETECT_CHECK_OK)
-        rval = check_agent_is_horizontal(i, j);
+        rval = check_agent_angle(id, i, j);
 
     if (rval == LANE_DETECT_CHECK_OK)
         rval = check_dist_of_k_to_vector_ij(i, j, k);
@@ -1033,7 +1070,7 @@ void* CLDWS::FindPartialLane(void* args)
                 }
   
                 /* examine validness of agent points. */ 
-                agent_valid = check_agent_valid(&pp[0], &pp[1], &pp[2]);
+                agent_valid = check_agent_valid(id, &pp[0], &pp[1], &pp[2]);
 
                 if (agent_valid != LANE_DETECT_CHECK_OK) {
                     //ldwsdbg("%s: Invalid reason %d", (id == 0 ? "Left" : "Right"), agent_valid);
