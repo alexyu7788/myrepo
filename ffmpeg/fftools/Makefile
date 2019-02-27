@@ -52,4 +52,4 @@ uninstall-progs:
 	$(RM) $(addprefix "$(BINDIR)/", $(ALLAVPROGS))
 
 clean::
-	$(RM) $(ALLAVPROGS) $(ALLAVPROGS_G) $(CLEANSUFFIXES:%=fftools/%) $(CLEANSUFFIXES:%=fftools/fcws/%) $(CLEANSUFFIXES:%=fftools/ldws/%) $(CLEANSUFFIXES:%=fftools/utils/*.o)
+	$(RM) $(ALLAVPROGS) $(ALLAVPROGS_G) $(CLEANSUFFIXES:%=fftools/%) $(CLEANSUFFIXES:%=fftools/fcws/%) $(CLEANSUFFIXES:%=fftools/dlib/%) $(CLEANSUFFIXES:%=fftools/ldws/%) $(CLEANSUFFIXES:%=fftools/utils/*.o)

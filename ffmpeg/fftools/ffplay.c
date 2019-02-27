@@ -1174,7 +1174,7 @@ static int upload_texture(SDL_Texture **tex, AVFrame *frame, struct SwsContext *
                                            frame->data[2], frame->linesize[2]);
 
                 //---------------------LDW------------------
-
+#if 0
                 if (!edged_img) 
                     edged_img = av_malloc(frame->linesize[0] * frame->height + 16 + 16/*STRIDE_ALIGN*/ - 1);
 
@@ -1193,7 +1193,12 @@ static int upload_texture(SDL_Texture **tex, AVFrame *frame, struct SwsContext *
                 ret = SDL_UpdateYUVTexture(fcw_texture[FCW_WINDOW_TAILLIGHT], NULL, edged_img, frame->linesize[0],
                                            frame->data[1], frame->linesize[1],
                                            frame->data[2], frame->linesize[2]);
+#endif
 
+                Dlib_DoDetection(frame->data[0],
+                                frame->width,
+                                frame->height,
+                                frame->linesize[0]);
 #endif
             } else if (frame->linesize[0] < 0 && frame->linesize[1] < 0 && frame->linesize[2] < 0) {
                 ret = SDL_UpdateYUVTexture(*tex, NULL, frame->data[0] + frame->linesize[0] * (frame->height                    - 1), -frame->linesize[0],
@@ -1458,10 +1463,12 @@ static void video_image_display(VideoState *is)
             }
         }
 
+#if 0
         // LDWS
         LDW_DrawSplines(fcw_renderer[FCW_WINDOW_TAILLIGHT], &rect, 4, COLOR_YELLOW);
 
         LDW_DrawLanes(fcw_renderer[FCW_WINDOW_RESULT], &rect, COLOR_CYAN);
+#endif
     }
 #endif
 }
@@ -1734,6 +1741,8 @@ static void do_exit(VideoState *is)
 
     // ---------------FCW-------------------------
     FCW_DeInit();
+
+    Dlib_DeInit();
 
     for (int i=0 ; i<FCW_WINDOW_TOTAL ; ++i) {
         if (fcw_renderer[i])
@@ -4283,9 +4292,14 @@ int main(int argc, char **argv)
     }
 
     //------------FCW--------------
-    FCW_Init();
+    //FCW_Init();
     //------------LDW--------------
     //LDW_Init();
+<<<<<<< HEAD
+=======
+    //------------DLIB--------------
+    Dlib_Init((char*)"fftools/dlib/data/mmod_front_and_rear_end_vehicle_detector.dat");
+>>>>>>> 1. USe dlib instead of gsl.(not ready)
 
     event_loop(is);
 
