@@ -3,7 +3,6 @@
 CDlib::CDlib()
 {
     m_terminate = 0;
-    m_busy = false;
 
     memset(&m_processthread, 0x0, sizeof(pthread_t));
     memset(&m_cond, 0x0, sizeof(pthread_cond_t));
@@ -15,7 +14,10 @@ CDlib::~CDlib()
     m_terminate = 1;
 
     if (m_processthread) {
+        pthread_mutex_lock(&m_mutex);
         pthread_cond_signal(&m_cond);
+        pthread_mutex_unlock(&m_mutex);
+
         pthread_join(m_processthread, NULL);
     }
 
@@ -39,9 +41,6 @@ void CDlib::DoDetection(uint8_t* img, int w, int h, int linesize)
     long r, c;
     dlib::matrix<unsigned char> temp;
 
-    if (m_busy)
-        return;
-
     temp.set_size(h, w);
 
     for (r=0 ; r<h ; ++r) {
@@ -52,9 +51,10 @@ void CDlib::DoDetection(uint8_t* img, int w, int h, int linesize)
 
     assign_image(m_img, temp);
 
-    pthread_mutex_lock(&m_mutex);
-    pthread_cond_signal(&m_cond);
-    pthread_mutex_unlock(&m_mutex);
+    if (pthread_mutex_trylock(&m_mutex) == 0) {
+        pthread_cond_signal(&m_cond);
+        pthread_mutex_unlock(&m_mutex);
+    }
 }
 
 void* CDlib::ProcessThread(void* args)
@@ -69,8 +69,6 @@ void* CDlib::ProcessThread(void* args)
         if (pThis->m_terminate) {
             break;
         }
-
-        pThis->m_busy = true;
 
         for (auto&& d : pThis->m_net(pThis->m_img)) {
             auto fd = pThis->m_sp(pThis->m_img, d);
@@ -88,8 +86,6 @@ void* CDlib::ProcessThread(void* args)
                         rect.bottom());
             }
         }
-
-        pThis->m_busy = false;
     }
 
     pthread_mutex_unlock(&pThis->m_mutex);

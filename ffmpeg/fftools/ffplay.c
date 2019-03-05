@@ -1174,7 +1174,7 @@ static int upload_texture(SDL_Texture **tex, AVFrame *frame, struct SwsContext *
                                            frame->data[2], frame->linesize[2]);
 
                 //---------------------LDW------------------
-#if 1
+#if 0
                 if (!edged_img) 
                     edged_img = av_malloc(frame->linesize[0] * frame->height + 16 + 16/*STRIDE_ALIGN*/ - 1);
 
@@ -1195,7 +1195,7 @@ static int upload_texture(SDL_Texture **tex, AVFrame *frame, struct SwsContext *
                                            frame->data[2], frame->linesize[2]);
 #endif
 
-#if 0
+#if 1
                 Dlib_DoDetection(frame->data[0],
                                 frame->width,
                                 frame->height,
@@ -1465,7 +1465,7 @@ static void video_image_display(VideoState *is)
             }
         }
 
-#if 1
+#if 0
         // LDWS
         LDW_DrawSplines(fcw_renderer[FCW_WINDOW_TAILLIGHT], &rect, 4, COLOR_YELLOW);
 
@@ -4296,9 +4296,9 @@ int main(int argc, char **argv)
     //------------FCW--------------
     //FCW_Init();
     //------------LDW--------------
-    LDW_Init();
+    //LDW_Init();
     //------------DLIB--------------
-    //Dlib_Init((char*)"fftools/dlib/data/mmod_front_and_rear_end_vehicle_detector.dat");
+    Dlib_Init((char*)"fftools/dlib/data/mmod_front_and_rear_end_vehicle_detector.dat");
 
     event_loop(is);
 
