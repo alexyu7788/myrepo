@@ -1196,7 +1196,11 @@ static int upload_texture(SDL_Texture **tex, AVFrame *frame, struct SwsContext *
 #endif
 
 #if 1
-                Dlib_DoDetection(frame->data[0],
+                //Dlib_DoDetection(frame->data[0],
+                //                frame->width,
+                //                frame->height,
+                //                frame->linesize[0]);
+                Dlib_DoHogDetection(frame->data[0],
                                 frame->width,
                                 frame->height,
                                 frame->linesize[0]);
@@ -1471,6 +1475,9 @@ static void video_image_display(VideoState *is)
 
         LDW_DrawLanes(fcw_renderer[FCW_WINDOW_RESULT], &rect, COLOR_CYAN);
 #endif
+
+        // HOG Detector
+        Dlib_DrawResult(fcw_renderer[FCW_WINDOW_RESULT]);
     }
 #endif
 }
@@ -4298,7 +4305,8 @@ int main(int argc, char **argv)
     //------------LDW--------------
     //LDW_Init();
     //------------DLIB--------------
-    Dlib_Init((char*)"fftools/dlib/data/mmod_front_and_rear_end_vehicle_detector.dat");
+    //Dlib_Init((char*)"fftools/dlib/data/mmod_front_and_rear_end_vehicle_detector.dat");
+    Dlib_HogDetectorInit((char*)"fftools/dlib/data/vdetector3_80_80.svm");
 
     event_loop(is);
 
