@@ -1,0 +1,17 @@
+*.a
+*.d
+*.mod.c
+*.ko
+*.o
+*.s
+*.S
+*.so
+*.dtbo
+*.dbg
+*.order
+*.cmd
+*.builtin
+*.tmp
+*.map
+.config
+.version
