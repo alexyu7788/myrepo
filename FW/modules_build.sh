@@ -1,4 +1,5 @@
 #!/bin/sh
+ARM64=ON
 
 current_dir=${PWD}
 modules_folder="${current_dir}/modules"
@@ -8,11 +9,8 @@ modules_folder="${current_dir}/modules"
 mkdir -p ${modules_folder}/build
 cd ${modules_folder}/build
 
-#if [ ${library_type} -eq 0 ]; then
-    cmake .. -DCMAKE_BUILD_TYPE=Release -DPLATFORM_TYPE=SCHUBERT -DLIB_TYPE=ShareLib  -DCMAKE_TOOLCHAIN_FILE=../devel_rpi4_toolchain.cmake
-#else
-#    cmake .. -DCMAKE_BUILD_TYPE=Release -DPLATFORM_TYPE=SCHUBERT -DLIB_TYPE=StaticLib -DCMAKE_TOOLCHAIN_FILE=../devel_rpi5_toolchain.cmake
-#fi
+cmake -DCMAKE_BUILD_TYPE=Release -DARM64=$ARM64 -DCMAKE_TOOLCHAIN_FILE=../devel_rpi4_toolchain.cmake -DLIB_TYPE=ShareLib ..
 
 make -j4
+make install
 cd ${current_dir}
