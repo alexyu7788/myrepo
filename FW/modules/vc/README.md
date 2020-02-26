@@ -1,4 +1,4 @@
-This repository contains the source code for the ARM side libraries used on Raspberry Pi.
+This repository(https://github.com/raspberrypi/userland) contains the source code for the ARM side libraries used on Raspberry Pi.
 These typically are installed in /opt/vc/lib and includes source for the ARM side code to interface to:
 EGL, mmal, GLESv2, vcos, openmaxil, vchiq_arm, bcm_host, WFC, OpenVG.
 
