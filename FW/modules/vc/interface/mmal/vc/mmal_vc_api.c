@@ -1411,6 +1411,7 @@ static MMAL_STATUS_T mmal_vc_component_create(const char *name, MMAL_COMPONENT_T
    /* Component has been created, allocate our context. */
    status = MMAL_ENOMEM;
    ports_num = 1 + reply.input_num + reply.output_num + reply.clock_num;
+   LOG_INFO("%s: Allocate %d(1+%d+%d+%d) ports.", name, ports_num, reply.input_num, reply.output_num, reply.clock_num);
    module = vcos_calloc(1, sizeof(*module) + ports_num * sizeof(*module->ports), "mmal_vc_module");
    if (!module)
    {
