@@ -260,8 +260,8 @@ MMAL_STATUS_T CPiCam::create_camera_component()
 	}
 
 	preview_port = camera->output[MMAL_CAMERA_PREVIEW_PORT];
-	video_port = camera->output[MMAL_CAMERA_VIDEO_PORT];
-	still_port = camera->output[MMAL_CAMERA_CAPTURE_PORT];
+	video_port 	 = camera->output[MMAL_CAMERA_VIDEO_PORT];
+	still_port 	 = camera->output[MMAL_CAMERA_CAPTURE_PORT];
 
 	// Enable the camera, and tell it its control callback function
 	status = mmal_port_enable(camera->control, default_camera_control_callback);
@@ -384,28 +384,55 @@ MMAL_STATUS_T CPiCam::create_camera_component()
 		goto error;
 	}
 
+	// Ensure there are enough buffers to avoid dropping frames
+	if (video_port->buffer_num < VIDEO_OUTPUT_BUFFERS_NUM)
+		video_port->buffer_num = VIDEO_OUTPUT_BUFFERS_NUM;
 
+	// ------------------- Still Port---------------------------------------------------------------
+	// Set the encode format on the still  port
+	format = still_port->format;
 
+	format->encoding = MMAL_ENCODING_OPAQUE;
+	format->encoding_variant = MMAL_ENCODING_I420;
 
+	format->es->video.width = VCOS_ALIGN_UP(m_common_settings.width, 32);
+	format->es->video.height = VCOS_ALIGN_UP(m_common_settings.height, 16);
+	format->es->video.crop.x = 0;
+	format->es->video.crop.y = 0;
+	format->es->video.crop.width = m_common_settings.width;
+	format->es->video.crop.height = m_common_settings.height;
+	format->es->video.frame_rate.num = 0;
+	format->es->video.frame_rate.den = 1;
 
+	status = mmal_port_format_commit(still_port);
 
+	if (status != MMAL_SUCCESS)
+	{
+		vcos_log_error("camera still format couldn't be set");
+		goto error;
+	}
 
+	/* Ensure there are enough buffers to avoid dropping frames */
+	if (still_port->buffer_num < VIDEO_OUTPUT_BUFFERS_NUM)
+		still_port->buffer_num = VIDEO_OUTPUT_BUFFERS_NUM;
 
+	/* Enable component */
+	status = mmal_component_enable(camera);
 
+	if (status != MMAL_SUCCESS)
+	{
+		vcos_log_error("camera component couldn't be enabled");
+		goto error;
+	}
 
+	// Note: this sets lots of parameters that were not individually addressed before.
+	control_set_all_parameters(camera, &m_camera_parameters);
 
+	m_camera_component = camera;
 
+//	update_annotation_data(state);
 
-
-
-
-
-
-
-
-
-
-
+	fprintf(stderr, "Camera component done\n");
 
 	return status;
 
@@ -417,7 +444,14 @@ error:
 	return status;
 }
 
-
+void CPiCam::destroy_camera_component()
+{
+	if (m_camera_component)
+	{
+		mmal_component_destroy(m_camera_component);
+		m_camera_component = NULL;
+	}
+}
 
 
 
@@ -456,7 +490,9 @@ bool CPiCam::Init()
 
 	if ((m_status = create_camera_component()) != MMAL_SUCCESS)
 	{
-
+		vcos_log_error("%s: Failed to create preview component", __func__);
+		destroy_camera_component();
+//		exit_code = EX_SOFTWARE;
 	}
 
 	return (ret = (m_status == MMAL_SUCCESS) ? true : false);

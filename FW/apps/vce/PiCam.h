@@ -303,8 +303,10 @@ protected:
 
 	MMAL_STATUS_T create_camera_component();
 
+	void destroy_camera_component();
 
 	// Control
+	int control_set_all_parameters(MMAL_COMPONENT_T *camera, const RASPICAM_CAMERA_PARAMETERS *params);
 
 	int control_set_stereo_mode(MMAL_PORT_T *port, MMAL_PARAMETER_STEREOSCOPIC_MODE_T *stereo_mode);
 
