@@ -408,7 +408,23 @@ void CPiCam::destroy_camera_component()
 //------------------------------------------------------------------------------------------------------
 CPiCam::CPiCam()
 {
-	m_status = MMAL_SUCCESS;
+	m_camera_component 		=
+	m_splitter_component 	=
+	m_encoder_component 	= NULL;
+
+	m_preview_connection 	=
+	m_splitter_connection 	=
+	m_encoder_connection 	= NULL;
+
+
+	m_splitter_pool			=
+	m_encoder_pool			= NULL;
+
+
+
+
+
+
 
 	bcm_host_init();
 
@@ -420,20 +436,23 @@ CPiCam::~CPiCam()
 	destroy_camera_component();
 }
 
-bool CPiCam::Init()
+bool CPiCam::Init(enum cam_type_e cam_type)
 {
 	bool ret = false;
+	MMAL_STATUS_T status;
 
 	get_sensor_defaults(m_common_settings.cameraNum, m_common_settings.camera_name, &m_common_settings.width, &m_common_settings.height);
 
 	check_camera_model(m_common_settings.cameraNum);
 
-	if ((m_status = create_camera_component()) != MMAL_SUCCESS)
+	if ((status = create_camera_component()) != MMAL_SUCCESS)
 	{
 		vcos_log_error("%s: Failed to create preview component", __func__);
 		destroy_camera_component();
 //		exit_code = EX_SOFTWARE;
 	}
 
-	return (ret = (m_status == MMAL_SUCCESS) ? true : false);
+	m_cam_type = CamType_Pi;
+
+	return (ret = (status == MMAL_SUCCESS) ? true : false);
 }

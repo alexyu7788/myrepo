@@ -1,5 +1,5 @@
-#include <stdio.h>
-#include <stdlib.h>
+#ifndef __VceCtrl_H__
+#define __VceCtrl_H__
 
 #include "Camera.h"
 
@@ -9,7 +9,7 @@ class CVceCtrl
 {
 protected:
 
-	CCam	m_camera[MAX_CAMERA_NUM];
+	CCam* m_camera[MAX_CAMERA_NUM];
 
 public:
 
@@ -20,4 +20,7 @@ public:
 	CVceCtrl();
 
 	~CVceCtrl();
+
+	bool SetupUpCameara();
 };
+#endif

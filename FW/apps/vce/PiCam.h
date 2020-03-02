@@ -1,3 +1,6 @@
+#ifndef __PiCAMERA_H__
+#define __PiCAMERA_H__
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -21,6 +24,9 @@ extern "C"
 #ifdef __cplusplus
 }
 #endif
+
+#include "Camera.h"
+
 //-----------------------------------------------------------------------------------------------------
 // Standard port setting for the camera component
 #define MMAL_CAMERA_PREVIEW_PORT 0
@@ -262,12 +268,12 @@ struct RASPIVID_STATE_S
    MMAL_BOOL_T addSPSTiming;
    int slices;
 };
+
 //------------------------------------------------------------------------------------------------------
-class CPiCam
+
+class CPiCam : public CCam
 {
 protected:
-
-	MMAL_STATUS_T 					m_status;
 
 	RASPICOMMONSETTINGS_PARAMETERS 	m_common_settings;     				/// Common settings
 	int 							m_timeout;                        /// Time taken before frame is grabbed and app then shuts down. Units are milliseconds
@@ -429,5 +435,6 @@ public:
 
 	~CPiCam();
 
-	bool Init();
+	bool Init(enum cam_type_e cam_type);
 };
+#endif
