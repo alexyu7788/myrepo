@@ -1,3 +1,4 @@
+SET( CMAKE_EXE_LINKER_FLAGS "-Wl,--no-as-needed" )
 
 SET(SRC_LIST vce.cpp
              VceCtrl.cpp
@@ -5,6 +6,7 @@ SET(SRC_LIST vce.cpp
              PiCam.cpp
              PiCamCtrl.cpp
              PiCamHelpers.cpp
+             PiCamCli.cpp
              V4l2Cam.cpp)
 
 LIST(APPEND LINK_LIST msgbroker 
@@ -15,9 +17,10 @@ LIST(APPEND LINK_LIST msgbroker
                       mmal_components
                       containers
                       vchiq_arm
-                      vcsm
                       vcos
-                      bcm_host)
+                      vcsm
+                      bcm_host
+                      )
 
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR} ${MODULE_INC}/)
 

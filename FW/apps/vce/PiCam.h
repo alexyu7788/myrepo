@@ -1,15 +1,26 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
+#include "interface/vcos/vcos.h"
+
 #include "interface/mmal/mmal.h"
 #include "interface/mmal/mmal_logging.h"
 #include "interface/mmal/mmal_buffer.h"
+#include "interface/mmal/mmal_parameters_camera.h"
 #include "interface/mmal/util/mmal_util.h"
 #include "interface/mmal/util/mmal_util_params.h"
 #include "interface/mmal/util/mmal_default_components.h"
 #include "interface/mmal/util/mmal_connection.h"
-#include "interface/mmal/mmal_parameters_camera.h"
+#include "interface/vmcs_host/vc_vchi_gencmd.h"
 
+#ifdef __cplusplus
+}
+#endif
 //-----------------------------------------------------------------------------------------------------
 // Standard port setting for the camera component
 #define MMAL_CAMERA_PREVIEW_PORT 0
@@ -57,6 +68,41 @@ typedef enum
    RAW_OUTPUT_FMT_GRAY,
 } RAW_OUTPUT_FMT;
 
+typedef enum
+{
+   ZOOM_IN, ZOOM_OUT, ZOOM_RESET
+} ZOOM_COMMAND_T;
+
+typedef struct
+{
+   int id;
+   char *command;
+   char *abbrev;
+   char *help;
+   int num_parameters;
+} COMMAND_LIST;
+
+/// Cross reference structure, mode string against mode id
+typedef struct xref_t
+{
+   const char *mode;
+   int mmal_mode;
+} XREF_T;
+
+typedef struct param_float_rect_s
+{
+   double x;
+   double y;
+   double w;
+   double h;
+} PARAM_FLOAT_RECT_T;
+
+typedef struct mmal_param_thumbnail_config_s
+{
+   int enable;
+   int width,height;
+   int quality;
+} MMAL_PARAM_THUMBNAIL_CONFIG_T;
 
 typedef struct
 {
@@ -68,7 +114,6 @@ typedef struct
    int sensor_mode;                    /// Sensor mode. 0=auto. Check docs/forum for modes selected by other values.
    int verbose;                        /// !0 if want detailed run information
    int gps;                            /// Add real-time gpsd output to output
-
 } RASPICOMMONSETTINGS_PARAMETERS;
 
 // There isn't actually a MMAL structure for the following, so make one
@@ -132,7 +177,7 @@ typedef struct raspicam_camera_parameters_s
    int rotation;              /// 0-359
    int hflip;                 /// 0 or 1
    int vflip;                 /// 0 or 1
-//   PARAM_FLOAT_RECT_T  roi;   /// region of interest to use on the sensor. Normalised [0,1] values in the rect
+   PARAM_FLOAT_RECT_T  roi;   /// region of interest to use on the sensor. Normalised [0,1] values in the rect
    int shutter_speed;         /// 0 = auto, otherwise the shutter speed in ms
    float awb_gains_r;         /// AWB red gain
    float awb_gains_b;         /// AWB blue gain
@@ -295,24 +340,89 @@ protected:
 
 	void default_status();
 
-	void get_sensor_defaults(int camera_num, char *camera_name, int *width, int *height );
-
 	void check_camera_model(int cam_num);
-
-	static void default_camera_control_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer);
 
 	MMAL_STATUS_T create_camera_component();
 
 	void destroy_camera_component();
 
 	// Control
+	void control_check_configuration(int min_gpu_mem);
+	int control_parse_cmdline(RASPICAM_CAMERA_PARAMETERS *params, const char *arg1, const char *arg2);
+	void control_display_help();
+	int control_cycle_test(MMAL_COMPONENT_T *camera);
+
 	int control_set_all_parameters(MMAL_COMPONENT_T *camera, const RASPICAM_CAMERA_PARAMETERS *params);
+	int control_get_all_parameters(MMAL_COMPONENT_T *camera, RASPICAM_CAMERA_PARAMETERS *params);
+	void control_dump_parameters(const RASPICAM_CAMERA_PARAMETERS *params);
 
+	void control_set_defaults(RASPICAM_CAMERA_PARAMETERS *params);
+
+	// Individual setting functions
+	int control_set_saturation(MMAL_COMPONENT_T *camera, int saturation);
+	int control_set_sharpness(MMAL_COMPONENT_T *camera, int sharpness);
+	int control_set_contrast(MMAL_COMPONENT_T *camera, int contrast);
+	int control_set_brightness(MMAL_COMPONENT_T *camera, int brightness);
+	int control_set_ISO(MMAL_COMPONENT_T *camera, int ISO);
+	int control_set_metering_mode(MMAL_COMPONENT_T *camera, MMAL_PARAM_EXPOSUREMETERINGMODE_T mode);
+	int control_set_video_stabilisation(MMAL_COMPONENT_T *camera, int vstabilisation);
+	int control_set_exposure_compensation(MMAL_COMPONENT_T *camera, int exp_comp);
+	int control_set_exposure_mode(MMAL_COMPONENT_T *camera, MMAL_PARAM_EXPOSUREMODE_T mode);
+	int control_set_flicker_avoid_mode(MMAL_COMPONENT_T *camera, MMAL_PARAM_FLICKERAVOID_T mode);
+	int control_set_awb_mode(MMAL_COMPONENT_T *camera, MMAL_PARAM_AWBMODE_T awb_mode);
+	int control_set_awb_gains(MMAL_COMPONENT_T *camera, float r_gain, float b_gain);
+	int control_set_imageFX(MMAL_COMPONENT_T *camera, MMAL_PARAM_IMAGEFX_T imageFX);
+	int control_set_colourFX(MMAL_COMPONENT_T *camera, const MMAL_PARAM_COLOURFX_T *colourFX);
+	int control_set_rotation(MMAL_COMPONENT_T *camera, int rotation);
+	int control_set_flips(MMAL_COMPONENT_T *camera, int hflip, int vflip);
+	int control_set_ROI(MMAL_COMPONENT_T *camera, PARAM_FLOAT_RECT_T rect);
+	int control_zoom_in_zoom_out(MMAL_COMPONENT_T *camera, ZOOM_COMMAND_T zoom_command, PARAM_FLOAT_RECT_T *roi);
+	int control_set_shutter_speed(MMAL_COMPONENT_T *camera, int speed_ms);
+	int control_set_DRC(MMAL_COMPONENT_T *camera, MMAL_PARAMETER_DRC_STRENGTH_T strength);
+	int control_set_stats_pass(MMAL_COMPONENT_T *camera, int stats_pass);
+	int control_set_annotate(MMAL_COMPONENT_T *camera, const int settings, const char *string,
+	                                 const int text_size, const int text_colour, const int bg_colour,
+	                                 const unsigned int justify, const unsigned int x, const unsigned int y);
 	int control_set_stereo_mode(MMAL_PORT_T *port, MMAL_PARAMETER_STEREOSCOPIC_MODE_T *stereo_mode);
+	int control_set_gains(MMAL_COMPONENT_T *camera, float analog, float digital);
+	int control_get_saturation(MMAL_COMPONENT_T *camera);
+	int control_get_sharpness(MMAL_COMPONENT_T *camera);
+	int control_get_contrast(MMAL_COMPONENT_T *camera);
+	int control_get_brightness(MMAL_COMPONENT_T *camera);
+	int control_get_ISO(MMAL_COMPONENT_T *camera);
+	MMAL_PARAM_EXPOSUREMETERINGMODE_T control_get_metering_mode(MMAL_COMPONENT_T *camera);
+	int control_get_video_stabilisation(MMAL_COMPONENT_T *camera);
+	int control_get_exposure_compensation(MMAL_COMPONENT_T *camera);
+	MMAL_PARAM_THUMBNAIL_CONFIG_T control_get_thumbnail_parameters(MMAL_COMPONENT_T *camera);
+	MMAL_PARAM_EXPOSUREMODE_T control_get_exposure_mode(MMAL_COMPONENT_T *camera);
+	MMAL_PARAM_FLICKERAVOID_T control_get_flicker_avoid_mode(MMAL_COMPONENT_T *camera);
+	MMAL_PARAM_AWBMODE_T control_get_awb_mode(MMAL_COMPONENT_T *camera);
+	MMAL_PARAM_IMAGEFX_T control_get_imageFX(MMAL_COMPONENT_T *camera);
+	MMAL_PARAM_COLOURFX_T control_get_colourFX(MMAL_COMPONENT_T *camera);
 
+	static void default_camera_control_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer);
+
+	int control_get_mem_gpu(void);
+	void control_get_camera(int *supported, int *detected);
 
 	// Helpers
+	void display_valid_parameters(char *name, void (*app_help)(char*));
+	void get_sensor_defaults(int camera_num, char *camera_name, int *width, int *height);
+	void set_app_name(const char *name);
+	const char *get_app_name();
+	MMAL_STATUS_T connect_ports(MMAL_PORT_T *output_port, MMAL_PORT_T *input_port, MMAL_CONNECTION_T **connection);
+	void check_disable_port(MMAL_PORT_T *port);
+	void default_signal_handler(int signal_number);
 	int mmal_status_to_int(MMAL_STATUS_T status);
+	void print_app_details(FILE *fd);
+	uint64_t get_microseconds64();
+
+	// CLI
+	void cli_display_help(const COMMAND_LIST *commands, const int num_commands);
+	int cli_get_command_id(const COMMAND_LIST *commands, const int num_commands, const char *arg, int *num_parameters);
+
+	int cli_map_xref(const char *str, const XREF_T *map, int num_refs);
+	const char *cli_unmap_xref(const int en, XREF_T *map, int num_refs);
 
 public:
 	CPiCam();
