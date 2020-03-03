@@ -1,0 +1,6 @@
+<map id="VG_CLIENT_STATE_T" name="VG_CLIENT_STATE_T">
+<area shape="rect" id="node2" href="$d0/d75/structVG__MAT3X3__SYNC__T.html" title="VG_MAT3X3_SYNC_T" alt="" coords="5,109,164,136"/>
+<area shape="rect" id="node3" href="$d5/da8/structVG__MAT3X3__T.html" title="VG_MAT3X3_T" alt="" coords="27,5,142,32"/>
+<area shape="rect" id="node4" href="$d0/db7/structVG__CLIENT__SHARED__STATE__T.html" title="VG_CLIENT_SHARED_STATE_T" alt="" coords="188,109,413,136"/>
+<area shape="rect" id="node5" href="$de/d65/structPLATFORM__MUTEX__T.html" title="PLATFORM_MUTEX_T" alt="" coords="219,5,382,32"/>
+</map>

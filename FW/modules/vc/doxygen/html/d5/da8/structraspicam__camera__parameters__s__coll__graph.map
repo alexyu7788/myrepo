@@ -1,0 +1,7 @@
+<map id="raspicam_camera_parameters_s" name="raspicam_camera_parameters_s">
+<area shape="rect" id="node2" href="$d4/dca/structmmal__param__colourfx__s.html" title="mmal_param_colourfx_s" alt="" coords="357,5,521,32"/>
+<area shape="rect" id="node3" href="$df/d0a/structMMAL__PARAMETER__IMAGEFX__PARAMETERS__T.html" title="MMAL_PARAMETER_IMAGEFX\l_PARAMETERS_T" alt="" coords="330,57,549,98"/>
+<area shape="rect" id="node4" href="$da/d2f/structMMAL__PARAMETER__HEADER__T.html" title="MMAL_PARAMETER_HEADER_T" alt="" coords="5,95,236,121"/>
+<area shape="rect" id="node5" href="$df/dbe/structMMAL__PARAMETER__STEREOSCOPIC__MODE__T.html" title="MMAL_PARAMETER_STEREOSCOPIC\l_MODE_T" alt="" coords="307,122,572,163"/>
+<area shape="rect" id="node6" href="$da/d30/structparam__float__rect__s.html" title="param_float_rect_s" alt="" coords="373,188,506,215"/>
+</map>

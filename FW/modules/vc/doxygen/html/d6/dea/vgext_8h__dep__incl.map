@@ -1,0 +1,8 @@
+<map id="interface/khronos/include/VG/vgext.h" name="interface/khronos/include/VG/vgext.h">
+<area shape="rect" id="node2" href="$dc/d79/vg__int__config_8h.html" title="interface/khronos/vg\l/vg_int_config.h" alt="" coords="89,95,229,136"/>
+<area shape="rect" id="node5" href="$d1/d05/vg__client_8c.html" title="interface/khronos/vg\l/vg_client.c" alt="" coords="172,273,312,315"/>
+<area shape="rect" id="node6" href="$d2/d73/egl__client__get__proc_8c.html" title="interface/khronos/egl\l/egl_client_get_proc.c" alt="" coords="305,95,454,136"/>
+<area shape="rect" id="node7" href="$d5/d5f/khrn__misc_8h.html" title="middleware/khronos\l/common/khrn_misc.h" alt="" coords="479,95,629,136"/>
+<area shape="rect" id="node3" href="$db/dd0/vg__client_8h.html" title="interface/khronos/vg\l/vg_client.h" alt="" coords="39,184,179,225"/>
+<area shape="rect" id="node4" href="$d4/da9/egl__client__context_8c.html" title="interface/khronos/egl\l/egl_client_context.c" alt="" coords="5,273,148,315"/>
+</map>

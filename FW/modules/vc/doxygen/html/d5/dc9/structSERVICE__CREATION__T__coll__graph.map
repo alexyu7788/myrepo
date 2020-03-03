@@ -1,0 +1,7 @@
+<map id="SERVICE_CREATION_T" name="SERVICE_CREATION_T">
+<area shape="rect" id="node2" href="$d9/d29/structVCHI__VERSION__T.html" title="VCHI_VERSION_T" alt="" coords="5,5,144,32"/>
+<area shape="rect" id="node3" href="$d2/dd7/structvchi__connection__t.html" title="vchi_connection_t" alt="" coords="169,5,295,32"/>
+<area shape="rect" id="node4" href="$df/d6a/structopaque__vchi__connection__api__t.html" title="opaque_vchi_connection\l_api_t" alt="" coords="276,168,441,209"/>
+<area shape="rect" id="node5" href="$d9/dd6/structVCHI__MSG__ITER__T.html" title="VCHI_MSG_ITER_T" alt="" coords="319,5,465,32"/>
+<area shape="rect" id="node6" href="$d5/d48/structvchi__msg__vector.html" title="vchi_msg_vector" alt="" coords="489,5,610,32"/>
+</map>

@@ -1,0 +1,12 @@
+<map id="VC_AUDIO_MSG_T" name="VC_AUDIO_MSG_T">
+<area shape="rect" id="node2" href="$d0/d41/structVC__AUDIO__RESULT__T.html" title="VC_AUDIO_RESULT_T" alt="" coords="15,5,182,32"/>
+<area shape="rect" id="node3" href="$d8/d44/structVC__AUDIO__START__T.html" title="VC_AUDIO_START_T" alt="" coords="20,56,177,83"/>
+<area shape="rect" id="node4" href="$d9/d33/structVC__AUDIO__WRITE__T.html" title="VC_AUDIO_WRITE_T" alt="" coords="20,107,177,133"/>
+<area shape="rect" id="node5" href="$d1/d2d/structVC__AUDIO__CONFIG__T.html" title="VC_AUDIO_CONFIG_T" alt="" coords="16,157,181,184"/>
+<area shape="rect" id="node6" href="$d4/d97/structVC__AUDIO__LATENCY__T.html" title="VC_AUDIO_LATENCY_T" alt="" coords="11,208,186,235"/>
+<area shape="rect" id="node7" href="$dc/d0c/structVC__AUDIO__CLOSE__T.html" title="VC_AUDIO_CLOSE_T" alt="" coords="19,259,178,285"/>
+<area shape="rect" id="node8" href="$d9/d01/structVC__AUDIO__COMPLETE__T.html" title="VC_AUDIO_COMPLETE_T" alt="" coords="5,309,192,336"/>
+<area shape="rect" id="node9" href="$d2/d0e/structVC__AUDIO__STOP__T.html" title="VC_AUDIO_STOP_T" alt="" coords="24,360,173,387"/>
+<area shape="rect" id="node10" href="$d2/d06/structVC__AUDIO__CONTROL__T.html" title="VC_AUDIO_CONTROL_T" alt="" coords="9,411,188,437"/>
+<area shape="rect" id="node11" href="$dc/d44/structVC__AUDIO__OPEN__T.html" title="VC_AUDIO_OPEN_T" alt="" coords="23,461,174,488"/>
+</map>

@@ -1,0 +1,30 @@
+<map id="interface/vcos/vcos_reentrant_mutex.h" name="interface/vcos/vcos_reentrant_mutex.h">
+<area shape="rect" id="node2" href="$da/df3/vcos__types_8h.html" title="interface/vcos/vcos\l_types.h" alt="" coords="794,363,930,404"/>
+<area shape="rect" id="node8" href="$d4/de3/vcos_8h.html" title="vcos.h" alt="" coords="923,95,985,121"/>
+<area shape="rect" id="node4" href="$d2/d69/vcos__platform__types_8h.html" title="vcos_platform_types.h" alt="" coords="870,459,1025,486"/>
+<area shape="rect" id="node7" href="$df/d5a/vcos__attr_8h.html" title="interface/vcos/vcos\l_attr.h" alt="" coords="710,452,846,493"/>
+<area shape="rect" id="node5" href="$d2/d4b/vcos__inttypes_8h.html" title="interface/vcos/vcos\l_inttypes.h" alt="" coords="879,541,1015,583"/>
+<area shape="rect" id="node9" href="$d6/db4/vcos__assert_8h.html" title="interface/vcos/vcos\l_assert.h" alt="" coords="1707,169,1843,211"/>
+<area shape="rect" id="node10" href="$db/db8/vcos__platform_8h.html" title="vcos_platform.h" alt="" coords="2287,177,2402,203"/>
+<area shape="rect" id="node30" href="$d0/d84/vcos__init_8h.html" title="interface/vcos/vcos\l_init.h" alt="" coords="86,169,222,211"/>
+<area shape="rect" id="node31" href="$d2/dc2/vcos__semaphore_8h.html" title="interface/vcos/vcos\l_semaphore.h" alt="" coords="246,169,382,211"/>
+<area shape="rect" id="node32" href="$de/d30/vcos__thread_8h.html" title="interface/vcos/vcos\l_thread.h" alt="" coords="406,169,542,211"/>
+<area shape="rect" id="node33" href="$da/d1b/vcos__mutex_8h.html" title="interface/vcos/vcos\l_mutex.h" alt="" coords="566,169,702,211"/>
+<area shape="rect" id="node34" href="$d8/db9/vcos__mem_8h.html" title="interface/vcos/vcos\l_mem.h" alt="" coords="726,169,862,211"/>
+<area shape="rect" id="node35" href="$d0/d85/vcos__logging_8h.html" title="interface/vcos/vcos\l_logging.h" alt="" coords="3539,169,3675,211"/>
+<area shape="rect" id="node38" href="$d1/d77/vcos__string_8h.html" title="interface/vcos/vcos\l_string.h" alt="" coords="1867,169,2003,211"/>
+<area shape="rect" id="node39" href="$dc/dd7/vcos__event_8h.html" title="interface/vcos/vcos\l_event.h" alt="" coords="886,169,1022,211"/>
+<area shape="rect" id="node40" href="$d1/d6d/vcos__thread__attr_8h.html" title="interface/vcos/vcos\l_thread_attr.h" alt="" coords="1547,169,1683,211"/>
+<area shape="rect" id="node41" href="$dc/d07/vcos__tls_8h.html" title="interface/vcos/vcos\l_tls.h" alt="" coords="1046,169,1182,211"/>
+<area shape="rect" id="node42" href="$d6/d00/vcos__named__semaphore_8h.html" title="interface/vcos/vcos\l_named_semaphore.h" alt="" coords="1207,169,1357,211"/>
+<area shape="rect" id="node43" href="$dd/dc6/vcos__quickslow__mutex_8h.html" title="interface/vcos/vcos\l_quickslow_mutex.h" alt="" coords="1382,169,1523,211"/>
+<area shape="rect" id="node22" href="$d9/d48/dlfcn_8h.html" title="dlfcn.h" alt="" coords="1594,273,1655,300"/>
+<area shape="rect" id="node23" href="$d2/d73/vcos__generic__event__flags_8h.html" title="interface/vcos/generic\l/vcos_generic_event_flags.h" alt="" coords="2251,266,2439,307"/>
+<area shape="rect" id="node24" href="$d3/d22/vcos__generic__blockpool_8h.html" title="interface/vcos/generic\l/vcos_generic_blockpool.h" alt="" coords="3167,266,3343,307"/>
+<area shape="rect" id="node25" href="$d1/d7f/vcos__mem__from__malloc_8h.html" title="interface/vcos/generic\l/vcos_mem_from_malloc.h" alt="" coords="1679,266,1858,307"/>
+<area shape="rect" id="node26" href="$db/d8f/vcos__generic__reentrant__mtx_8h.html" title="interface/vcos/generic\l/vcos_generic_reentrant_mtx.h" alt="" coords="3368,266,3569,307"/>
+<area shape="rect" id="node27" href="$df/d21/vcos__generic__named__sem_8h.html" title="interface/vcos/generic\l/vcos_generic_named_sem.h" alt="" coords="1199,266,1391,307"/>
+<area shape="rect" id="node28" href="$da/d8e/vcos__generic__quickslow__mutex_8h.html" title="interface/vcos/generic\l/vcos_generic_quickslow\l_mutex.h" alt="" coords="2058,259,2226,315"/>
+<area shape="rect" id="node29" href="$d5/d17/vcos__common_8h.html" title="interface/vcos/generic\l/vcos_common.h" alt="" coords="1883,266,2033,307"/>
+<area shape="rect" id="node37" href="$d5/d18/vcos__logging__control_8h.html" title="vcos_logging_control.h" alt="" coords="3695,273,3850,300"/>
+</map>

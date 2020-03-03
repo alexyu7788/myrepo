@@ -1,0 +1,7 @@
+<map id="mmal_worker_buffer_from_host" name="mmal_worker_buffer_from_host">
+<area shape="rect" id="node2" href="$d1/dd4/structmmal__worker__msg__header.html" title="mmal_worker_msg_header" alt="" coords="299,5,477,32"/>
+<area shape="rect" id="node3" href="$d3/d55/structMMAL__DRIVER__BUFFER__T.html" title="MMAL_DRIVER_BUFFER_T" alt="" coords="291,63,485,89"/>
+<area shape="rect" id="node4" href="$d7/d43/structMMAL__VC__BUFFER__HEADER__T.html" title="MMAL_VC_BUFFER_HEADER_T" alt="" coords="275,113,501,140"/>
+<area shape="rect" id="node5" href="$db/dc2/unionMMAL__BUFFER__HEADER__TYPE__SPECIFIC__T.html" title="MMAL_BUFFER_HEADER\l_TYPE_SPECIFIC_T" alt="" coords="295,166,481,207"/>
+<area shape="rect" id="node6" href="$dc/d8a/structMMAL__BUFFER__HEADER__VIDEO__SPECIFIC__T.html" title="MMAL_BUFFER_HEADER\l_VIDEO_SPECIFIC_T" alt="" coords="5,166,191,207"/>
+</map>

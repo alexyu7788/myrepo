@@ -1,0 +1,36 @@
+<map id="interface/khronos/egl/egl_client_surface.h" name="interface/khronos/egl/egl_client_surface.h">
+<area shape="rect" id="node2" href="$d1/d5c/khrn__client_8h.html" title="interface/khronos/common\l/khrn_client.h" alt="" coords="1727,95,1903,136"/>
+<area shape="rect" id="node8" href="$de/de7/egl__client_8c.html" title="interface/khronos/egl\l/egl_client.c" alt="" coords="35,295,178,337"/>
+<area shape="rect" id="node9" href="$d4/da9/egl__client__context_8c.html" title="interface/khronos/egl\l/egl_client_context.c" alt="" coords="307,399,450,441"/>
+<area shape="rect" id="node10" href="$d2/d73/egl__client__get__proc_8c.html" title="interface/khronos/egl\l/egl_client_get_proc.c" alt="" coords="3319,295,3468,337"/>
+<area shape="rect" id="node11" href="$dd/d0a/egl__client__surface_8c.html" title="interface/khronos/egl\l/egl_client_surface.c" alt="" coords="3493,295,3635,337"/>
+<area shape="rect" id="node3" href="$da/d0e/khrn__client_8c.html" title="interface/khronos/common\l/khrn_client.c" alt="" coords="637,399,813,441"/>
+<area shape="rect" id="node4" href="$d8/d96/khrn__client__rpc_8h.html" title="interface/khronos/common\l/khrn_client_rpc.h" alt="" coords="1789,191,1965,233"/>
+<area shape="rect" id="node6" href="$d3/d5d/khrn__client__platform__linux_8c.html" title="interface/khronos/common\l/linux/khrn_client_platform\l_linux.c" alt="" coords="763,288,939,344"/>
+<area shape="rect" id="node7" href="$d1/d48/khrn__client__rpc__linux_8c.html" title="interface/khronos/common\l/linux/khrn_client_rpc\l_linux.c" alt="" coords="963,288,1139,344"/>
+<area shape="rect" id="node12" href="$dd/d98/egl__brcm__driver__monitor__client_8c.html" title="interface/khronos/ext\l/egl_brcm_driver_monitor\l_client.c" alt="" coords="520,288,688,344"/>
+<area shape="rect" id="node14" href="$d8/dc9/egl__brcm__global__image__client_8c.html" title="interface/khronos/ext\l/egl_brcm_global_image\l_client.c" alt="" coords="1339,288,1501,344"/>
+<area shape="rect" id="node15" href="$d6/dc3/egl__brcm__perf__monitor__client_8c.html" title="interface/khronos/ext\l/egl_brcm_perf_monitor\l_client.c" alt="" coords="3135,288,3294,344"/>
+<area shape="rect" id="node16" href="$d3/d45/egl__khr__image__client_8c.html" title="interface/khronos/ext\l/egl_khr_image_client.c" alt="" coords="2595,295,2754,337"/>
+<area shape="rect" id="node17" href="$da/dd4/egl__khr__lock__surface__client_8c.html" title="interface/khronos/ext\l/egl_khr_lock_surface\l_client.c" alt="" coords="2779,288,2928,344"/>
+<area shape="rect" id="node19" href="$d4/d18/egl__openmaxil__client_8c.html" title="interface/khronos/ext\l/egl_openmaxil_client.c" alt="" coords="2953,295,3111,337"/>
+<area shape="rect" id="node29" href="$dd/d3b/glxx__client_8h.html" title="interface/khronos/glxx\l/glxx_client.h" alt="" coords="2017,295,2167,337"/>
+<area shape="rect" id="node30" href="$d6/dad/khrn__client__cache_8h.html" title="interface/khronos/common\l/khrn_client_cache.h" alt="" coords="2040,191,2216,233"/>
+<area shape="rect" id="node31" href="$d3/dad/egl__khr__sync__client_8h.html" title="interface/khronos/ext\l/egl_khr_sync_client.h" alt="" coords="1448,191,1600,233"/>
+<area shape="rect" id="node32" href="$d7/d99/egl__brcm__driver__monitor__client_8h.html" title="interface/khronos/ext\l/egl_brcm_driver_monitor\l_client.h" alt="" coords="520,184,688,240"/>
+<area shape="rect" id="node33" href="$db/dd0/vg__client_8h.html" title="interface/khronos/vg\l/vg_client.h" alt="" coords="355,191,495,233"/>
+<area shape="rect" id="node34" href="$d3/d9c/egl__brcm__perf__monitor__client_8h.html" title="interface/khronos/ext\l/egl_brcm_perf_monitor\l_client.h" alt="" coords="2725,184,2883,240"/>
+<area shape="rect" id="node35" href="$d4/d62/wfc__client__stream_8c.html" title="interface/khronos/wf\l/wfc_client_stream.c" alt="" coords="1281,191,1423,233"/>
+<area shape="rect" id="node5" href="$dc/d47/khrn__client__cache_8c.html" title="interface/khronos/common\l/khrn_client_cache.c" alt="" coords="2395,295,2571,337"/>
+<area shape="rect" id="node13" href="$d9/da8/egl__brcm__flush__client_8c.html" title="interface/khronos/ext\l/egl_brcm_flush_client.c" alt="" coords="1627,295,1789,337"/>
+<area shape="rect" id="node18" href="$d6/d1e/egl__khr__sync__client_8c.html" title="interface/khronos/ext\l/egl_khr_sync_client.c" alt="" coords="1163,295,1315,337"/>
+<area shape="rect" id="node20" href="$d7/deb/ext__gl__debug__marker_8c.html" title="interface/khronos/ext\l/ext_gl_debug_marker.c" alt="" coords="2278,399,2439,441"/>
+<area shape="rect" id="node21" href="$d2/db5/gl__oes__draw__texture__client_8c.html" title="interface/khronos/ext\l/gl_oes_draw_texture\l_client.c" alt="" coords="2464,392,2611,448"/>
+<area shape="rect" id="node22" href="$da/deb/gl__oes__egl__image__client_8c.html" title="interface/khronos/ext\l/gl_oes_egl_image_client.c" alt="" coords="2635,399,2813,441"/>
+<area shape="rect" id="node23" href="$d0/d0d/gl__oes__framebuffer__object_8c.html" title="interface/khronos/ext\l/gl_oes_framebuffer_object.c" alt="" coords="1367,399,1558,441"/>
+<area shape="rect" id="node24" href="$d1/d73/gl__oes__map__buffer_8c.html" title="interface/khronos/ext\l/gl_oes_map_buffer.c" alt="" coords="1583,399,1729,441"/>
+<area shape="rect" id="node25" href="$d9/d9b/gl__oes__matrix__palette__client_8c.html" title="interface/khronos/ext\l/gl_oes_matrix_palette\l_client.c" alt="" coords="1754,392,1907,448"/>
+<area shape="rect" id="node26" href="$db/da8/gl__oes__query__matrix__client_8c.html" title="interface/khronos/ext\l/gl_oes_query_matrix\l_client.c" alt="" coords="1932,392,2079,448"/>
+<area shape="rect" id="node27" href="$dd/df1/glxx__client_8c.html" title="interface/khronos/glxx\l/glxx_client.c" alt="" coords="2103,399,2254,441"/>
+<area shape="rect" id="node28" href="$d1/d05/vg__client_8c.html" title="interface/khronos/vg\l/vg_client.c" alt="" coords="355,295,495,337"/>
+</map>

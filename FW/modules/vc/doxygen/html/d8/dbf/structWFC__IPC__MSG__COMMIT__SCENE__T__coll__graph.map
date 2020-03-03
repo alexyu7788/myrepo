@@ -1,0 +1,6 @@
+<map id="WFC_IPC_MSG_COMMIT_SCENE_T" name="WFC_IPC_MSG_COMMIT_SCENE_T">
+<area shape="rect" id="node2" href="$de/d76/structWFC__IPC__MSG__HEADER__T.html" title="WFC_IPC_MSG_HEADER_T" alt="" coords="5,109,204,136"/>
+<area shape="rect" id="node3" href="$d3/dd4/structWFC__SCENE__T.html" title="Data for a &quot;scene&quot; (i.e. context and element data associated with a commit). " alt="" coords="229,109,351,136"/>
+<area shape="rect" id="node4" href="$d8/d79/structWFC__CONTEXT__DYNAMIC__ATTRIB__T.html" title="WFC_CONTEXT_DYNAMIC\l_ATTRIB_T" alt="" coords="83,5,278,47"/>
+<area shape="rect" id="node5" href="$d8/d00/structWFC__ELEMENT__ATTRIB__T.html" title="Attributes associated with each element. " alt="" coords="303,13,496,39"/>
+</map>

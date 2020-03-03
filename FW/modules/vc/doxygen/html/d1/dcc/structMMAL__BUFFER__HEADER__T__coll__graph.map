@@ -1,0 +1,5 @@
+<map id="MMAL_BUFFER_HEADER_T" name="MMAL_BUFFER_HEADER_T">
+<area shape="rect" id="node2" href="$d7/dda/structMMAL__BUFFER__HEADER__PRIVATE__T.html" title="MMAL_BUFFER_HEADER\l_PRIVATE_T" alt="" coords="13,317,198,359"/>
+<area shape="rect" id="node3" href="$db/dc2/unionMMAL__BUFFER__HEADER__TYPE__SPECIFIC__T.html" title="MMAL_BUFFER_HEADER\l_TYPE_SPECIFIC_T" alt="" coords="13,109,198,151"/>
+<area shape="rect" id="node4" href="$dc/d8a/structMMAL__BUFFER__HEADER__VIDEO__SPECIFIC__T.html" title="MMAL_BUFFER_HEADER\l_VIDEO_SPECIFIC_T" alt="" coords="13,5,198,47"/>
+</map>

@@ -1,0 +1,28 @@
+<map id="GPS_READER_DATA" name="GPS_READER_DATA">
+<area shape="rect" id="node2" href="$de/df2/structgpsd__info.html" title="gpsd_info" alt="" coords="950,436,1029,463"/>
+<area shape="rect" id="node3" href="$dd/d7a/structgps__data__t.html" title="gps_data_t" alt="" coords="757,392,844,419"/>
+<area shape="rect" id="node4" href="$d1/d66/structdevconfig__t.html" title="devconfig_t" alt="" coords="561,12,651,39"/>
+<area shape="rect" id="node5" href="$d4/d26/structgps__fix__t.html" title="gps_fix_t" alt="" coords="569,63,643,89"/>
+<area shape="rect" id="node6" href="$d4/ddd/structrawdata__t.html" title="rawdata_t" alt="" coords="567,113,645,140"/>
+<area shape="rect" id="node7" href="$d5/da7/structrtcm2__t.html" title="rtcm2_t" alt="" coords="573,164,639,191"/>
+<area shape="rect" id="node8" href="$d1/d5c/structdop__t.html" title="dop_t" alt="" coords="579,215,633,241"/>
+<area shape="rect" id="node9" href="$da/d9c/structrtcm3__t.html" title="rtcm3_t" alt="" coords="573,265,639,292"/>
+<area shape="rect" id="node10" href="$d7/dae/structrtcm3__correction__diff.html" title="rtcm3_correction_diff" alt="" coords="284,167,428,193"/>
+<area shape="rect" id="node11" href="$d8/d64/structrtcm3__rtk__hdr.html" title="rtcm3_rtk_hdr" alt="" coords="305,217,407,244"/>
+<area shape="rect" id="node12" href="$d1/d68/structrtcm3__network__rtk__header.html" title="rtcm3_network_rtk_header" alt="" coords="268,268,444,295"/>
+<area shape="rect" id="node13" href="$de/dd6/structrtcm3__extended__rtk.html" title="rtcm3_extended_rtk" alt="" coords="287,325,425,352"/>
+<area shape="rect" id="node14" href="$d7/db7/structrtcm3__basic__rtk.html" title="rtcm3_basic_rtk" alt="" coords="299,385,413,412"/>
+<area shape="rect" id="node15" href="$d9/d1c/structpolicy__t.html" title="policy_t" alt="" coords="573,316,639,343"/>
+<area shape="rect" id="node16" href="$da/d9c/structversion__t.html" title="version_t" alt="" coords="569,367,643,393"/>
+<area shape="rect" id="node17" href="$d0/d0f/structgst__t.html" title="gst_t" alt="" coords="581,417,631,444"/>
+<area shape="rect" id="node18" href="$d7/da8/structsubframe__t.html" title="subframe_t" alt="" coords="563,468,649,495"/>
+<area shape="rect" id="node19" href="$d2/d91/structalmanac__t.html" title="almanac_t" alt="" coords="315,468,397,495"/>
+<area shape="rect" id="node20" href="$de/da0/structoscillator__t.html" title="oscillator_t" alt="" coords="563,519,649,545"/>
+<area shape="rect" id="node21" href="$da/d4f/structnavdata__t.html" title="navdata_t" alt="" coords="567,569,645,596"/>
+<area shape="rect" id="node22" href="$d6/d98/structtimedelta__t.html" title="timedelta_t" alt="" coords="563,620,649,647"/>
+<area shape="rect" id="node23" href="$d7/d0d/structais__t.html" title="ais_t" alt="" coords="581,671,631,697"/>
+<area shape="rect" id="node24" href="$d1/dc5/structroute__info.html" title="route_info" alt="" coords="317,671,395,697"/>
+<area shape="rect" id="node25" href="$d8/d56/structroute__info_1_1waypoint__t.html" title="route_info::waypoint_t" alt="" coords="5,671,156,697"/>
+<area shape="rect" id="node26" href="$d3/d3d/structattitude__t.html" title="attitude_t" alt="" coords="568,721,644,748"/>
+<area shape="rect" id="node27" href="$df/d9f/structsatellite__t.html" title="satellite_t" alt="" coords="567,772,645,799"/>
+</map>

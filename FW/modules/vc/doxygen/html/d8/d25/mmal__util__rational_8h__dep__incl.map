@@ -1,0 +1,13 @@
+<map id="interface/mmal/util/mmal_util_rational.h" name="interface/mmal/util/mmal_util_rational.h">
+<area shape="rect" id="node2" href="$dc/d54/clock_8c.html" title="interface/mmal/components\l/clock.c" alt="" coords="5,95,188,136"/>
+<area shape="rect" id="node3" href="$df/d37/mmal__clock_8c.html" title="interface/mmal/core\l/mmal_clock.c" alt="" coords="212,95,349,136"/>
+<area shape="rect" id="node4" href="$d9/d40/mmal__format_8c.html" title="interface/mmal/core\l/mmal_format.c" alt="" coords="373,95,511,136"/>
+<area shape="rect" id="node5" href="$dd/d7e/mmalomx__parameters_8c.html" title="interface/mmal/openmaxil\l/mmalomx_parameters.c" alt="" coords="535,95,706,136"/>
+<area shape="rect" id="node6" href="$d6/d1a/mmalomx__util__params__common_8h.html" title="interface/mmal/openmaxil\l/mmalomx_util_params_common.h" alt="" coords="731,95,956,136"/>
+<area shape="rect" id="node12" href="$d3/df9/mmal__util__rational_8c.html" title="interface/mmal/util\l/mmal_util_rational.c" alt="" coords="980,95,1123,136"/>
+<area shape="rect" id="node7" href="$d3/d6e/mmalomx__util__params_8c.html" title="interface/mmal/openmaxil\l/mmalomx_util_params.c" alt="" coords="307,184,478,225"/>
+<area shape="rect" id="node8" href="$df/d6f/mmalomx__util__params__audio_8c.html" title="interface/mmal/openmaxil\l/mmalomx_util_params_audio.c" alt="" coords="503,184,709,225"/>
+<area shape="rect" id="node9" href="$d4/d48/mmalomx__util__params__camera_8c.html" title="interface/mmal/openmaxil\l/mmalomx_util_params_camera.c" alt="" coords="734,184,953,225"/>
+<area shape="rect" id="node10" href="$d3/dc8/mmalomx__util__params__misc_8c.html" title="interface/mmal/openmaxil\l/mmalomx_util_params_misc.c" alt="" coords="977,184,1179,225"/>
+<area shape="rect" id="node11" href="$d3/dc4/mmalomx__util__params__video_8c.html" title="interface/mmal/openmaxil\l/mmalomx_util_params_video.c" alt="" coords="1204,184,1411,225"/>
+</map>

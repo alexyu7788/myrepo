@@ -1,0 +1,12 @@
+<map id="interface/khronos/egl/egl_client_config.h" name="interface/khronos/egl/egl_client_config.h">
+<area shape="rect" id="node2" href="$da/d0e/khrn__client_8c.html" title="interface/khronos/common\l/khrn_client.c" alt="" coords="5,102,181,143"/>
+<area shape="rect" id="node3" href="$de/de7/egl__client_8c.html" title="interface/khronos/egl\l/egl_client.c" alt="" coords="206,102,349,143"/>
+<area shape="rect" id="node4" href="$db/dea/egl__client__config_8c.html" title="interface/khronos/egl\l/egl_client_config.c" alt="" coords="373,102,515,143"/>
+<area shape="rect" id="node5" href="$d2/d73/egl__client__get__proc_8c.html" title="interface/khronos/egl\l/egl_client_get_proc.c" alt="" coords="540,102,689,143"/>
+<area shape="rect" id="node6" href="$dd/d0a/egl__client__surface_8c.html" title="interface/khronos/egl\l/egl_client_surface.c" alt="" coords="714,102,857,143"/>
+<area shape="rect" id="node7" href="$dd/d98/egl__brcm__driver__monitor__client_8c.html" title="interface/khronos/ext\l/egl_brcm_driver_monitor\l_client.c" alt="" coords="881,95,1049,151"/>
+<area shape="rect" id="node8" href="$d8/dc9/egl__brcm__global__image__client_8c.html" title="interface/khronos/ext\l/egl_brcm_global_image\l_client.c" alt="" coords="1073,95,1236,151"/>
+<area shape="rect" id="node9" href="$d6/dc3/egl__brcm__perf__monitor__client_8c.html" title="interface/khronos/ext\l/egl_brcm_perf_monitor\l_client.c" alt="" coords="1261,95,1419,151"/>
+<area shape="rect" id="node10" href="$da/dd4/egl__khr__lock__surface__client_8c.html" title="interface/khronos/ext\l/egl_khr_lock_surface\l_client.c" alt="" coords="1444,95,1593,151"/>
+<area shape="rect" id="node11" href="$d1/d05/vg__client_8c.html" title="interface/khronos/vg\l/vg_client.c" alt="" coords="1618,102,1758,143"/>
+</map>

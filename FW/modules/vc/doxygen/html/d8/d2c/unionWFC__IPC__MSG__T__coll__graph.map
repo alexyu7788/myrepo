@@ -1,0 +1,28 @@
+<map id="WFC_IPC_MSG_T" name="WFC_IPC_MSG_T">
+<area shape="rect" id="node2" href="$d4/db2/structWFC__IPC__MSG__SS__SIGNAL__EGLIMAGE__DATA__T.html" title="WFC_IPC_MSG_SS_SIGNAL\l_EGLIMAGE_DATA_T" alt="" coords="623,789,825,831"/>
+<area shape="rect" id="node3" href="$de/d76/structWFC__IPC__MSG__HEADER__T.html" title="WFC_IPC_MSG_HEADER_T" alt="" coords="305,629,504,655"/>
+<area shape="rect" id="node4" href="$dd/dee/structWFC__IPC__MSG__STREAM__T.html" title="WFC_IPC_MSG_STREAM_T" alt="" coords="625,918,823,945"/>
+<area shape="rect" id="node5" href="$d2/d6f/structWFC__IPC__MSG__SS__ALLOCATE__IMAGES__T.html" title="WFC_IPC_MSG_SS_ALLOCATE\l_IMAGES_T" alt="" coords="613,969,835,1011"/>
+<area shape="rect" id="node6" href="$df/d43/structWFC__IPC__MSG__CREATE__CONTEXT__T.html" title="WFC_IPC_MSG_CREATE\l_CONTEXT_T" alt="" coords="633,1035,815,1076"/>
+<area shape="rect" id="node7" href="$d0/d06/structWFC__IPC__MSG__SS__ON__IMAGE__AVAILABLE__T.html" title="WFC_IPC_MSG_SS_ON_IMAGE\l_AVAILABLE_T" alt="" coords="613,1100,835,1141"/>
+<area shape="rect" id="node8" href="$d1/d70/structWFC__IPC__MSG__SS__SIGNAL__MM__IMAGE__DATA__T.html" title="WFC_IPC_MSG_SS_SIGNAL\l_MM_IMAGE_DATA_T" alt="" coords="623,1231,825,1272"/>
+<area shape="rect" id="node9" href="$db/dc4/structWFC__IPC__MSG__SS__SIGNAL__RAW__PIXELS__T.html" title="WFC_IPC_MSG_SS_SIGNAL\l_RAW_PIXELS_T" alt="" coords="623,103,825,144"/>
+<area shape="rect" id="node10" href="$df/dc5/structWFC__IPC__MSG__SS__UNREGISTER__T.html" title="WFC_IPC_MSG_SS_UNREGISTER_T" alt="" coords="596,234,852,261"/>
+<area shape="rect" id="node11" href="$d6/da9/structWFC__IPC__MSG__COMMIT__SCENE__T.html" title="WFC_IPC_MSG_COMMIT\l_SCENE_T" alt="" coords="633,37,815,79"/>
+<area shape="rect" id="node15" href="$d3/d42/structWFC__IPC__MSG__SS__ON__RECTS__CHANGE__T.html" title="WFC_IPC_MSG_SS_ON_RECTS\l_CHANGE_T" alt="" coords="611,285,837,327"/>
+<area shape="rect" id="node16" href="$d1/d11/structWFC__IPC__MSG__SS__CREATE__T.html" title="WFC_IPC_MSG_SS_CREATE_T" alt="" coords="613,351,835,378"/>
+<area shape="rect" id="node17" href="$d1/df3/structWFC__IPC__MSG__SS__GET__RECTS__T.html" title="WFC_IPC_MSG_SS_GET\l_RECTS_T" alt="" coords="635,403,813,444"/>
+<area shape="rect" id="node18" href="$da/d83/structWFC__IPC__MSG__CONTEXT__T.html" title="WFC_IPC_MSG_CONTEXT_T" alt="" coords="621,469,827,495"/>
+<area shape="rect" id="node19" href="$d0/d04/structWFC__IPC__MSG__SS__SIGNAL__IMAGE__T.html" title="WFC_IPC_MSG_SS_SIGNAL\l_IMAGE_T" alt="" coords="623,1165,825,1207"/>
+<area shape="rect" id="node21" href="$da/d32/structWFC__IPC__MSG__SS__DESTROY__T.html" title="WFC_IPC_MSG_SS_DESTROY_T" alt="" coords="608,519,840,546"/>
+<area shape="rect" id="node22" href="$de/d40/structWFC__IPC__MSG__UINT32__T.html" title="WFC_IPC_MSG_UINT32_T" alt="" coords="630,570,818,597"/>
+<area shape="rect" id="node23" href="$d2/d0b/structWFC__IPC__MSG__SET__DEFERRAL__STREAM__T.html" title="WFC_IPC_MSG_SET_DEFERRAL\l_STREAM_T" alt="" coords="608,621,840,663"/>
+<area shape="rect" id="node24" href="$d9/d42/structWFC__IPC__MSG__GET__VERSION__T.html" title="WFC_IPC_MSG_GET_VERSION_T" alt="" coords="605,687,843,714"/>
+<area shape="rect" id="node25" href="$d8/d89/structWFC__IPC__MSG__SS__REGISTER__T.html" title="WFC_IPC_MSG_SS_REGISTER_T" alt="" coords="606,738,842,765"/>
+<area shape="rect" id="node26" href="$d5/df0/structWFC__IPC__MSG__SS__CREATE__INFO__T.html" title="WFC_IPC_MSG_SS_CREATE\l_INFO_T" alt="" coords="621,168,827,209"/>
+<area shape="rect" id="node12" href="$d3/dd4/structWFC__SCENE__T.html" title="Data for a &quot;scene&quot; (i.e. context and element data associated with a commit). " alt="" coords="343,42,466,69"/>
+<area shape="rect" id="node13" href="$d8/d79/structWFC__CONTEXT__DYNAMIC__ATTRIB__T.html" title="WFC_CONTEXT_DYNAMIC\l_ATTRIB_T" alt="" coords="5,5,200,47"/>
+<area shape="rect" id="node14" href="$d8/d00/structWFC__ELEMENT__ATTRIB__T.html" title="Attributes associated with each element. " alt="" coords="6,71,199,98"/>
+<area shape="rect" id="node20" href="$de/d87/structWFC__STREAM__IMAGE__T.html" title="Describes a generic buffer on the reloctable heap. " alt="" coords="314,1173,495,1199"/>
+<area shape="rect" id="node27" href="$d2/d49/structWFC__STREAM__INFO__T.html" title="WFC_STREAM_INFO_T" alt="" coords="319,178,490,205"/>
+</map>

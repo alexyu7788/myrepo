@@ -1,0 +1,5 @@
+<map id="MMAL_VC_STATS_T" name="MMAL_VC_STATS_T">
+<area shape="rect" id="node2" href="$df/de8/structMMAL__VC__COMP__STATS__T.html" title="MMAL_VC_COMP_STATS_T" alt="" coords="5,5,204,32"/>
+<area shape="rect" id="node3" href="$d2/da6/structMMAL__VC__STATS__T_1_1commands.html" title="MMAL_VC_STATS_T::commands" alt="" coords="228,5,451,32"/>
+<area shape="rect" id="node4" href="$dc/d0c/structMMAL__VC__STATS__T_1_1service.html" title="MMAL_VC_STATS_T::service" alt="" coords="475,5,676,32"/>
+</map>

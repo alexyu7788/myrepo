@@ -1,0 +1,28 @@
+var searchData=
+[
+  ['khr_5fstatus_5ft',['KHR_STATUS_T',['../d9/d7b/khrn__client__platform__filler__abstract_8h.html#aab38a4fa7bce95a38aeacbefae410d31',1,'KHR_STATUS_T():&#160;khrn_client_platform_filler_abstract.h'],['../d6/d4b/khrn__client__platform__filler__direct_8h.html#aab38a4fa7bce95a38aeacbefae410d31',1,'KHR_STATUS_T():&#160;khrn_client_platform_filler_direct.h'],['../d2/db3/khrn__client__platform__filler__vcos_8h.html#ac650ce08d22bf1e25bcd693998510c66',1,'KHR_STATUS_T():&#160;khrn_client_platform_filler_vcos.h'],['../d3/dc7/khrn__client__platform__filler__vcos__vchiq_8h.html#ac650ce08d22bf1e25bcd693998510c66',1,'KHR_STATUS_T():&#160;khrn_client_platform_filler_vcos_vchiq.h']]],
+  ['khrn_5fdo_5fsuspend_5fresume_5ffunc',['KHRN_DO_SUSPEND_RESUME_FUNC',['../d1/d0d/khrn__hw_8h.html#a09f84970ea465769143f7b42838cd709',1,'khrn_hw.h']]],
+  ['khrn_5fgeneric_5fmap',['KHRN_GENERIC_MAP',['../d3/d48/khrn__int__generic__map_8h.html#ac88cc1b37d1e00c339d6c86d68eb1ab5',1,'khrn_int_generic_map.h']]],
+  ['khrn_5fhw_5fcallback_5ft',['KHRN_HW_CALLBACK_T',['../df/df2/khrn__prod__4_8h.html#a6774e0c30c1358e08404eaa3f273e894',1,'khrn_prod_4.h']]],
+  ['khrn_5fpid_5fmap_5fvalue_5ft',['KHRN_PID_MAP_VALUE_T',['../d9/d7a/khrn__pid__map__value_8h.html#a5d9afce62060203d0e6c6ff0bd3fe56c',1,'khrn_pid_map_value.h']]],
+  ['khrn_5fshader_5ft',['KHRN_SHADER_T',['../df/df2/khrn__prod__4_8h.html#a9f825ad2353e2e2ec073e83da5f0e237',1,'khrn_prod_4.h']]],
+  ['khrn_5fspecify_5fevent_5ffunc',['KHRN_SPECIFY_EVENT_FUNC',['../d1/d0d/khrn__hw_8h.html#a90eaddc2ebf681a798007b21ae96dd08',1,'khrn_hw.h']]],
+  ['khrn_5fsync_5fmaster_5fwait_5ffunc',['KHRN_SYNC_MASTER_WAIT_FUNC',['../d1/d0d/khrn__hw_8h.html#a97e49206fadbe0d19539f3a44646785c',1,'khrn_hw.h']]],
+  ['khronos_5fdispatch_5ffunc',['KHRONOS_DISPATCH_FUNC',['../dd/d4a/khrn__dispatch_8h.html#a216615de13b3221935b7b9654e8b1197',1,'khrn_dispatch.h']]],
+  ['khronos_5ffloat_5ft',['khronos_float_t',['../d7/d3a/khrplatform_8h.html#a1591fab40b33ac5df09dfe668d4c62fe',1,'khrplatform.h']]],
+  ['khronos_5fget_5ffunc_5ftable_5ffunc',['KHRONOS_GET_FUNC_TABLE_FUNC',['../d5/d5f/khrn__misc_8h.html#a6e5fa997cb16d668b3bc1186c66adf34',1,'khrn_misc.h']]],
+  ['khronos_5fint16_5ft',['khronos_int16_t',['../d7/d3a/khrplatform_8h.html#aea31402f1f8fad5bec8bdc4dd0919da9',1,'khrplatform.h']]],
+  ['khronos_5fint32_5ft',['khronos_int32_t',['../d7/d3a/khrplatform_8h.html#af409d81dd359bf16ec33a34810a61b7c',1,'khrplatform.h']]],
+  ['khronos_5fint64_5ft',['khronos_int64_t',['../d7/d3a/khrplatform_8h.html#a55dc5b71f5c76458b3bfaa7621520796',1,'khrplatform.h']]],
+  ['khronos_5fint8_5ft',['khronos_int8_t',['../d7/d3a/khrplatform_8h.html#afb103620f76ee8c038529cbf0375cfed',1,'khrplatform.h']]],
+  ['khronos_5fintptr_5ft',['khronos_intptr_t',['../d7/d3a/khrplatform_8h.html#a182f27e517e990b263b51dc7b5f4ca3f',1,'khrplatform.h']]],
+  ['khronos_5fssize_5ft',['khronos_ssize_t',['../d7/d3a/khrplatform_8h.html#a8bd045e2edc004c61c2586c7cbcff35d',1,'khrplatform.h']]],
+  ['khronos_5fstime_5fnanoseconds_5ft',['khronos_stime_nanoseconds_t',['../d7/d3a/khrplatform_8h.html#aaec967d90a72559fa6aa12e0160743f8',1,'khrplatform.h']]],
+  ['khronos_5fuint16_5ft',['khronos_uint16_t',['../d7/d3a/khrplatform_8h.html#a99a2182846c1c18bb6629ac57ccbe178',1,'khrplatform.h']]],
+  ['khronos_5fuint32_5ft',['khronos_uint32_t',['../d7/d3a/khrplatform_8h.html#a8c4a2ace0aee51dc1c2c9827b90a31cf',1,'khrplatform.h']]],
+  ['khronos_5fuint64_5ft',['khronos_uint64_t',['../d7/d3a/khrplatform_8h.html#a8c07fcf14a1c0f49618f9abd659a3c99',1,'khrplatform.h']]],
+  ['khronos_5fuint8_5ft',['khronos_uint8_t',['../d7/d3a/khrplatform_8h.html#ab18f061b993d901e1161a4de18e8fc6b',1,'khrplatform.h']]],
+  ['khronos_5fuintptr_5ft',['khronos_uintptr_t',['../d7/d3a/khrplatform_8h.html#ab5f63ab277fa98e81850e4d15f87c19b',1,'khrplatform.h']]],
+  ['khronos_5fusize_5ft',['khronos_usize_t',['../d7/d3a/khrplatform_8h.html#a0e1021b0953a3d0e673c83cc66c58164',1,'khrplatform.h']]],
+  ['khronos_5futime_5fnanoseconds_5ft',['khronos_utime_nanoseconds_t',['../d7/d3a/khrplatform_8h.html#a7643cf38bfc46e0d120a42d586639856',1,'khrplatform.h']]]
+];

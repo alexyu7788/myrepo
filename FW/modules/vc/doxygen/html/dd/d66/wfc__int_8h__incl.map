@@ -1,0 +1,38 @@
+<map id="interface/khronos/wf/wfc_int.h" name="interface/khronos/wf/wfc_int.h">
+<area shape="rect" id="node2" href="$d1/dea/wfc_8h.html" title="Standard OpenWF&#45;C header file. Available from the Khronos OpenWF API Registry. " alt="" coords="61,95,228,136"/>
+<area shape="rect" id="node3" href="$de/d4e/wfcplatform_8h.html" title="wfcplatform.h" alt="" coords="94,184,195,211"/>
+<area shape="rect" id="node4" href="$d7/d3a/khrplatform_8h.html" title="../KHR/khrplatform.h" alt="" coords="31,415,173,442"/>
+<area shape="rect" id="node6" href="$da/de2/egl_8h.html" title="../EGL/egl.h" alt="" coords="141,259,233,285"/>
+<area shape="rect" id="node7" href="$d4/d35/eglplatform_8h.html" title="eglplatform.h" alt="" coords="140,333,237,360"/>
+<area shape="rect" id="node8" href="$db/d61/vc__dispmanx_8h.html" title="interface/vmcs_host\l/vc_dispmanx.h" alt="" coords="303,408,443,449"/>
+<area shape="rect" id="node9" href="$d4/de3/vcos_8h.html" title="interface/vcos/vcos.h" alt="" coords="1086,683,1233,710"/>
+<area shape="rect" id="node41" href="$da/d23/interface_2vctypes_2vc__image__types_8h.html" title="interface/vctypes/vc\l_image_types.h" alt="" coords="151,587,291,628"/>
+<area shape="rect" id="node43" href="$db/dbc/vc__dispservice__x__defs_8h.html" title="vc_dispservice_x_defs.h" alt="" coords="197,505,364,531"/>
+<area shape="rect" id="node44" href="$d3/da6/vc__dispmanx__types_8h.html" title="interface/vmcs_host\l/vc_dispmanx_types.h" alt="" coords="388,497,541,539"/>
+<area shape="rect" id="node46" href="$d7/dcd/vchi_8h.html" title="interface/vchi/vchi.h" alt="" coords="755,505,894,531"/>
+<area shape="rect" id="node10" href="$d6/db4/vcos__assert_8h.html" title="interface/vcos/vcos\l_assert.h" alt="" coords="1767,765,1903,807"/>
+<area shape="rect" id="node11" href="$da/df3/vcos__types_8h.html" title="interface/vcos/vcos\l_types.h" alt="" coords="1106,855,1242,896"/>
+<area shape="rect" id="node15" href="$db/db8/vcos__platform_8h.html" title="vcos_platform.h" alt="" coords="2407,773,2522,799"/>
+<area shape="rect" id="node28" href="$d0/d84/vcos__init_8h.html" title="interface/vcos/vcos\l_init.h" alt="" coords="786,765,922,807"/>
+<area shape="rect" id="node29" href="$d2/dc2/vcos__semaphore_8h.html" title="interface/vcos/vcos\l_semaphore.h" alt="" coords="1927,765,2063,807"/>
+<area shape="rect" id="node30" href="$de/d30/vcos__thread_8h.html" title="interface/vcos/vcos\l_thread.h" alt="" coords="2087,765,2223,807"/>
+<area shape="rect" id="node31" href="$da/d1b/vcos__mutex_8h.html" title="interface/vcos/vcos\l_mutex.h" alt="" coords="95,765,231,807"/>
+<area shape="rect" id="node32" href="$d8/db9/vcos__mem_8h.html" title="interface/vcos/vcos\l_mem.h" alt="" coords="255,765,391,807"/>
+<area shape="rect" id="node33" href="$d0/d85/vcos__logging_8h.html" title="interface/vcos/vcos\l_logging.h" alt="" coords="415,765,551,807"/>
+<area shape="rect" id="node34" href="$d1/d77/vcos__string_8h.html" title="interface/vcos/vcos\l_string.h" alt="" coords="2247,765,2383,807"/>
+<area shape="rect" id="node35" href="$dc/dd7/vcos__event_8h.html" title="interface/vcos/vcos\l_event.h" alt="" coords="575,765,711,807"/>
+<area shape="rect" id="node36" href="$d1/d6d/vcos__thread__attr_8h.html" title="interface/vcos/vcos\l_thread_attr.h" alt="" coords="1607,765,1743,807"/>
+<area shape="rect" id="node37" href="$dc/d07/vcos__tls_8h.html" title="interface/vcos/vcos\l_tls.h" alt="" coords="946,765,1082,807"/>
+<area shape="rect" id="node38" href="$d6/da9/vcos__reentrant__mutex_8h.html" title="interface/vcos/vcos\l_reentrant_mutex.h" alt="" coords="1106,765,1242,807"/>
+<area shape="rect" id="node39" href="$d6/d00/vcos__named__semaphore_8h.html" title="interface/vcos/vcos\l_named_semaphore.h" alt="" coords="1267,765,1417,807"/>
+<area shape="rect" id="node40" href="$dd/dc6/vcos__quickslow__mutex_8h.html" title="interface/vcos/vcos\l_quickslow_mutex.h" alt="" coords="1442,765,1583,807"/>
+<area shape="rect" id="node13" href="$d2/d69/vcos__platform__types_8h.html" title="vcos_platform_types.h" alt="" coords="1182,951,1337,978"/>
+<area shape="rect" id="node14" href="$df/d5a/vcos__attr_8h.html" title="interface/vcos/vcos\l_attr.h" alt="" coords="1022,944,1158,985"/>
+<area shape="rect" id="node27" href="$d9/d48/dlfcn_8h.html" title="dlfcn.h" alt="" coords="2786,862,2847,889"/>
+<area shape="rect" id="node42" href="$de/dc4/vcos__stdint_8h.html" title="interface/vcos/vcos\l_stdint.h" alt="" coords="122,676,258,717"/>
+<area shape="rect" id="node45" href="$d8/ddd/vc__display__types_8h.html" title="interface/vctypes/vc\l_display_types.h" alt="" coords="395,587,535,628"/>
+<area shape="rect" id="node47" href="$d9/d77/vchi__cfg_8h.html" title="interface/vchi/vchi\l_cfg.h" alt="" coords="887,587,1015,628"/>
+<area shape="rect" id="node48" href="$d8/d56/vchi__common_8h.html" title="interface/vchi/vchi\l_common.h" alt="" coords="673,676,801,717"/>
+<area shape="rect" id="node49" href="$d4/d67/connection_8h.html" title="interface/vchi/connections\l/connection.h" alt="" coords="587,587,761,628"/>
+<area shape="rect" id="node50" href="$d1/dff/vchi__mh_8h.html" title="vchi_mh.h" alt="" coords="1039,594,1122,621"/>
+</map>

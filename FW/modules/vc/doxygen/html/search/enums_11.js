@@ -1,0 +1,22 @@
+var searchData=
+[
+  ['wfc_5fimage_5fflags_5ft',['WFC_IMAGE_FLAGS_T',['../de/d50/wfc__int_8h.html#ae62d2e2f50e9fe762ab8f0a8102b17bf',1,'wfc_int.h']]],
+  ['wfc_5fipc_5fmsg_5ftype',['WFC_IPC_MSG_TYPE',['../d3/d18/wfc__ipc_8h.html#ac0b82c5c59d50de5abcdbcdba98a307b',1,'wfc_ipc.h']]],
+  ['wfc_5fpixel_5fformat_5ft',['WFC_PIXEL_FORMAT_T',['../de/d50/wfc__int_8h.html#a306153343ca0e0e874847e9a3b98865b',1,'wfc_int.h']]],
+  ['wfc_5fprotection_5fflags_5ft',['WFC_PROTECTION_FLAGS_T',['../de/d50/wfc__int_8h.html#a6eb2cc262ad553523e7fe74b61f34ced',1,'wfc_int.h']]],
+  ['wfc_5fserver_5fcommit_5fflags_5ft',['WFC_SERVER_COMMIT_FLAGS_T',['../db/d8c/wfc__server__api_8h.html#a8e3c4ec36b39913fa12f9dbcc69ea44c',1,'wfc_server_api.h']]],
+  ['wfc_5fstream_5fimage_5fflip_5ft',['WFC_STREAM_IMAGE_FLIP_T',['../de/d50/wfc__int_8h.html#a9aa1e62e9e63ccafc1754d277db1c614',1,'wfc_int.h']]],
+  ['wfc_5fstream_5fimage_5ftype_5ft',['WFC_STREAM_IMAGE_TYPE_T',['../de/d50/wfc__int_8h.html#a86d5e96777e12284f5e3630ab1c1f0f7',1,'wfc_int.h']]],
+  ['wfcboolean',['WFCboolean',['../d3/dbb/structKHRONOS__FUNC__TABLE__T.html#a81cb7d7ca4796c0775c015d8c5d4af03',1,'KHRONOS_FUNC_TABLE_T::WFCboolean()'],['../de/d4e/wfcplatform_8h.html#a49525faeda6e6c0f48b69e45bcdba533',1,'WFCboolean():&#160;wfcplatform.h']]],
+  ['wfccontextattrib',['WFCContextAttrib',['../d3/dbb/structKHRONOS__FUNC__TABLE__T.html#ac59a8af48b923b18d7d3fc4e240636ce',1,'KHRONOS_FUNC_TABLE_T::WFCContextAttrib()'],['../d1/dea/wfc_8h.html#a7bbdb8ac72f88061ce0c8fafea11b7f0',1,'WFCContextAttrib():&#160;wfc.h']]],
+  ['wfccontexttype',['WFCContextType',['../d3/dbb/structKHRONOS__FUNC__TABLE__T.html#ab4c8ab443be8b920f676137499098717',1,'KHRONOS_FUNC_TABLE_T::WFCContextType()'],['../d1/dea/wfc_8h.html#a814a7d1abd9b4fa9aaf04e11d5482781',1,'WFCContextType():&#160;wfc.h']]],
+  ['wfcdeviceattrib',['WFCDeviceAttrib',['../d3/dbb/structKHRONOS__FUNC__TABLE__T.html#a1aa01e383ebbfe4b1332e0cb1f217c78',1,'KHRONOS_FUNC_TABLE_T::WFCDeviceAttrib()'],['../d1/dea/wfc_8h.html#ad347dc8e2b3c72e96cef51a32e779909',1,'WFCDeviceAttrib():&#160;wfc.h']]],
+  ['wfcdeviceclass',['WFCDeviceClass',['../d3/dbb/structKHRONOS__FUNC__TABLE__T.html#afbd0998338feb258123c8f93dc303d83',1,'KHRONOS_FUNC_TABLE_T::WFCDeviceClass()'],['../d1/dea/wfc_8h.html#a5fc242aadaf28d17629122d3129819f5',1,'WFCDeviceClass():&#160;wfc.h']]],
+  ['wfcdevicefilter',['WFCDeviceFilter',['../d3/dbb/structKHRONOS__FUNC__TABLE__T.html#adfd78de1bb3ea228915bee021bb66f04',1,'KHRONOS_FUNC_TABLE_T::WFCDeviceFilter()'],['../d1/dea/wfc_8h.html#aa4bd383117b642274fe0d7f98499d147',1,'WFCDeviceFilter():&#160;wfc.h']]],
+  ['wfcelementattrib',['WFCElementAttrib',['../d3/dbb/structKHRONOS__FUNC__TABLE__T.html#aa82ff343b3c7afdda81a5b80568819f5',1,'KHRONOS_FUNC_TABLE_T::WFCElementAttrib()'],['../d1/dea/wfc_8h.html#aa66e2aeed8423b5fe1c46b74a4c0c64d',1,'WFCElementAttrib():&#160;wfc.h']]],
+  ['wfcerrorcode',['WFCErrorCode',['../d3/dbb/structKHRONOS__FUNC__TABLE__T.html#af53581019505bf49516cfa48a6b55782',1,'KHRONOS_FUNC_TABLE_T::WFCErrorCode()'],['../d1/dea/wfc_8h.html#aac1772859f4dfa6f0fe03f98501939b9',1,'WFCErrorCode():&#160;wfc.h']]],
+  ['wfcrotation',['WFCRotation',['../d3/dbb/structKHRONOS__FUNC__TABLE__T.html#aee5c465d6a6706823203c9220deb13fa',1,'KHRONOS_FUNC_TABLE_T::WFCRotation()'],['../d1/dea/wfc_8h.html#a175857b78a33a1a2b7421e421baa7b1c',1,'WFCRotation():&#160;wfc.h']]],
+  ['wfcscalefilter',['WFCScaleFilter',['../d3/dbb/structKHRONOS__FUNC__TABLE__T.html#a743497b1f70b03ee086adf5b299246bd',1,'KHRONOS_FUNC_TABLE_T::WFCScaleFilter()'],['../d1/dea/wfc_8h.html#ab1ef5cbc4e44a8da49e769e47032b614',1,'WFCScaleFilter():&#160;wfc.h']]],
+  ['wfcstringid',['WFCStringID',['../d3/dbb/structKHRONOS__FUNC__TABLE__T.html#a52538d1b86f6a50739e2a2248e946528',1,'KHRONOS_FUNC_TABLE_T::WFCStringID()'],['../d1/dea/wfc_8h.html#a9462e30f03a1b40709245670f627c342',1,'WFCStringID():&#160;wfc.h']]],
+  ['wfctransparencytype',['WFCTransparencyType',['../d3/dbb/structKHRONOS__FUNC__TABLE__T.html#abe62cd85347385182b86a78d58059b42',1,'KHRONOS_FUNC_TABLE_T::WFCTransparencyType()'],['../d1/dea/wfc_8h.html#a4fe69ad92661a7aad6b504e3c9b083f2',1,'WFCTransparencyType():&#160;wfc.h']]]
+];

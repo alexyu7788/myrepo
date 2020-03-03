@@ -1,0 +1,9 @@
+var searchData=
+[
+  ['unix_5fto_5fiso8601',['unix_to_iso8601',['../db/d34/gps_8h.html#a134c5330307e2ffd4245aa5ac875d40a',1,'gps.h']]],
+  ['unload_5fwavefront',['unload_wavefront',['../d0/d14/hello__pi_2hello__teapot_2models_8c.html#adae1f52225a2e7531634f0d900dafcba',1,'unload_wavefront(MODEL_T m):&#160;models.c'],['../da/df2/hello__pi_2hello__teapot_2models_8h.html#adae1f52225a2e7531634f0d900dafcba',1,'unload_wavefront(MODEL_T m):&#160;models.c'],['../d1/d25/raspicam_2gl__scenes_2models_8c.html#adae1f52225a2e7531634f0d900dafcba',1,'unload_wavefront(MODEL_T m):&#160;models.c'],['../d0/df6/raspicam_2gl__scenes_2models_8h.html#adae1f52225a2e7531634f0d900dafcba',1,'unload_wavefront(MODEL_T m):&#160;models.c']]],
+  ['unmapmem',['unmapmem',['../dc/d09/mailbox_8c.html#aa9090c94c4b3f0094135105bbf05aad0',1,'unmapmem(void *addr, unsigned size):&#160;mailbox.c'],['../d1/d84/mailbox_8h.html#aa9090c94c4b3f0094135105bbf05aad0',1,'unmapmem(void *addr, unsigned size):&#160;mailbox.c']]],
+  ['updatecrc32',['updateCRC32',['../d2/d0c/crc__32_8c.html#a7d2a67cbec0b946380febeaff556205b',1,'crc_32.c']]],
+  ['use_5fgencmd_5fservice',['use_gencmd_service',['../d4/d55/vc__vchi__gencmd_8c.html#a08b9e6842f7fa4b7caae0fa819ea37cf',1,'use_gencmd_service(void):&#160;vc_vchi_gencmd.c'],['../d0/d8d/vc__vchi__gencmd_8h.html#af15825db4fd9083673eb86f980eeb2a7',1,'use_gencmd_service(void):&#160;vc_vchi_gencmd.c']]],
+  ['utf8_5ffrom_5fcharset',['utf8_from_charset',['../dd/d34/containers__utils_8c.html#acd60efd6a4bc6e41a443ecc2e49cd3dd',1,'utf8_from_charset(const char *charset, char *out, unsigned int out_size, const void *in, unsigned int in_size):&#160;containers_utils.c'],['../d2/d44/containers__utils_8h.html#acd60efd6a4bc6e41a443ecc2e49cd3dd',1,'utf8_from_charset(const char *charset, char *out, unsigned int out_size, const void *in, unsigned int in_size):&#160;containers_utils.c']]]
+];

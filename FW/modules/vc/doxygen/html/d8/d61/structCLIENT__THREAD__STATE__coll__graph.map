@@ -1,0 +1,7 @@
+<map id="CLIENT_THREAD_STATE" name="CLIENT_THREAD_STATE">
+<area shape="rect" id="node3" href="$db/d1a/structEGL__SURFACE__T.html" title="EGL_SURFACE_T" alt="" coords="260,200,395,227"/>
+<area shape="rect" id="node6" href="$df/ddd/structEGL__CONTEXT__T.html" title="EGL_CONTEXT_T" alt="" coords="5,200,140,227"/>
+<area shape="rect" id="node2" href="$d4/db9/structEGL__CURRENT__T.html" title="EGL_CURRENT_T" alt="" coords="120,305,257,332"/>
+<area shape="rect" id="node4" href="$d4/d75/structVCOS__NAMED__SEMAPHORE__T.html" title="VCOS_NAMED_SEMAPHORE_T" alt="" coords="282,109,506,136"/>
+<area shape="rect" id="node5" href="$de/d64/structVCOS__NAMED__SEMAPHORE__IMPL__T.html" title="VCOS_NAMED_SEMAPHORE\l_IMPL_T" alt="" coords="289,5,499,47"/>
+</map>

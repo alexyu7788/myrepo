@@ -1,0 +1,43 @@
+<map id="interface/khronos/ext/egl_khr_lock_surface_client.c" name="interface/khronos/ext/egl_khr_lock_surface_client.c">
+<area shape="rect" id="node2" href="$d5/d8e/khrn__client__mangle_8h.html" title="interface/khronos/common\l/khrn_client_mangle.h" alt="" coords="5,109,181,151"/>
+<area shape="rect" id="node3" href="$da/d05/khrn__int__common_8h.html" title="interface/khronos/common\l/khrn_int_common.h" alt="" coords="624,645,800,687"/>
+<area shape="rect" id="node12" href="$da/de2/egl_8h.html" title="interface/khronos/include\l/EGL/egl.h" alt="" coords="1266,467,1433,508"/>
+<area shape="rect" id="node23" href="$d3/dda/eglext_8h.html" title="interface/khronos/include\l/EGL/eglext.h" alt="" coords="414,467,581,508"/>
+<area shape="rect" id="node25" href="$d1/d5c/khrn__client_8h.html" title="interface/khronos/common\l/khrn_client.h" alt="" coords="761,199,937,240"/>
+<area shape="rect" id="node44" href="$d8/d96/khrn__client__rpc_8h.html" title="interface/khronos/common\l/khrn_client_rpc.h" alt="" coords="1448,109,1624,151"/>
+<area shape="rect" id="node48" href="$d7/d95/egl__client__config_8h.html" title="interface/khronos/egl\l/egl_client_config.h" alt="" coords="986,288,1129,329"/>
+<area shape="rect" id="node4" href="$d2/d98/v3d__ver_8h.html" title="helpers/v3d/v3d_ver.h" alt="" coords="637,749,787,776"/>
+<area shape="rect" id="node5" href="$d6/db4/vcos__assert_8h.html" title="interface/vcos/vcos\l_assert.h" alt="" coords="1287,928,1423,969"/>
+<area shape="rect" id="node11" href="$d9/d0a/vcos__stdbool_8h.html" title="interface/vcos/vcos\l_stdbool.h" alt="" coords="476,742,612,783"/>
+<area shape="rect" id="node6" href="$da/df3/vcos__types_8h.html" title="interface/vcos/vcos\l_types.h" alt="" coords="1392,1017,1528,1059"/>
+<area shape="rect" id="node8" href="$d2/d69/vcos__platform__types_8h.html" title="vcos_platform_types.h" alt="" coords="1383,1114,1537,1141"/>
+<area shape="rect" id="node9" href="$df/d5a/vcos__attr_8h.html" title="interface/vcos/vcos\l_attr.h" alt="" coords="1561,1107,1697,1148"/>
+<area shape="rect" id="node13" href="$d4/d35/eglplatform_8h.html" title="eglplatform.h" alt="" coords="1338,563,1435,590"/>
+<area shape="rect" id="node14" href="$d7/d3a/khrplatform_8h.html" title="../KHR/khrplatform.h" alt="" coords="1751,653,1894,679"/>
+<area shape="rect" id="node16" href="$db/d61/vc__dispmanx_8h.html" title="interface/vmcs_host\l/vc_dispmanx.h" alt="" coords="1355,645,1495,687"/>
+<area shape="rect" id="node17" href="$d4/de3/vcos_8h.html" title="interface/vcos/vcos.h" alt="" coords="1440,846,1587,873"/>
+<area shape="rect" id="node19" href="$da/d23/interface_2vctypes_2vc__image__types_8h.html" title="interface/vctypes/vc\l_image_types.h" alt="" coords="1022,839,1162,880"/>
+<area shape="rect" id="node20" href="$db/dbc/vc__dispservice__x__defs_8h.html" title="vc_dispservice_x_defs.h" alt="" coords="1130,749,1297,776"/>
+<area shape="rect" id="node21" href="$d3/da6/vc__dispmanx__types_8h.html" title="interface/vmcs_host\l/vc_dispmanx_types.h" alt="" coords="901,742,1054,783"/>
+<area shape="rect" id="node22" href="$d7/dcd/vchi_8h.html" title="interface/vchi/vchi.h" alt="" coords="1321,749,1460,776"/>
+<area shape="rect" id="node18" href="$d6/da9/vcos__reentrant__mutex_8h.html" title="interface/vcos/vcos\l_reentrant_mutex.h" alt="" coords="1497,928,1633,969"/>
+<area shape="rect" id="node24" href="$d1/d3f/eglext__brcm_8h.html" title="eglext_brcm.h" alt="" coords="445,563,549,590"/>
+<area shape="rect" id="node26" href="$d8/d8c/khrn__client__platform_8h.html" title="interface/khronos/common\l/khrn_client_platform.h" alt="" coords="1045,377,1221,419"/>
+<area shape="rect" id="node37" href="$dc/daf/egl__client__context_8h.html" title="interface/khronos/egl\l/egl_client_context.h" alt="" coords="358,377,501,419"/>
+<area shape="rect" id="node38" href="$d1/dc4/egl__client__surface_8h.html" title="interface/khronos/egl\l/egl_client_surface.h" alt="" coords="1153,288,1295,329"/>
+<area shape="rect" id="node41" href="$dd/d65/khrn__client__pointermap_8h.html" title="interface/khronos/common\l/khrn_client_pointermap.h" alt="" coords="735,288,911,329"/>
+<area shape="rect" id="node43" href="$d7/d2f/khrn__client__global__image__map_8h.html" title="interface/khronos/common\l/khrn_client_global_image_map.h" alt="" coords="495,288,710,329"/>
+<area shape="rect" id="node27" href="$d1/df9/khrn__int__image_8h.html" title="interface/khronos/common\l/khrn_int_image.h" alt="" coords="1065,467,1241,508"/>
+<area shape="rect" id="node33" href="$df/d5d/egl__int_8h.html" title="interface/khronos/egl\l/egl_int.h" alt="" coords="605,467,747,508"/>
+<area shape="rect" id="node35" href="$d2/db3/khrn__client__platform__filler__vcos_8h.html" title="interface/khronos/common\l/vcos/khrn_client_platform\l_filler_vcos.h" alt="" coords="1585,735,1761,791"/>
+<area shape="rect" id="node36" href="$d1/dea/wfc_8h.html" title="Standard OpenWF&#45;C header file. Available from the Khronos OpenWF API Registry. " alt="" coords="823,467,990,508"/>
+<area shape="rect" id="node28" href="$da/d0a/khrn__int__util_8h.html" title="interface/khronos/common\l/khrn_int_util.h" alt="" coords="1065,556,1241,597"/>
+<area shape="rect" id="node32" href="$de/d3c/khrn__int__util__cr_8h.html" title="interface/khronos/common\l/khrn_int_util_cr.h" alt="" coords="1065,645,1241,687"/>
+<area shape="rect" id="node39" href="$dc/d43/openvg_8h.html" title="OpenVG 1.1 API. " alt="" coords="1739,377,1906,419"/>
+<area shape="rect" id="node40" href="$d7/d74/vgplatform_8h.html" title="VG platform specific header. " alt="" coords="1775,563,1870,590"/>
+<area shape="rect" id="node42" href="$d3/d48/khrn__int__generic__map_8h.html" title="interface/khronos/common\l/khrn_int_generic_map.h" alt="" coords="525,377,701,419"/>
+<area shape="rect" id="node45" href="$d6/d5f/khrn__int__ids_8h.html" title="interface/khronos/common\l/khrn_int_ids.h" alt="" coords="1559,199,1735,240"/>
+<area shape="rect" id="node46" href="$d2/d61/gl_8h.html" title="interface/khronos/include\l/GLES/gl.h" alt="" coords="1861,199,2027,240"/>
+<area shape="rect" id="node47" href="$d6/d4c/glplatform_8h.html" title="glplatform.h" alt="" coords="1896,563,1987,590"/>
+<area shape="rect" id="node49" href="$d4/da6/egl__int__config_8h.html" title="interface/khronos/egl\l/egl_int_config.h" alt="" coords="726,377,869,419"/>
+</map>

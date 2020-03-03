@@ -1,0 +1,12 @@
+<map id="MMAL_CLOCK_EVENT_T" name="MMAL_CLOCK_EVENT_T">
+<area shape="rect" id="node2" href="$dd/d88/structMMAL__BUFFER__HEADER__T.html" title="MMAL_BUFFER_HEADER_T" alt="" coords="577,44,777,71"/>
+<area shape="rect" id="node3" href="$d7/dda/structMMAL__BUFFER__HEADER__PRIVATE__T.html" title="MMAL_BUFFER_HEADER\l_PRIVATE_T" alt="" coords="973,14,1159,55"/>
+<area shape="rect" id="node4" href="$db/dc2/unionMMAL__BUFFER__HEADER__TYPE__SPECIFIC__T.html" title="MMAL_BUFFER_HEADER\l_TYPE_SPECIFIC_T" alt="" coords="275,37,460,78"/>
+<area shape="rect" id="node5" href="$dc/d8a/structMMAL__BUFFER__HEADER__VIDEO__SPECIFIC__T.html" title="MMAL_BUFFER_HEADER\l_VIDEO_SPECIFIC_T" alt="" coords="5,37,191,78"/>
+<area shape="rect" id="node6" href="$d1/d39/structMMAL__RATIONAL__T.html" title="MMAL_RATIONAL_T" alt="" coords="603,132,752,159"/>
+<area shape="rect" id="node7" href="$d7/d6c/structMMAL__CLOCK__LATENCY__T.html" title="MMAL_CLOCK_LATENCY_T" alt="" coords="579,183,776,209"/>
+<area shape="rect" id="node8" href="$db/d40/structMMAL__CLOCK__UPDATE__THRESHOLD__T.html" title="MMAL_CLOCK_UPDATE_THRESHOLD_T" alt="" coords="537,233,817,260"/>
+<area shape="rect" id="node9" href="$d8/d32/structMMAL__CLOCK__DISCONT__THRESHOLD__T.html" title="MMAL_CLOCK_DISCONT\l_THRESHOLD_T" alt="" coords="587,285,768,326"/>
+<area shape="rect" id="node10" href="$de/d67/structMMAL__CLOCK__REQUEST__THRESHOLD__T.html" title="MMAL_CLOCK_REQUEST\l_THRESHOLD_T" alt="" coords="585,350,770,391"/>
+<area shape="rect" id="node11" href="$d7/d34/structMMAL__CLOCK__BUFFER__INFO__T.html" title="MMAL_CLOCK_BUFFER_INFO_T" alt="" coords="563,416,791,443"/>
+</map>

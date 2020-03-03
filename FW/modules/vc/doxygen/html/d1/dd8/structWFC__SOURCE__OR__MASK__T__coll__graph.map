@@ -1,0 +1,9 @@
+<map id="WFC_SOURCE_OR_MASK_T" name="WFC_SOURCE_OR_MASK_T">
+<area shape="rect" id="node2" href="$d1/dc4/struct__WFC__LINK.html" title="Simple doubly&#45;linked list. " alt="" coords="11,13,109,39"/>
+<area shape="rect" id="node3" href="$d3/d34/structWFC__CONTEXT__T.html" title="WF&#45;C context. " alt="" coords="324,260,463,287"/>
+<area shape="rect" id="node8" href="$de/ddc/structWFC__DEVICE__T.html" title="WF&#45;C device. " alt="" coords="202,140,329,167"/>
+<area shape="rect" id="node4" href="$d5/d50/structWFC__CONTEXT__STATIC__ATTRIB__T.html" title="Attributes associated with a context which are fixed on creation. " alt="" coords="353,133,532,174"/>
+<area shape="rect" id="node5" href="$d3/dd4/structWFC__SCENE__T.html" title="Data for a &quot;scene&quot; (i.e. context and element data associated with a commit). " alt="" coords="719,140,841,167"/>
+<area shape="rect" id="node6" href="$d8/d79/structWFC__CONTEXT__DYNAMIC__ATTRIB__T.html" title="WFC_CONTEXT_DYNAMIC\l_ATTRIB_T" alt="" coords="483,5,677,47"/>
+<area shape="rect" id="node7" href="$d8/d00/structWFC__ELEMENT__ATTRIB__T.html" title="Attributes associated with each element. " alt="" coords="702,13,895,39"/>
+</map>

@@ -1,0 +1,31 @@
+<map id="host_applications/linux/libs/bcm_host/include/bcm_host.h" name="host_applications/linux/libs/bcm_host/include/bcm_host.h">
+<area shape="rect" id="node2" href="$d9/d13/launcher__rpi_8c.html" title="host_applications/android\l/apps/vidtex/launcher_rpi.c" alt="" coords="5,117,184,158"/>
+<area shape="rect" id="node3" href="$d3/d9a/audio_8c.html" title="host_applications/linux\l/apps/hello_pi/hello_audio\l/audio.c" alt="" coords="208,109,379,165"/>
+<area shape="rect" id="node4" href="$d6/d22/dispmanx_8c.html" title="host_applications/linux\l/apps/hello_pi/hello_dispmanx\l/dispmanx.c" alt="" coords="403,109,599,165"/>
+<area shape="rect" id="node5" href="$dd/d3f/encode_8c.html" title="host_applications/linux\l/apps/hello_pi/hello_encode\l/encode.c" alt="" coords="623,109,806,165"/>
+<area shape="rect" id="node6" href="$da/dc3/hello__font_2main_8c.html" title="host_applications/linux\l/apps/hello_pi/hello_font\l/main.c" alt="" coords="831,109,993,165"/>
+<area shape="rect" id="node7" href="$d3/d31/jpeg_8h.html" title="host_applications/linux\l/apps/hello_pi/hello_jpeg\l/jpeg.h" alt="" coords="1018,109,1182,165"/>
+<area shape="rect" id="node9" href="$d6/d86/mmal__encode_8c.html" title="host_applications/linux\l/apps/hello_pi/hello_mmal\l_encode/mmal_encode.c" alt="" coords="1206,109,1378,165"/>
+<area shape="rect" id="node10" href="$d0/d0c/hello__teapot_2triangle_8c.html" title="host_applications/linux\l/apps/hello_pi/hello_teapot\l/triangle.c" alt="" coords="1403,109,1579,165"/>
+<area shape="rect" id="node11" href="$d0/db7/hello__teapot_2video_8c.html" title="host_applications/linux\l/apps/hello_pi/hello_teapot\l/video.c" alt="" coords="1603,109,1779,165"/>
+<area shape="rect" id="node12" href="$dc/d22/hello__triangle_2triangle_8c.html" title="host_applications/linux\l/apps/hello_pi/hello_triangle\l/triangle.c" alt="" coords="1803,109,1986,165"/>
+<area shape="rect" id="node13" href="$df/dc9/triangle2_8c.html" title="host_applications/linux\l/apps/hello_pi/hello_triangle2\l/triangle2.c" alt="" coords="2011,109,2200,165"/>
+<area shape="rect" id="node14" href="$d7/d52/hello__video_2video_8c.html" title="host_applications/linux\l/apps/hello_pi/hello_video\l/video.c" alt="" coords="2224,109,2395,165"/>
+<area shape="rect" id="node15" href="$d1/d75/hello__videocube_2triangle_8c.html" title="host_applications/linux\l/apps/hello_pi/hello_videocube\l/triangle.c" alt="" coords="2419,109,2618,165"/>
+<area shape="rect" id="node16" href="$d6/d7e/hello__videocube_2video_8c.html" title="host_applications/linux\l/apps/hello_pi/hello_videocube\l/video.c" alt="" coords="2642,109,2841,165"/>
+<area shape="rect" id="node17" href="$de/d75/graphics__x__private_8h.html" title="host_applications/linux\l/apps/hello_pi/libs/vgfont\l/graphics_x_private.h" alt="" coords="2865,109,3031,165"/>
+<area shape="rect" id="node21" href="$de/d37/RaspiStill_8c.html" title="host_applications/linux\l/apps/raspicam/RaspiStill.c" alt="" coords="3055,117,3238,158"/>
+<area shape="rect" id="node22" href="$d0/d89/RaspiStillYUV_8c.html" title="host_applications/linux\l/apps/raspicam/RaspiStillYUV.c" alt="" coords="3263,117,3473,158"/>
+<area shape="rect" id="node23" href="$d6/d18/RaspiTexUtil_8c.html" title="host_applications/linux\l/apps/raspicam/RaspiTexUtil.c" alt="" coords="3497,117,3700,158"/>
+<area shape="rect" id="node24" href="$d7/d0c/RaspiVid_8c.html" title="host_applications/linux\l/apps/raspicam/RaspiVid.c" alt="" coords="3724,117,3903,158"/>
+<area shape="rect" id="node25" href="$d3/dce/RaspiVidYUV_8c.html" title="host_applications/linux\l/apps/raspicam/RaspiVidYUV.c" alt="" coords="3927,117,4134,158"/>
+<area shape="rect" id="node26" href="$d3/d2b/bcm__host_8c.html" title="host_applications/linux\l/libs/bcm_host/bcm_host.c" alt="" coords="4159,117,4337,158"/>
+<area shape="rect" id="node27" href="$df/d30/example__basic__1_8c.html" title="interface/mmal/test\l/examples/example_basic_1.c" alt="" coords="4362,117,4561,158"/>
+<area shape="rect" id="node28" href="$d2/d6e/example__basic__2_8c.html" title="interface/mmal/test\l/examples/example_basic_2.c" alt="" coords="4585,117,4783,158"/>
+<area shape="rect" id="node29" href="$de/df8/example__connections_8c.html" title="interface/mmal/test\l/examples/example_connections.c" alt="" coords="4807,117,5030,158"/>
+<area shape="rect" id="node30" href="$d8/dcc/example__graph_8c.html" title="interface/mmal/test\l/examples/example_graph.c" alt="" coords="5054,117,5239,158"/>
+<area shape="rect" id="node8" href="$d1/ded/jpeg_8c.html" title="host_applications/linux\l/apps/hello_pi/hello_jpeg\l/jpeg.c" alt="" coords="1018,213,1182,269"/>
+<area shape="rect" id="node18" href="$da/d8c/font_8c.html" title="host_applications/linux\l/apps/hello_pi/libs/vgfont\l/font.c" alt="" coords="2674,213,2841,269"/>
+<area shape="rect" id="node19" href="$d5/d95/graphics_8c.html" title="host_applications/linux\l/apps/hello_pi/libs/vgfont\l/graphics.c" alt="" coords="2865,213,3031,269"/>
+<area shape="rect" id="node20" href="$da/de4/vgft_8c.html" title="host_applications/linux\l/apps/hello_pi/libs/vgfont\l/vgft.c" alt="" coords="3055,213,3222,269"/>
+</map>

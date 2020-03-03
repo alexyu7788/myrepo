@@ -1,0 +1,36 @@
+<map id="OMX_FORMAT_PARAM_TYPE" name="OMX_FORMAT_PARAM_TYPE">
+<area shape="rect" id="node2" href="$dd/d01/structOMX__AUDIO__PARAM__TDMAEFRTYPE.html" title="OMX_AUDIO_PARAM_TDMAEFRTYPE" alt="" coords="315,157,579,184"/>
+<area shape="rect" id="node3" href="$db/d7d/unionOMX__VERSIONTYPE.html" title="OMX_VERSIONTYPE" alt="" coords="5,793,160,820"/>
+<area shape="rect" id="node4" href="$d4/d4a/structOMX__AUDIO__PARAM__G723TYPE.html" title="OMX_AUDIO_PARAM_G723TYPE" alt="" coords="332,208,563,235"/>
+<area shape="rect" id="node5" href="$d5/d3b/structOMX__AUDIO__PARAM__SBCTYPE.html" title="OMX_AUDIO_PARAM_SBCTYPE" alt="" coords="334,259,561,285"/>
+<area shape="rect" id="node6" href="$d1/d9c/structOMX__AUDIO__PARAM__MIDITYPE.html" title="OMX_AUDIO_PARAM_MIDITYPE" alt="" coords="333,56,561,83"/>
+<area shape="rect" id="node8" href="$d7/d90/structOMX__AUDIO__PARAM__GSMEFRTYPE.html" title="OMX_AUDIO_PARAM_GSMEFRTYPE" alt="" coords="319,360,575,387"/>
+<area shape="rect" id="node9" href="$d7/d36/structOMX__AUDIO__PARAM__PCMMODETYPE.html" title="OMX_AUDIO_PARAM_PCMMODETYPE" alt="" coords="313,411,582,437"/>
+<area shape="rect" id="node10" href="$d3/dec/structOMX__VIDEO__PARAM__WMVTYPE.html" title="OMX_VIDEO_PARAM_WMVTYPE" alt="" coords="332,461,563,488"/>
+<area shape="rect" id="node11" href="$d4/d41/structOMX__AUDIO__PARAM__SMVTYPE.html" title="OMX_AUDIO_PARAM_SMVTYPE" alt="" coords="333,512,561,539"/>
+<area shape="rect" id="node12" href="$dc/dce/structOMX__AUDIO__PARAM__EVRCTYPE.html" title="OMX_AUDIO_PARAM_EVRCTYPE" alt="" coords="329,563,566,589"/>
+<area shape="rect" id="node13" href="$d0/d81/structOMX__AUDIO__PARAM__VORBISTYPE.html" title="OMX_AUDIO_PARAM_VORBISTYPE" alt="" coords="322,613,573,640"/>
+<area shape="rect" id="node14" href="$d0/dd7/structOMX__VIDEO__PARAM__MPEG4TYPE.html" title="OMX_VIDEO_PARAM_MPEG4TYPE" alt="" coords="325,664,569,691"/>
+<area shape="rect" id="node15" href="$dc/da7/structOMX__AUDIO__PARAM__MP3TYPE.html" title="OMX_AUDIO_PARAM_MP3TYPE" alt="" coords="334,715,561,741"/>
+<area shape="rect" id="node16" href="$d9/d57/structOMX__VIDEO__PARAM__AVCTYPE.html" title="OMX_VIDEO_PARAM_AVCTYPE" alt="" coords="334,765,561,792"/>
+<area shape="rect" id="node17" href="$d9/daa/structOMX__AUDIO__PARAM__AMRTYPE.html" title="OMX_AUDIO_PARAM_AMRTYPE" alt="" coords="333,816,562,843"/>
+<area shape="rect" id="node18" href="$d8/d2a/structOMX__AUDIO__PARAM__TDMAFRTYPE.html" title="OMX_AUDIO_PARAM_TDMAFRTYPE" alt="" coords="320,867,575,893"/>
+<area shape="rect" id="node19" href="$d9/d18/structOMX__VIDEO__PARAM__H263TYPE.html" title="OMX_VIDEO_PARAM_H263TYPE" alt="" coords="333,917,562,944"/>
+<area shape="rect" id="node20" href="$dd/d35/structOMX__AUDIO__PARAM__RATYPE.html" title="OMX_AUDIO_PARAM_RATYPE" alt="" coords="338,968,557,995"/>
+<area shape="rect" id="node21" href="$d7/df5/structOMX__AUDIO__PARAM__PDCFRTYPE.html" title="OMX_AUDIO_PARAM_PDCFRTYPE" alt="" coords="324,1019,571,1045"/>
+<area shape="rect" id="node22" href="$d0/de0/structOMX__AUDIO__PARAM__GSMFRTYPE.html" title="OMX_AUDIO_PARAM_GSMFRTYPE" alt="" coords="324,1069,571,1096"/>
+<area shape="rect" id="node23" href="$d5/d55/structOMX__VIDEO__PARAM__RVTYPE.html" title="OMX_VIDEO_PARAM_RVTYPE" alt="" coords="339,1120,556,1147"/>
+<area shape="rect" id="node24" href="$da/dbc/structOMX__AUDIO__PARAM__AACPROFILETYPE.html" title="OMX_AUDIO_PARAM_AACPROFILETYPE" alt="" coords="305,1171,589,1197"/>
+<area shape="rect" id="node25" href="$de/de5/structOMX__AUDIO__PARAM__QCELP13TYPE.html" title="OMX_AUDIO_PARAM_QCELP13TYPE" alt="" coords="318,1221,577,1248"/>
+<area shape="rect" id="node26" href="$dc/ddb/structOMX__AUDIO__PARAM__PDCHRTYPE.html" title="OMX_AUDIO_PARAM_PDCHRTYPE" alt="" coords="323,1272,571,1299"/>
+<area shape="rect" id="node27" href="$de/df3/structOMX__AUDIO__PARAM__GSMHRTYPE.html" title="OMX_AUDIO_PARAM_GSMHRTYPE" alt="" coords="323,1323,572,1349"/>
+<area shape="rect" id="node28" href="$d8/dc0/structOMX__AUDIO__PARAM__G729TYPE.html" title="OMX_AUDIO_PARAM_G729TYPE" alt="" coords="332,1373,563,1400"/>
+<area shape="rect" id="node29" href="$d0/dc9/structOMX__AUDIO__PARAM__PDCEFRTYPE.html" title="OMX_AUDIO_PARAM_PDCEFRTYPE" alt="" coords="320,1424,575,1451"/>
+<area shape="rect" id="node30" href="$d4/db7/structOMX__VIDEO__PARAM__MPEG2TYPE.html" title="OMX_VIDEO_PARAM_MPEG2TYPE" alt="" coords="325,1475,569,1501"/>
+<area shape="rect" id="node31" href="$de/ddf/structOMX__AUDIO__PARAM__ADPCMTYPE.html" title="OMX_AUDIO_PARAM_ADPCMTYPE" alt="" coords="323,1525,571,1552"/>
+<area shape="rect" id="node32" href="$dd/d7b/structOMX__PARAM__U32TYPE.html" title="OMX_PARAM_U32TYPE" alt="" coords="361,1576,534,1603"/>
+<area shape="rect" id="node33" href="$d0/ddc/structOMX__AUDIO__PARAM__QCELP8TYPE.html" title="OMX_AUDIO_PARAM_QCELP8TYPE" alt="" coords="322,5,573,32"/>
+<area shape="rect" id="node34" href="$db/daa/structOMX__AUDIO__PARAM__G726TYPE.html" title="OMX_AUDIO_PARAM_G726TYPE" alt="" coords="332,107,563,133"/>
+<area shape="rect" id="node35" href="$dc/dcc/structOMX__AUDIO__PARAM__WMATYPE.html" title="OMX_AUDIO_PARAM_WMATYPE" alt="" coords="331,309,563,336"/>
+<area shape="rect" id="node7" href="$d2/d35/structOMX__BU32.html" title="OMX_BU32" alt="" coords="37,45,129,72"/>
+</map>

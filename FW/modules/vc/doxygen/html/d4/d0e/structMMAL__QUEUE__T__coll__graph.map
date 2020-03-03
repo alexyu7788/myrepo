@@ -1,0 +1,12 @@
+<map id="MMAL_QUEUE_T" name="MMAL_QUEUE_T">
+<area shape="rect" id="node2" href="$d4/d54/structVCOS__MUTEX__T.html" title="VCOS_MUTEX_T" alt="" coords="806,111,935,137"/>
+<area shape="rect" id="node3" href="$df/db2/structVCOS__THREAD__T.html" title="VCOS_THREAD_T" alt="" coords="521,111,659,137"/>
+<area shape="rect" id="node4" href="$d8/d26/structVCOS__THREAD__EXIT__T.html" title="VCOS_THREAD_EXIT_T" alt="" coords="221,5,395,32"/>
+<area shape="rect" id="node5" href="$d5/d38/structVCOS__TIMER__T.html" title="VCOS_TIMER_T" alt="" coords="5,81,129,108"/>
+<area shape="rect" id="node6" href="$dc/d2c/struct__VCOS__THREAD__TIMER__T.html" title="_VCOS_THREAD_TIMER_T" alt="" coords="211,119,405,145"/>
+<area shape="rect" id="node7" href="$d8/d24/structVCOS__LLTHREAD__T.html" title="VCOS_LLTHREAD_T" alt="" coords="232,169,384,196"/>
+<area shape="rect" id="node8" href="$dd/d88/structMMAL__BUFFER__HEADER__T.html" title="MMAL_BUFFER_HEADER_T" alt="" coords="771,231,971,257"/>
+<area shape="rect" id="node9" href="$d7/dda/structMMAL__BUFFER__HEADER__PRIVATE__T.html" title="MMAL_BUFFER_HEADER\l_PRIVATE_T" alt="" coords="1104,246,1289,287"/>
+<area shape="rect" id="node10" href="$db/dc2/unionMMAL__BUFFER__HEADER__TYPE__SPECIFIC__T.html" title="MMAL_BUFFER_HEADER\l_TYPE_SPECIFIC_T" alt="" coords="497,223,683,265"/>
+<area shape="rect" id="node11" href="$dc/d8a/structMMAL__BUFFER__HEADER__VIDEO__SPECIFIC__T.html" title="MMAL_BUFFER_HEADER\l_VIDEO_SPECIFIC_T" alt="" coords="215,223,401,265"/>
+</map>

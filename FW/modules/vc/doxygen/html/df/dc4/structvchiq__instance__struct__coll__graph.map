@@ -1,0 +1,11 @@
+<map id="vchiq_instance_struct" name="vchiq_instance_struct">
+<area shape="rect" id="node2" href="$d4/d54/structVCOS__MUTEX__T.html" title="VCOS_MUTEX_T" alt="" coords="740,175,869,201"/>
+<area shape="rect" id="node3" href="$df/db2/structVCOS__THREAD__T.html" title="VCOS_THREAD_T" alt="" coords="507,115,645,141"/>
+<area shape="rect" id="node4" href="$d8/d26/structVCOS__THREAD__EXIT__T.html" title="VCOS_THREAD_EXIT_T" alt="" coords="221,5,395,32"/>
+<area shape="rect" id="node5" href="$d5/d38/structVCOS__TIMER__T.html" title="VCOS_TIMER_T" alt="" coords="5,81,129,108"/>
+<area shape="rect" id="node6" href="$dc/d2c/struct__VCOS__THREAD__TIMER__T.html" title="_VCOS_THREAD_TIMER_T" alt="" coords="211,119,405,145"/>
+<area shape="rect" id="node7" href="$d8/d24/structVCOS__LLTHREAD__T.html" title="VCOS_LLTHREAD_T" alt="" coords="232,169,384,196"/>
+<area shape="rect" id="node8" href="$d3/daf/structvchiq__service__struct.html" title="vchiq_service_struct" alt="" coords="733,225,876,252"/>
+<area shape="rect" id="node9" href="$d6/df0/structvchiq__service__base__struct.html" title="vchiq_service_base\l_struct" alt="" coords="507,218,645,259"/>
+<area shape="rect" id="node10" href="$d8/d04/structvchiq__header__struct.html" title="vchiq_header_struct" alt="" coords="239,225,377,252"/>
+</map>

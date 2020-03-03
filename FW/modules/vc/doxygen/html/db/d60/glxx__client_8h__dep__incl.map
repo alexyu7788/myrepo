@@ -1,0 +1,12 @@
+<map id="interface/khronos/glxx/glxx_client.h" name="interface/khronos/glxx/glxx_client.h">
+<area shape="rect" id="node2" href="$da/d0e/khrn__client_8c.html" title="interface/khronos/common\l/khrn_client.c" alt="" coords="5,102,181,143"/>
+<area shape="rect" id="node3" href="$d4/da9/egl__client__context_8c.html" title="interface/khronos/egl\l/egl_client_context.c" alt="" coords="206,102,349,143"/>
+<area shape="rect" id="node4" href="$d7/deb/ext__gl__debug__marker_8c.html" title="interface/khronos/ext\l/ext_gl_debug_marker.c" alt="" coords="373,102,534,143"/>
+<area shape="rect" id="node5" href="$d2/db5/gl__oes__draw__texture__client_8c.html" title="interface/khronos/ext\l/gl_oes_draw_texture\l_client.c" alt="" coords="559,95,705,151"/>
+<area shape="rect" id="node6" href="$da/deb/gl__oes__egl__image__client_8c.html" title="interface/khronos/ext\l/gl_oes_egl_image_client.c" alt="" coords="729,102,908,143"/>
+<area shape="rect" id="node7" href="$d0/d0d/gl__oes__framebuffer__object_8c.html" title="interface/khronos/ext\l/gl_oes_framebuffer_object.c" alt="" coords="933,102,1123,143"/>
+<area shape="rect" id="node8" href="$d1/d73/gl__oes__map__buffer_8c.html" title="interface/khronos/ext\l/gl_oes_map_buffer.c" alt="" coords="1148,102,1295,143"/>
+<area shape="rect" id="node9" href="$d9/d9b/gl__oes__matrix__palette__client_8c.html" title="interface/khronos/ext\l/gl_oes_matrix_palette\l_client.c" alt="" coords="1319,95,1473,151"/>
+<area shape="rect" id="node10" href="$db/da8/gl__oes__query__matrix__client_8c.html" title="interface/khronos/ext\l/gl_oes_query_matrix\l_client.c" alt="" coords="1497,95,1644,151"/>
+<area shape="rect" id="node11" href="$dd/df1/glxx__client_8c.html" title="interface/khronos/glxx\l/glxx_client.c" alt="" coords="1669,102,1819,143"/>
+</map>

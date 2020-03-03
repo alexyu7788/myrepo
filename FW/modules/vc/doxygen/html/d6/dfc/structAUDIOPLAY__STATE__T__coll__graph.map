@@ -1,0 +1,15 @@
+<map id="AUDIOPLAY_STATE_T" name="AUDIOPLAY_STATE_T">
+<area shape="rect" id="node2" href="$d2/d7f/structOMX__BUFFERHEADERTYPE.html" title="OMX_BUFFERHEADERTYPE" alt="" coords="5,363,211,389"/>
+<area shape="rect" id="node6" href="$d1/de9/struct__COMPONENT__T.html" title="_COMPONENT_T" alt="" coords="200,468,331,495"/>
+<area shape="rect" id="node3" href="$db/d7d/unionOMX__VERSIONTYPE.html" title="OMX_VERSIONTYPE" alt="" coords="31,273,185,300"/>
+<area shape="rect" id="node4" href="$de/d5b/struct__ILCLIENT__T.html" title="_ILCLIENT_T" alt="" coords="339,633,442,660"/>
+<area shape="rect" id="node5" href="$d9/dbc/struct__ILEVENT__T.html" title="_ILEVENT_T" alt="" coords="303,363,403,389"/>
+<area shape="rect" id="node7" href="$d9/d2f/structVCOS__EVENT__FLAGS__T.html" title="VCOS_EVENT_FLAGS_T" alt="" coords="510,363,687,389"/>
+<area shape="rect" id="node8" href="$d0/d64/structVCOS__EVENT__WAITER__T.html" title="VCOS_EVENT_WAITER_T" alt="" coords="576,468,763,495"/>
+<area shape="rect" id="node9" href="$df/db2/structVCOS__THREAD__T.html" title="VCOS_THREAD_T" alt="" coords="609,184,748,211"/>
+<area shape="rect" id="node14" href="$d4/d54/structVCOS__MUTEX__T.html" title="VCOS_MUTEX_T" alt="" coords="551,273,681,300"/>
+<area shape="rect" id="node10" href="$d8/d26/structVCOS__THREAD__EXIT__T.html" title="VCOS_THREAD_EXIT_T" alt="" coords="398,95,573,121"/>
+<area shape="rect" id="node11" href="$d5/d38/structVCOS__TIMER__T.html" title="VCOS_TIMER_T" alt="" coords="617,5,741,32"/>
+<area shape="rect" id="node12" href="$dc/d2c/struct__VCOS__THREAD__TIMER__T.html" title="_VCOS_THREAD_TIMER_T" alt="" coords="711,95,905,121"/>
+<area shape="rect" id="node13" href="$d8/d24/structVCOS__LLTHREAD__T.html" title="VCOS_LLTHREAD_T" alt="" coords="929,95,1081,121"/>
+</map>

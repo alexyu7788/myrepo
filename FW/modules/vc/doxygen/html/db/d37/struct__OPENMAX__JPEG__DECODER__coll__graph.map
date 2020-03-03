@@ -1,0 +1,16 @@
+<map id="_OPENMAX_JPEG_DECODER" name="_OPENMAX_JPEG_DECODER">
+<area shape="rect" id="node2" href="$d2/d7f/structOMX__BUFFERHEADERTYPE.html" title="OMX_BUFFERHEADERTYPE" alt="" coords="5,363,211,389"/>
+<area shape="rect" id="node6" href="$d1/de9/struct__COMPONENT__T.html" title="_COMPONENT_T" alt="" coords="257,468,388,495"/>
+<area shape="rect" id="node3" href="$db/d7d/unionOMX__VERSIONTYPE.html" title="OMX_VERSIONTYPE" alt="" coords="31,273,185,300"/>
+<area shape="rect" id="node4" href="$de/d5b/struct__ILCLIENT__T.html" title="_ILCLIENT_T" alt="" coords="366,632,469,659"/>
+<area shape="rect" id="node5" href="$d9/dbc/struct__ILEVENT__T.html" title="_ILEVENT_T" alt="" coords="346,363,446,389"/>
+<area shape="rect" id="node15" href="$d7/d75/struct__COMPONENT__DETAILS.html" title="_COMPONENT_DETAILS" alt="" coords="97,632,276,659"/>
+<area shape="rect" id="node7" href="$d9/d2f/structVCOS__EVENT__FLAGS__T.html" title="VCOS_EVENT_FLAGS_T" alt="" coords="559,363,737,389"/>
+<area shape="rect" id="node8" href="$d0/d64/structVCOS__EVENT__WAITER__T.html" title="VCOS_EVENT_WAITER_T" alt="" coords="625,468,812,495"/>
+<area shape="rect" id="node9" href="$df/db2/structVCOS__THREAD__T.html" title="VCOS_THREAD_T" alt="" coords="659,184,797,211"/>
+<area shape="rect" id="node14" href="$d4/d54/structVCOS__MUTEX__T.html" title="VCOS_MUTEX_T" alt="" coords="601,273,730,300"/>
+<area shape="rect" id="node10" href="$d8/d26/structVCOS__THREAD__EXIT__T.html" title="VCOS_THREAD_EXIT_T" alt="" coords="447,95,622,121"/>
+<area shape="rect" id="node11" href="$d5/d38/structVCOS__TIMER__T.html" title="VCOS_TIMER_T" alt="" coords="666,5,790,32"/>
+<area shape="rect" id="node12" href="$dc/d2c/struct__VCOS__THREAD__TIMER__T.html" title="_VCOS_THREAD_TIMER_T" alt="" coords="760,95,955,121"/>
+<area shape="rect" id="node13" href="$d8/d24/structVCOS__LLTHREAD__T.html" title="VCOS_LLTHREAD_T" alt="" coords="979,95,1131,121"/>
+</map>

@@ -1,0 +1,27 @@
+<map id="interface/mmal/core/mmal_events_private.h" name="interface/mmal/core/mmal_events_private.h">
+<area shape="rect" id="node2" href="$d7/d1f/mmal__port__private_8h.html" title="interface/mmal/core\l/mmal_port_private.h" alt="" coords="2401,95,2545,136"/>
+<area shape="rect" id="node3" href="$d7/d5a/aaf__audio__render_8cpp.html" title="interface/mmal/components\l/aaf_audio_render.cpp" alt="" coords="5,184,188,225"/>
+<area shape="rect" id="node4" href="$d5/dcd/aggregator_8c.html" title="interface/mmal/components\l/aggregator.c" alt="" coords="212,184,395,225"/>
+<area shape="rect" id="node5" href="$dc/d48/android__media__codec_8cpp.html" title="interface/mmal/components\l/android_media_codec.cpp" alt="" coords="419,184,601,225"/>
+<area shape="rect" id="node6" href="$df/d6b/artificial__camera_8c.html" title="interface/mmal/components\l/artificial_camera.c" alt="" coords="625,184,808,225"/>
+<area shape="rect" id="node7" href="$d7/d90/avcodec__audio__decoder_8c.html" title="interface/mmal/components\l/avcodec_audio_decoder.c" alt="" coords="832,184,1015,225"/>
+<area shape="rect" id="node8" href="$de/d5e/avcodec__video__decoder_8c.html" title="interface/mmal/components\l/avcodec_video_decoder.c" alt="" coords="1039,184,1221,225"/>
+<area shape="rect" id="node9" href="$dc/d54/clock_8c.html" title="interface/mmal/components\l/clock.c" alt="" coords="1245,184,1428,225"/>
+<area shape="rect" id="node10" href="$de/d5c/container__reader_8c.html" title="interface/mmal/components\l/container_reader.c" alt="" coords="1452,184,1635,225"/>
+<area shape="rect" id="node11" href="$dd/dac/copy_8c.html" title="interface/mmal/components\l/copy.c" alt="" coords="1659,184,1841,225"/>
+<area shape="rect" id="node12" href="$d7/d5b/null__sink_8c.html" title="interface/mmal/components\l/null_sink.c" alt="" coords="1865,184,2048,225"/>
+<area shape="rect" id="node13" href="$d0/d51/passthrough_8c.html" title="interface/mmal/components\l/passthrough.c" alt="" coords="2072,184,2255,225"/>
+<area shape="rect" id="node14" href="$dd/d6c/scheduler_8c.html" title="interface/mmal/components\l/scheduler.c" alt="" coords="2279,184,2461,225"/>
+<area shape="rect" id="node15" href="$d3/d85/sdl__audio__render_8c.html" title="interface/mmal/components\l/sdl_audio_render.c" alt="" coords="2485,184,2668,225"/>
+<area shape="rect" id="node16" href="$d9/db9/sdl__video__render_8c.html" title="interface/mmal/components\l/sdl_video_render.c" alt="" coords="2692,184,2875,225"/>
+<area shape="rect" id="node17" href="$de/d5f/spdif_8c.html" title="interface/mmal/components\l/spdif.c" alt="" coords="2899,184,3081,225"/>
+<area shape="rect" id="node18" href="$d8/da2/splitter_8c.html" title="interface/mmal/components\l/splitter.c" alt="" coords="3105,184,3288,225"/>
+<area shape="rect" id="node19" href="$de/db8/mmal__component_8c.html" title="interface/mmal/core\l/mmal_component.c" alt="" coords="3312,184,3452,225"/>
+<area shape="rect" id="node20" href="$d8/d6d/mmal__events_8c.html" title="interface/mmal/core\l/mmal_events.c" alt="" coords="3476,184,3613,225"/>
+<area shape="rect" id="node21" href="$d6/d4d/mmal__port_8c.html" title="interface/mmal/core\l/mmal_port.c" alt="" coords="3637,184,3775,225"/>
+<area shape="rect" id="node22" href="$d1/db5/mmal__port__clock_8c.html" title="interface/mmal/core\l/mmal_port_clock.c" alt="" coords="3799,184,3936,225"/>
+<area shape="rect" id="node23" href="$dd/d50/mmal__graph_8c.html" title="interface/mmal/util\l/mmal_graph.c" alt="" coords="3960,184,4089,225"/>
+<area shape="rect" id="node24" href="$db/dde/mmal__vc__api_8c.html" title="interface/mmal/vc/mmal\l_vc_api.c" alt="" coords="4114,184,4277,225"/>
+<area shape="rect" id="node25" href="$d5/d3a/mmal__vc__api__drm_8c.html" title="interface/mmal/vc/mmal\l_vc_api_drm.c" alt="" coords="4301,184,4463,225"/>
+<area shape="rect" id="node26" href="$d9/daa/mmal__vc__client_8c.html" title="interface/mmal/vc/mmal\l_vc_client.c" alt="" coords="4487,184,4650,225"/>
+</map>

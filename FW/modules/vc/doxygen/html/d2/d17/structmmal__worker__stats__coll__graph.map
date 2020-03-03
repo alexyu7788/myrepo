@@ -1,0 +1,7 @@
+<map id="mmal_worker_stats" name="mmal_worker_stats">
+<area shape="rect" id="node2" href="$da/dee/structMMAL__VC__STATS__T.html" title="MMAL_VC_STATS_T" alt="" coords="264,95,415,121"/>
+<area shape="rect" id="node3" href="$df/de8/structMMAL__VC__COMP__STATS__T.html" title="MMAL_VC_COMP_STATS_T" alt="" coords="5,5,204,32"/>
+<area shape="rect" id="node4" href="$d2/da6/structMMAL__VC__STATS__T_1_1commands.html" title="MMAL_VC_STATS_T::commands" alt="" coords="228,5,451,32"/>
+<area shape="rect" id="node5" href="$dc/d0c/structMMAL__VC__STATS__T_1_1service.html" title="MMAL_VC_STATS_T::service" alt="" coords="475,5,676,32"/>
+<area shape="rect" id="node6" href="$d1/dd4/structmmal__worker__msg__header.html" title="mmal_worker_msg_header" alt="" coords="439,95,618,121"/>
+</map>

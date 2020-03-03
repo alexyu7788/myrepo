@@ -1,0 +1,24 @@
+var searchData=
+[
+  ['khrn_5fhw_5fcallback_5freason_5fbin_5ffinished',['KHRN_HW_CALLBACK_REASON_BIN_FINISHED',['../df/df2/khrn__prod__4_8h.html#acd826edf7c047aa673eb7c31f217ef09a25e5b998bd9744fc204406641df5f013',1,'khrn_prod_4.h']]],
+  ['khrn_5fhw_5fcallback_5freason_5fbin_5ffinished_5fllat',['KHRN_HW_CALLBACK_REASON_BIN_FINISHED_LLAT',['../df/df2/khrn__prod__4_8h.html#acd826edf7c047aa673eb7c31f217ef09a9f5179a809c3faa72ca076ff7fbd6ae8',1,'khrn_prod_4.h']]],
+  ['khrn_5fhw_5fcallback_5freason_5ffixup',['KHRN_HW_CALLBACK_REASON_FIXUP',['../df/df2/khrn__prod__4_8h.html#acd826edf7c047aa673eb7c31f217ef09a0ac894b54989c87d439012f273e6189a',1,'khrn_prod_4.h']]],
+  ['khrn_5fhw_5fcallback_5freason_5fout_5fof_5fmem',['KHRN_HW_CALLBACK_REASON_OUT_OF_MEM',['../df/df2/khrn__prod__4_8h.html#acd826edf7c047aa673eb7c31f217ef09a78d3f0aee5255b75332a3361d9f3cd5c',1,'khrn_prod_4.h']]],
+  ['khrn_5fhw_5fcallback_5freason_5fout_5fof_5fmem_5fllat',['KHRN_HW_CALLBACK_REASON_OUT_OF_MEM_LLAT',['../df/df2/khrn__prod__4_8h.html#acd826edf7c047aa673eb7c31f217ef09af356c849cd14e564a99c492a4ff9492f',1,'khrn_prod_4.h']]],
+  ['khrn_5fhw_5fcallback_5freason_5frender_5ffinished',['KHRN_HW_CALLBACK_REASON_RENDER_FINISHED',['../df/df2/khrn__prod__4_8h.html#acd826edf7c047aa673eb7c31f217ef09a554e6a75de85615bc1500fe6618358fc',1,'khrn_prod_4.h']]],
+  ['khrn_5fhw_5fcallback_5freason_5funfixup',['KHRN_HW_CALLBACK_REASON_UNFIXUP',['../df/df2/khrn__prod__4_8h.html#acd826edf7c047aa673eb7c31f217ef09a5ea3012e04d343449e23ed02c8f4bee1',1,'khrn_prod_4.h']]],
+  ['khrn_5fhw_5fcc_5fflag_5fic',['KHRN_HW_CC_FLAG_IC',['../df/df2/khrn__prod__4_8h.html#a4fc9eb7098d819cd74d2035aa6aa1e41aa2f740e92a0d0301b51a3641a80eab58',1,'khrn_prod_4.h']]],
+  ['khrn_5fhw_5fcc_5fflag_5fl2',['KHRN_HW_CC_FLAG_L2',['../df/df2/khrn__prod__4_8h.html#a4fc9eb7098d819cd74d2035aa6aa1e41ab27fc9448157cfaaa8bb78e3f976dddf',1,'khrn_prod_4.h']]],
+  ['khrn_5fhw_5fcc_5fflag_5fnone',['KHRN_HW_CC_FLAG_NONE',['../df/df2/khrn__prod__4_8h.html#a4fc9eb7098d819cd74d2035aa6aa1e41aed27a9639d6bfe21434e464a381662a2',1,'khrn_prod_4.h']]],
+  ['khrn_5fhw_5fcc_5fflag_5ftu',['KHRN_HW_CC_FLAG_TU',['../df/df2/khrn__prod__4_8h.html#a4fc9eb7098d819cd74d2035aa6aa1e41aed531f579f33e103fe9b4865482e2aa7',1,'khrn_prod_4.h']]],
+  ['khrn_5fhw_5fcc_5fflag_5fuc',['KHRN_HW_CC_FLAG_UC',['../df/df2/khrn__prod__4_8h.html#a4fc9eb7098d819cd74d2035aa6aa1e41a6ee8dc4ecc0aaf6903315bed368f1332',1,'khrn_prod_4.h']]],
+  ['khrn_5fhw_5ftype_5fgl',['KHRN_HW_TYPE_GL',['../df/df2/khrn__prod__4_8h.html#ae89e71fbc0832fa85fdb48d3f21b864daa15bc02a9d859a820feeed5a3d220e1f',1,'khrn_prod_4.h']]],
+  ['khrn_5fhw_5ftype_5fvg',['KHRN_HW_TYPE_VG',['../df/df2/khrn__prod__4_8h.html#ae89e71fbc0832fa85fdb48d3f21b864dad5936e8ebe4c18e6442b9d1555051648',1,'khrn_prod_4.h']]],
+  ['khrn_5finterlock_5fuser_5finvalid',['KHRN_INTERLOCK_USER_INVALID',['../de/d5f/khrn__interlock__filler__4_8h.html#a2e92c215fcc9dd926df0451b9c2aa8e8a1967f3ea533e8b4df6dce9981166dd5e',1,'khrn_interlock_filler_4.h']]],
+  ['khrn_5finterlock_5fuser_5fnone',['KHRN_INTERLOCK_USER_NONE',['../de/d5f/khrn__interlock__filler__4_8h.html#a2e92c215fcc9dd926df0451b9c2aa8e8afdaa7cb5cac9e52925022c065292b197',1,'khrn_interlock_filler_4.h']]],
+  ['khrn_5finterlock_5fuser_5ftemp',['KHRN_INTERLOCK_USER_TEMP',['../de/d5f/khrn__interlock__filler__4_8h.html#a2e92c215fcc9dd926df0451b9c2aa8e8adbcea78c97663da68fd0dda58a2df15c',1,'khrn_interlock_filler_4.h']]],
+  ['khrn_5finterlock_5fuser_5fwriting',['KHRN_INTERLOCK_USER_WRITING',['../de/d5f/khrn__interlock__filler__4_8h.html#a2e92c215fcc9dd926df0451b9c2aa8e8a51c67a8d07236d8203a7cc01d59971aa',1,'khrn_interlock_filler_4.h']]],
+  ['khronos_5fboolean_5fenum_5fforce_5fsize',['KHRONOS_BOOLEAN_ENUM_FORCE_SIZE',['../d7/d3a/khrplatform_8h.html#a0b823cfbc138820708978d43a5f26c64a47d7d559cf039488acac78e797bc3cf9',1,'khrplatform.h']]],
+  ['khronos_5ffalse',['KHRONOS_FALSE',['../d7/d3a/khrplatform_8h.html#a0b823cfbc138820708978d43a5f26c64a37d68e7202b4d30f7742acebb50d1ba6',1,'khrplatform.h']]],
+  ['khronos_5ftrue',['KHRONOS_TRUE',['../d7/d3a/khrplatform_8h.html#a0b823cfbc138820708978d43a5f26c64a9275264520295ae24bc2033c05d6cb70',1,'khrplatform.h']]]
+];

@@ -1,0 +1,7 @@
+<map id="interface/mmal/core/mmal_buffer_private.h" name="interface/mmal/core/mmal_buffer_private.h">
+<area shape="rect" id="node2" href="$df/d0f/mmal__buffer_8c.html" title="interface/mmal/core\l/mmal_buffer.c" alt="" coords="5,95,143,136"/>
+<area shape="rect" id="node3" href="$d4/d09/mmal__pool_8c.html" title="interface/mmal/core\l/mmal_pool.c" alt="" coords="167,95,304,136"/>
+<area shape="rect" id="node4" href="$db/dde/mmal__vc__api_8c.html" title="interface/mmal/vc/mmal\l_vc_api.c" alt="" coords="329,95,491,136"/>
+<area shape="rect" id="node5" href="$d5/d3a/mmal__vc__api__drm_8c.html" title="interface/mmal/vc/mmal\l_vc_api_drm.c" alt="" coords="515,95,678,136"/>
+<area shape="rect" id="node6" href="$d9/daa/mmal__vc__client_8c.html" title="interface/mmal/vc/mmal\l_vc_client.c" alt="" coords="702,95,865,136"/>
+</map>
