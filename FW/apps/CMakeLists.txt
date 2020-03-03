@@ -54,6 +54,7 @@ PROJECT(PRI4_APPS)
 SET(MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../modules/install_temp_modules")
 SET(MODULE_LIB "${MODULE_PATH}/lib")
 SET(MODULE_INC "${MODULE_PATH}/include")
+SET(MODULE_INC2 "${MODULE_PATH}/include/interface/vcsm")
 
 #SET(MODULE_OPEN_SRC_3RD_INSTALL_DIR "${MODULE_PATH}/install_temp_open_src_3rd")
 
