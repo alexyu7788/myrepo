@@ -1,0 +1,20 @@
+#!/bin/sh
+
+ScriptPath=$(cd $(dirname $BASH_SOURCE) && pwd)
+
+export PROJECT=rpi4
+export TOOLSDIR=/opt/rpi4_32_toolchain/bin
+export CROSS_COMPILE=aarch64-linux-
+
+export TARGET=aarch64-linux
+export PATH=${TOOLSDIR}:${PREFIX}/bin:/usr/local/bin:${PATH}
+export KERNELINC=$ScriptPath/Kernel/include
+export KERNELSRC=$ScriptPath/Kernel/
+export CPU=arm
+export ARCH=arm
+
+#Intentionally empty to avoid plus sign in Kernel version
+export LOCALVERSION=
+
+# Platfrom definition
+export PLATFORMNAME=rpi4
