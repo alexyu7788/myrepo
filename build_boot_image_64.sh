@@ -13,7 +13,7 @@ make clean
 make -j4
 
 echo "Copy the generated files"
-cp u-boot.bin ../../../Images
+cp u-boot.bin ../../../Images_64
 
 echo "=->leave Bootloader"
 cd ../../../

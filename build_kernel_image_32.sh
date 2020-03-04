@@ -12,7 +12,7 @@ make bcm2711_defconfig
 make -j4
 make dtbs
 #cat arch/arm/boot/zImage arch/arm/boot/dts/r5s-spi-nand.dtb > zImage.dtb
-cp arch/arm64/boot/Image arch/arm64/boot/dts/broadcom/bcm2711-rpi-4-b.dtb ../../Images
+cp arch/arm/boot/Image arch/arm/boot/dts/bcm2711-rpi-4-b.dtb ../../Images_32
 echo "=->leave kernel"
 cd ../..
 
