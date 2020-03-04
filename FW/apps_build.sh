@@ -8,7 +8,12 @@ apps_folder="${current_dir}/apps"
 mkdir -p ${apps_folder}/build
 cd ${apps_folder}/build
 
-cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=../devel_rpi4_toolchain.cmake -DLIB_TYPE=ShareLib ..
+if [ ${ARCH} = "arm64" ]
+then
+    cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=../devel_rpi4_toolchain_64.cmake -DLIB_TYPE=ShareLib ..
+else
+    cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=../devel_rpi4_toolchain_32.cmake -DLIB_TYPE=ShareLib ..
+fi
 
 make -j4
 cd ${current_dir}
