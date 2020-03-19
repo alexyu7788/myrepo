@@ -1,7 +1,8 @@
 include(ExternalProject)
 
 ExternalProject_Add(dlib_target
-	URL ${CMAKE_CURRENT_SOURCE_DIR}/dlib-19.19.tar.gz
+    #URL ${CMAKE_CURRENT_SOURCE_DIR}/dlib-19.19.tar.gz
+	URL ${CMAKE_CURRENT_SOURCE_DIR}/dlib-031920.tar.bz2
     CMAKE_ARGS
     "-DCMAKE_C_COMPILER=/opt/rpi4_toolchain/bin/aarch64-linux-gcc"
     "-DCMAKE_CXX_COMPILER=/opt/rpi4_toolchain/bin/aarch64-linux-g++"
