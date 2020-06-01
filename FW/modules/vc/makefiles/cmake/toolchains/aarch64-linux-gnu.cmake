@@ -4,9 +4,9 @@
 #
 
 SET(CMAKE_SYSTEM_NAME Linux)
-SET(CMAKE_C_COMPILER aarch64-linux-gcc)
-SET(CMAKE_CXX_COMPILER aarch64-linux-g++)
-SET(CMAKE_ASM_COMPILER aarch64-linux-gcc)
+SET(CMAKE_C_COMPILER aarch64-linux-gnu-gcc)
+SET(CMAKE_CXX_COMPILER aarch64-linux-gnu-g++)
+SET(CMAKE_ASM_COMPILER aarch64-linux-gnu-gcc)
 SET(CMAKE_SYSTEM_PROCESSOR arm)
 
 #ADD_DEFINITIONS("-march=armv6")
