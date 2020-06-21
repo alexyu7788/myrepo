@@ -1,0 +1,1 @@
+build_boot_image_32.sh

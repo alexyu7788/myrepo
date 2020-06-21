@@ -7,12 +7,12 @@ echo "=->enter Kernel"
 cd ./SDK/Kernel/
 
 echo "=->make Kernel"
-make bcm2711_defconfig
+make bcm2711_local_defconfig
+#make bcm2711_defconfig
 #make clean
 make -j4
 make dtbs
-#cat arch/arm/boot/zImage arch/arm/boot/dts/r5s-spi-nand.dtb > zImage.dtb
-cp arch/arm/boot/Image arch/arm/boot/dts/bcm2711-rpi-4-b.dtb ../../Images_32
+cp arch/arm/boot/zImage arch/arm/boot/dts/bcm2711-rpi-4-b.dtb ../../Images_32
 echo "=->leave kernel"
 cd ../..
 

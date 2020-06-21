@@ -1,0 +1,1 @@
+build_kernel_image_32.sh
