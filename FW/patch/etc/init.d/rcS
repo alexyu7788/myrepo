@@ -1,5 +1,14 @@
 #!/bin/sh
 
+# Mount /dev/mmcblk0p2 for writable /etc
+if [ -b /dev/mmcblk0 ];then
+    if [ -b /dev/mmcblk0p2 ];then
+        mkdir -p /tmp/etc
+        mount /dev/mmcblk0p2 /tmp/etc
+        cp -aru /etc/* /tmp/etc
+        mount --bind /tmp/etc/ /etc
+    fi
+fi
 
 # Start all init scripts in /etc/init.d
 # executing them in numerical order.

@@ -24,7 +24,7 @@ cp -ar ${modules_folder}/install_temp_modules/lib/pkgconfig ${temp_folder}/usr/l
 cp -a ${apps_folder}/bin/* ${temp_folder}/usr/sbin
 
 #### Copy the patch file. from the patch folder ####
-cp -a ${patch_folder}/* ${temp_folder}/
+cp -ar ${patch_folder}/* ${temp_folder}/
 
 #### copy default setting ####
 #if [ ! -d  ${temp_folder}/etc/default_system ];then

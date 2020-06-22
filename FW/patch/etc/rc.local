@@ -1,7 +1,5 @@
 #!/bin/sh
 
-echo "initramfs test"
-
 modprobe cmac
 modprobe bnep
 modprobe 8021q

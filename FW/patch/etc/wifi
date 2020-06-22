@@ -1,0 +1,150 @@
+#!/bin/sh
+#
+# wifi: This starts and stops wifi.
+#
+# chkconfig: 2345 50 04
+# description: wifi
+#
+set -a
+
+PATH=/sbin:/bin:/usr/bin:/usr/sbin
+
+start()
+{
+    echo -n "Starting Wifi ... "
+
+    insmod /drivers/${wifi_model}.ko
+    ifconfig wlan0 192.168.1.1
+
+    sleep 1
+
+    /usr/sbin/hostapd /etc/rtl_hostapd_2G.conf -dd -B > /dev/null 2>&1
+    /usr/sbin/udhcpd  /etc/conf.d/udhcp/udhcpd.conf
+    /usr/sbin/mDNSResponderPosix -b -n "${bonjour_name}"
+    /usr/sbin/smbd -D
+    /usr/sbin/lighttpd -f /etc/conf.d/lighttpd/lighttpd.conf
+    /usr/sbin/server_socket_pro -D
+}
+
+stop()
+{
+    echo -n "Stopping Wifi ... "
+
+   	killall -TERM server_socket_pro
+    killall -TERM lighttpd
+    killall -TERM smbd
+    killall -TERM mDNSResponderPosix
+    killall -TERM udhcpd
+    killall -TERM hostapd
+
+    ifconfig wlan0 down
+    rmmod ${wifi_model}.ko
+}
+
+stop_partial()
+{
+    echo -n "Stopping Wifi Partial... "
+
+    killall -TERM lighttpd
+    killall -TERM smbd
+    killall -TERM mDNSResponderPosix
+    killall -TERM udhcpd
+    killall -TERM hostapd
+
+    ifconfig wlan0 down
+    rmmod ${wifi_model}.ko
+}
+
+start_client1()
+{
+    echo -n "Starting Wifi Client 1... "
+
+    ifconfig -a wlan0 up
+    ifconfig -a wlan0 0.0.0.0
+    route del default
+
+    /usr/sbin/wpa_supplicant -B -i wlan0 -c /etc/wpa_supplicant.conf
+
+    sleep 5
+}
+
+start_client2()
+{
+    echo -n "Starting Wifi Client 2... "
+    /sbin/udhcpc -t 20 -i wlan0
+}
+
+start_client3()
+{
+    echo -n "Starting Wifi Client 3... "
+
+    /usr/sbin/mDNSResponderPosix -b -n "${bonjour_name}"
+    /usr/sbin/smbd -D
+    /usr/sbin/lighttpd -f /etc/conf.d/lighttpd/lighttpd.conf    
+    /usr/sbin/server_socket_pro -D
+}
+
+stop_client()
+{
+    echo -n "Stopping Wifi Client... "
+
+    killall -TERM udhcpcd
+    killall -TERM wpa_supplicant
+
+    ifconfig wlan0 down
+}
+
+stop_client_partial()
+{
+    echo -n "Stopping Wifi Client Partial... "
+
+    killall -TERM lighttpd
+    killall -TERM smbd
+    killall -TERM mDNSResponderPosix
+    killall -TERM dhcpcd
+    killall -TERM wpa_supplicant
+
+    ifconfig wlan0 down
+    rmmod ${wifi_model}.ko
+}
+
+case "$1" in
+    start)
+        start
+        ;;
+    stop)
+        stop
+        ;;
+    stop_partial)
+        stop_partial
+        ;;
+    restart)
+        stop
+        sleep 3
+        start
+        ;;
+    start_client)
+    	start_client1
+        start_client2
+        ;;
+    start_client1)
+        start_client1
+        ;;
+    start_client2)
+        start_client2
+        ;;
+    start_client3)
+        start_client3
+        ;;
+    stop_client)
+        stop_client
+        ;;
+    stop_client_partial)
+        stop_client_partial
+        ;;
+    *)
+        echo "Usage: $0 {start|stop|stop_partial|start_client|start_client1|start_client2|start_client3|stop_client|stop_client_partial|restart}"
+        exit 1
+esac
+
+exit 0
