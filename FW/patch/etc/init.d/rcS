@@ -3,10 +3,17 @@
 # Mount /dev/mmcblk0p2 for writable /etc
 if [ -b /dev/mmcblk0 ];then
     if [ -b /dev/mmcblk0p2 ];then
-        mkdir -p /tmp/etc
-        mount /dev/mmcblk0p2 /tmp/etc
-        cp -aru /etc/* /tmp/etc
-        mount --bind /tmp/etc/ /etc
+        mkdir -p /tmp/writable_etc
+        mount /dev/mmcblk0p2 /tmp/writable_etc
+
+        if [ ! -d /tmp/writable_etc/etc ]; then
+            mkdir -p /tmp/writable_etc/etc
+            cp -ar /etc/* /tmp/writable_etc/etc
+        fi
+
+        if [ -d /tmp/writable_etc/etc ];then
+            mount --bind /tmp/writable_etc/etc /etc
+        fi
     fi
 fi
 
