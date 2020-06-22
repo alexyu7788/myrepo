@@ -88,7 +88,7 @@ stop_client()
 {
     echo -n "Stopping Wifi Client... "
 
-    killall -TERM udhcpcd
+    killall -TERM udhcpc
     killall -TERM wpa_supplicant
 
     ifconfig wlan0 down

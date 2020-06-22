@@ -1,0 +1,23 @@
+#!/bin/sh
+
+start() {
+    printf "Starting modprobe: "
+    modprobe cmac
+    modprobe bnep
+    modprobe 8021q
+    modprobe vc4
+    modprobe brcmfmac
+    modprobe v3d
+    modprobe raspberrypi_hwmon
+    modprobe bcm2835_codec
+    modprobe bcm2835_v4l2
+}
+
+case "$1" in
+    start)
+        start
+        ;;
+    *)
+        echo "Usage: $0 {start}"
+        exit 1
+esac
