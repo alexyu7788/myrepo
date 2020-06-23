@@ -1,2 +1,11 @@
 #!/bin/sh
 
+mkdir -p /tmp/fifo
+
+### Start WIFI client
+if [ -f /etc/wifi ]; then
+    /etc/wifi start_client
+fi
+
+
+

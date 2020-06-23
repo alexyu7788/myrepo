@@ -29,7 +29,7 @@ bool CVceCtrl::SetupUpCameara()
 {
 	int i;
 	bool ret = true;
-	enum cam_type_e cam_type = CamType_Unknown;
+	enum cam_type_e cam_type = CamType_Pi;
 
 	for (i=0 ; i<MAX_CAMERA_NUM ; ++i)
 	{
