@@ -63,7 +63,7 @@ start_client1()
     ifconfig -a wlan0 0.0.0.0
     route del default
 
-    /usr/sbin/wpa_supplicant -B -i wlan0 -c /etc/wpa_supplicant.conf
+    /usr/sbin/wpa_supplicant -B -i wlan0 -c /etc/wpa_supplicant/wpa_supplicant.conf
 
     sleep 5
 }
@@ -71,7 +71,7 @@ start_client1()
 start_client2()
 {
     echo -n "Starting Wifi Client 2... "
-    /sbin/udhcpc -t 20 -i wlan0
+    /sbin/dhcpcd -t 20 -L wlan0
 }
 
 start_client3()
@@ -88,7 +88,7 @@ stop_client()
 {
     echo -n "Stopping Wifi Client... "
 
-    killall -TERM udhcpc
+    killall -TERM dhcpcd
     killall -TERM wpa_supplicant
 
     ifconfig wlan0 down
