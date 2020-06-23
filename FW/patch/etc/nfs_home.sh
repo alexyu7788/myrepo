@@ -6,7 +6,7 @@ if [ ! -f /tmp/nfs ];then
 fi
 
 echo "Mount NFS"
-mount -t nfs 192.168.2.78:/home/alexyu/projects/nfs/rpi /tmp/nfs -o nolock,tcp
+mount -t nfs 192.168.88.12:/home/alex/projects/nfs/rpi /tmp/nfs -o nolock,tcp
 sleep 1
 
 echo "Bind /usr/sbin"

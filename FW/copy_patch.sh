@@ -13,6 +13,7 @@ mkdir -p ${temp_folder}/usr/bin
 mkdir -p ${temp_folder}/usr/lib
 mkdir -p ${temp_folder}/usr/lib/plugins
 mkdir -p ${temp_folder}/usr/sbin
+mkdir -p ${temp_folder}/home/alex
 
 #### Copy the libraries etc. from the modules ####
 cp -a ${modules_folder}/install_temp_modules/bin/* ${temp_folder}/usr/bin

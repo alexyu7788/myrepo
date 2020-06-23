@@ -11,6 +11,7 @@ start() {
     modprobe raspberrypi_hwmon
     modprobe bcm2835_codec
     modprobe bcm2835_v4l2
+    modprobe uvcvideo
 }
 
 case "$1" in
