@@ -33,17 +33,19 @@ bool CVceCtrl::SetupUpCameara()
 
 	for (i=0 ; i<MAX_CAMERA_NUM ; ++i)
 	{
+		cam_type = i == 0 ? CamType_Pi : CamType_V4l2;
+
 		if (!m_camera[i])
 		{
 			if (cam_type == CamType_Pi)
 				m_camera[i] = new CPiCam();
 			else if (cam_type == CamType_V4l2)
-				m_camera[i] = new CV2l2Cam();
+				m_camera[i] = new CV4l2Cam();
 			else
 				fprintf(stderr, "Unknown Camera Type\n");
 
 			if (m_camera[i])
-				m_camera[i]->Init(cam_type);
+				ret = m_camera[i]->Init("/dev/video0");
 		}
 	}
 

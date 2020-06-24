@@ -25,9 +25,9 @@ cp -ar ${temp_folder}/usr/* ${tmp_rootfs_folder}/usr
 cp -ar ${temp_folder}/lib/* ${tmp_rootfs_folder}/
 
 mkdir -p ${tmp_rootfs_folder}/home/alex
-fakeroot -i ${fake_root_session_file} -s ${fake_root_session_file} chown -R 1002:1002 ${tmp_rootfs_folder}/home/alex
+fakeroot -i ${fake_root_session_file} -s ${fake_root_session_file} chown -R 7788:7788 ${tmp_rootfs_folder}/home/alex
 echo "alex:\$1\$Rjpavdix\$Yara09Rrq081IhCkbpV0L0:1:0:99999:7:::" >> ${tmp_rootfs_folder}/etc/shadow
-echo "alex:x:1002:1002:Linux User,,,:/home/alex:/bin/sh" >> ${tmp_rootfs_folder}/etc/passwd
+echo "alex:x:7788:7788:Linux User,,,:/home/alex:/bin/sh" >> ${tmp_rootfs_folder}/etc/passwd
 fakeroot -i ${fake_root_session_file} -s ${fake_root_session_file} chmod 660 ${tmp_rootfs_folder}/etc/sudoers
 echo "alex ALL=(ALL) ALL" >> ${tmp_rootfs_folder}/etc/sudoers
 fakeroot -i ${fake_root_session_file} -s ${fake_root_session_file} chmod 220 ${tmp_rootfs_folder}/etc/sudoers

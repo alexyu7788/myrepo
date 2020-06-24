@@ -12,7 +12,7 @@ int main(int argc, char* argv[])
 	if (!vce_ctrl)
 		vce_ctrl = new CVceCtrl();
 
-	sleep(3);
+	sleep(30);
 
 	if (vce_ctrl)
 	{

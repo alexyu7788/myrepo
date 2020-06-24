@@ -436,7 +436,7 @@ CPiCam::~CPiCam()
 	destroy_camera_component();
 }
 
-bool CPiCam::Init(enum cam_type_e cam_type)
+bool CPiCam::Init(const char* dev_name)
 {
 	bool ret = false;
 	MMAL_STATUS_T status;
@@ -456,3 +456,22 @@ bool CPiCam::Init(enum cam_type_e cam_type)
 
 	return (ret = (status == MMAL_SUCCESS) ? true : false);
 }
+
+bool CPiCam::Setup(uint32_t width, uint32_t height)
+{
+
+	return true;
+}
+
+bool CPiCam::StartCapture()
+{
+
+	return true;
+}
+
+bool CPiCam::StopCapture()
+{
+
+	return true;
+}
+

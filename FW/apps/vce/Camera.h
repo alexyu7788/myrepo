@@ -3,6 +3,12 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <string.h>
 
 enum cam_type_e
 {
@@ -16,6 +22,11 @@ class CCam
 {
 protected:
 	enum cam_type_e		m_cam_type;
+	uint32_t			m_width;
+	uint32_t			m_height;
+
+	bool				m_terminate;
+	bool				m_do_capture;
 
 public:
 
@@ -28,6 +39,12 @@ public:
 
 	enum cam_type_e GetCamType() {return m_cam_type;};
 
-	virtual bool Init(enum cam_type_e cam_type) = 0;
+	virtual bool Init(const char* dev_name = NULL) = 0;
+
+	virtual bool Setup(uint32_t width, uint32_t height) = 0;
+
+	virtual bool StartCapture() = 0;
+
+	virtual bool StopCapture() = 0;
 };
 #endif

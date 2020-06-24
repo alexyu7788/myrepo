@@ -435,6 +435,12 @@ public:
 
 	~CPiCam();
 
-	bool Init(enum cam_type_e cam_type);
+	bool Init(const char* dev_name);
+
+	bool Setup(uint32_t width, uint32_t height);
+
+	bool StartCapture();
+
+	bool StopCapture();
 };
 #endif
