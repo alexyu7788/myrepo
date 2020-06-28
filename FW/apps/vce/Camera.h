@@ -10,6 +10,27 @@
 #include <unistd.h>
 #include <string.h>
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
+#include "interface/vcos/vcos.h"
+
+#include "interface/mmal/mmal.h"
+#include "interface/mmal/mmal_logging.h"
+#include "interface/mmal/mmal_buffer.h"
+#include "interface/mmal/mmal_parameters_camera.h"
+#include "interface/mmal/util/mmal_util.h"
+#include "interface/mmal/util/mmal_util_params.h"
+#include "interface/mmal/util/mmal_default_components.h"
+#include "interface/mmal/util/mmal_connection.h"
+#include "interface/vmcs_host/vc_vchi_gencmd.h"
+
+#ifdef __cplusplus
+}
+#endif
+
 enum cam_type_e
 {
 	CamType_Unknown = -1,
@@ -27,6 +48,9 @@ protected:
 
 	bool				m_terminate;
 	bool				m_do_capture;
+
+	MMAL_COMPONENT_T*	m_component_camera;
+	MMAL_COMPONENT_T*	m_component_splitter;
 
 public:
 

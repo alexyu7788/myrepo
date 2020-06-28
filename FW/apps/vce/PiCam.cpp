@@ -1,4 +1,3 @@
-#include "bcm_host.h"
 #include "interface/vcos/vcos.h"
 
 #include "PiCam.h"
@@ -426,7 +425,6 @@ CPiCam::CPiCam()
 
 
 
-	bcm_host_init();
 
 	default_status();
 }

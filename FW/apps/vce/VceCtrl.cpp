@@ -33,7 +33,7 @@ bool CVceCtrl::SetupUpCameara()
 
 	for (i=0 ; i<MAX_CAMERA_NUM ; ++i)
 	{
-		cam_type = i == 0 ? CamType_Pi : CamType_V4l2;
+		cam_type = i == 0 ? CamType_Unknown : CamType_V4l2;
 
 		if (!m_camera[i])
 		{

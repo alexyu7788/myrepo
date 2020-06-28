@@ -7,6 +7,7 @@
 #include <errno.h>
 #include <poll.h>
 #include <pthread.h>
+
 #include "Camera.h"
 
 enum io_method {
@@ -44,17 +45,21 @@ protected:
 
 	bool QueryCap();
 
-	bool InitMemRead();
+	bool InitMemRead(unsigned int buffer_size);
 
 	bool InitMemMmap();
 
-	bool InitMemUserp();
+	bool InitMemUserPtr(unsigned int buffer_size);
 
-	bool InitMem();
+	bool InitMem(unsigned int buffer_size);
 
 	void DeInitMem();
 
 	void DeInit();
+
+	MMAL_STATUS_T CreateSplitterComponent();
+
+	MMAL_STATUS_T DestroySplitterComponent();
 
 	static void* DoCapture(void* arg);
 

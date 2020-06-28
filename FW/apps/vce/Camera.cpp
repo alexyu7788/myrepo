@@ -8,10 +8,24 @@ CCam::CCam()
 
 	m_terminate = false;
 	m_do_capture= false;
+
+	/* Components */
+	m_component_camera		= NULL;
+	m_component_splitter	= NULL;
 }
 
 CCam::~CCam()
 {
+	if (m_component_splitter)
+	{
+		mmal_component_destroy(m_component_splitter);
+		m_component_splitter = NULL;
+	}
 
+	if (m_component_camera)
+	{
+		mmal_component_destroy(m_component_camera);
+		m_component_camera = NULL;
+	}
 }
 

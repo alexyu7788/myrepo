@@ -118,33 +118,33 @@ bool CV4l2Cam::QueryCap()
 //        return false;
 //    }
 
-    m_fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-    if ( -1 == XIoctl(m_fd, VIDIOC_G_FMT, &m_fmt))
-	{
-		perror("Querying VIDIOC_G_FMT");
-		return false;
-	}
-
-    printf("Get Format:\n");
-    struct v4l2_pix_format		pix;
-    memcpy(&pix, &m_fmt.fmt.pix, sizeof(pix));
-
-    strncpy(fourcc, (char *)&pix.pixelformat, 4);
-
-    printf("%u %ux%u, pixelformat %s, field %u, byteperline %u, sizeimage %u, colorspace %u, flags 0x%X\n",
-    		m_fmt.type,
-			pix.width, pix.height,
-			fourcc,
-			pix.field,
-			pix.bytesperline,
-			pix.sizeimage,
-			pix.colorspace,
-			pix.flags);
+//    m_fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+//    if ( -1 == XIoctl(m_fd, VIDIOC_G_FMT, &m_fmt))
+//	{
+//		perror("Querying VIDIOC_G_FMT");
+//		return false;
+//	}
+//
+//    printf("Get Format:\n");
+//    struct v4l2_pix_format		pix;
+//    memcpy(&pix, &m_fmt.fmt.pix, sizeof(pix));
+//
+//    strncpy(fourcc, (char *)&pix.pixelformat, 4);
+//
+//    printf("%u %ux%u, pixelformat %s, field %u, byteperline %u, sizeimage %u, colorspace %u, flags 0x%X\n",
+//    		m_fmt.type,
+//			pix.width, pix.height,
+//			fourcc,
+//			pix.field,
+//			pix.bytesperline,
+//			pix.sizeimage,
+//			pix.colorspace,
+//			pix.flags);
 
 	return ret;
 }
 
-bool CV4l2Cam::InitMemRead()
+bool CV4l2Cam::InitMemRead(unsigned int buffer_size)
 {
 	bool  ret = true;
 
@@ -229,27 +229,71 @@ bool CV4l2Cam::InitMemMmap()
 	return ret;
 }
 
-bool CV4l2Cam::InitMemUserp()
+bool CV4l2Cam::InitMemUserPtr(unsigned int buffer_size)
 {
 	bool  ret = true;
+	struct v4l2_requestbuffers req;
+
+	memset(&req, 0x0, sizeof(req));
+
+	req.count 	= 4;
+	req.type 	= V4L2_BUF_TYPE_VIDEO_CAPTURE;
+	req.memory 	= V4L2_MEMORY_USERPTR;
+
+	if (-1 == XIoctl(m_fd, VIDIOC_REQBUFS, &req))
+	{
+		switch (errno)
+		{
+		case EINVAL:
+			fprintf(stderr, "[%s] does not support memory mapping.\n", m_dev_name);
+			ret = false;
+			break;
+		default:
+			fprintf(stderr, "[%s] VIDIOC_REQBUFS: %d, %s\n", m_dev_name, errno, strerror(errno));
+			ret = false;
+			break;
+		}
+	}
+
+	m_buffers = (struct buffer*)calloc(req.count, sizeof(*m_buffers));
+	if (!m_buffers)
+	{
+		fprintf(stderr, "[%s][%s]: Out of memory.\n", m_dev_name, __func__);
+		return false;
+	}
+
+	for (m_n_buffer = 0 ; m_n_buffer < req.count ; ++m_n_buffer)
+	{
+		m_buffers[m_n_buffer].length = buffer_size;
+		m_buffers[m_n_buffer].start  = malloc(buffer_size);
+
+		if (!m_buffers[m_n_buffer].start)
+		{
+			fprintf(stderr, "[%s][%s] UserPtr failed.\n", m_dev_name, __func__);
+			ret = false;
+			break;
+		}
+
+		fprintf(stderr, "[%s][%s] UserPtr [%d]: %p, %d.\n", m_dev_name, __func__, m_n_buffer, m_buffers[m_n_buffer].start, m_buffers[m_n_buffer].length);
+	}
 
 	return ret;
 }
 
-bool CV4l2Cam::InitMem()
+bool CV4l2Cam::InitMem(unsigned int buffer_size)
 {
 	bool  ret = true;
 
 	switch (m_io_method)
 	{
 	case IO_METHOD_READ:
-		ret = InitMemRead();
+		ret = InitMemRead(buffer_size);
 		break;
 	case IO_METHOD_MMAP:
 		ret = InitMemMmap();
 		break;
 	case IO_METHOD_USERPTR:
-		ret = InitMemUserp();
+		ret = InitMemUserPtr(buffer_size);
 		break;
 	}
 
@@ -261,10 +305,12 @@ void CV4l2Cam::DeInitMem()
 	switch (m_io_method)
 	{
 	case IO_METHOD_READ:
+		fprintf(stderr, "[%s][%s] IO_METHOD_READ.\n", m_dev_name, __func__);
 		if (m_buffers[0].start)
 			free (m_buffers[0].start);
 		break;
 	case IO_METHOD_MMAP:
+		fprintf(stderr, "[%s][%s] IO_METHOD_MMAP.\n", m_dev_name, __func__);
 		for (uint32_t i=0 ; i < m_n_buffer ; ++i)
 		{
 			if (m_buffers[i].start)
@@ -277,6 +323,7 @@ void CV4l2Cam::DeInitMem()
 		}
 		break;
 	case IO_METHOD_USERPTR:
+		fprintf(stderr, "[%s][%s] IO_METHOD_USERPTR.\n", m_dev_name, __func__);
 		for (uint32_t i=0 ; i < m_n_buffer ; ++i)
 		{
 			if (m_buffers[i].start)
@@ -298,6 +345,105 @@ void CV4l2Cam::DeInit()
 		free (m_dev_name);
 		m_dev_name = NULL;
 	}
+}
+
+MMAL_STATUS_T CV4l2Cam::CreateSplitterComponent()
+{
+	MMAL_STATUS_T status = MMAL_SUCCESS;
+
+	if (m_component_splitter)
+		return status;
+
+	status = mmal_component_create(MMAL_COMPONENT_DEFAULT_VIDEO_SPLITTER, &m_component_splitter);
+
+	if (status != MMAL_SUCCESS)
+	{
+		fprintf(stderr, "Failed to create video splitter component\n");
+	}
+	else
+	{
+		fprintf(stderr, "[%s] %s has been created with id %d, in %d, out %d\n", __func__, m_component_splitter->name,
+				m_component_splitter->id, m_component_splitter->input_num, m_component_splitter->output_num);
+
+		if (!m_component_splitter->input_num)
+		{
+		      status = MMAL_ENOSYS;
+		      fprintf(stderr, "[%s] %s doesn't have any input port\n", __func__, m_component_splitter->name);
+		      goto error;
+		}
+
+		if (m_component_splitter->output_num < 2)
+		{
+			status = MMAL_ENOSYS;
+			fprintf(stderr, "[%s] %s doesn't have enough output ports", __func__, m_component_splitter->name);
+			goto error;
+		}
+
+		if (m_component_splitter->input[0]->format)
+		{
+			m_component_splitter->input[0]->format->type	 = MMAL_ES_TYPE_VIDEO;
+			m_component_splitter->input[0]->format->encoding = MMAL_ENCODING_I420;
+
+			fprintf(stderr, "[%s] %s format: %d, %4.4s, %4.4s\n", __func__, m_component_splitter->name,
+					(int)m_component_splitter->input[0]->format->type,
+					(char*)&m_component_splitter->input[0]->format->encoding,
+					(char*)&m_component_splitter->input[0]->format->encoding_variant);
+		}
+
+		if (m_component_splitter->input[0]->buffer_num < 3)
+			m_component_splitter->input[0]->buffer_num = 3;
+
+		status = mmal_port_format_commit(m_component_splitter->input[0]);
+
+		if (status != MMAL_SUCCESS)
+		{
+			fprintf(stderr, "[%s] Unable to set format on %s input port\n", __func__, m_component_splitter->name);
+			goto error;
+		}
+
+		status = mmal_component_enable(m_component_splitter);
+		if (status != MMAL_SUCCESS)
+		{
+			fprintf(stderr, "[%s] %s couldn't enabled.\n", __func__, m_component_splitter->name);
+			goto error;
+		}
+
+		MMAL_PORT_T* inport = m_component_splitter->input[0];
+		MMAL_POOL_T* pool = NULL;
+		if (inport)
+		{
+			fprintf(stderr, "[%s] inport port %s, %d, %d\n", __func__, inport->name,
+					inport->buffer_num, inport->buffer_size);
+
+			pool = mmal_port_pool_create(inport, inport->buffer_num, inport->buffer_size);
+
+			   if (!pool)
+			   {
+				   fprintf(stderr, "[%s] Failed to create buffer header pool for splitter output port %s", __func__, inport->name);
+			   }
+		}
+	}
+
+	return status;
+
+error:
+
+	DestroySplitterComponent();
+
+	return status;
+}
+
+MMAL_STATUS_T CV4l2Cam::DestroySplitterComponent()
+{
+	MMAL_STATUS_T status = MMAL_SUCCESS;
+
+	if (!m_component_splitter)
+		 return status;
+
+	status = mmal_component_destroy(m_component_splitter);
+	m_component_splitter = NULL;
+
+	return status;
 }
 
 void* CV4l2Cam::DoCapture(void* arg)
@@ -351,7 +497,9 @@ void* CV4l2Cam::DoCapture(void* arg)
 				}
 
 				// Process
-				fprintf(stderr, "[%s][%s] processing [%d] %p\n", pThis->m_dev_name, __func__, buf.index, pThis->m_buffers[buf.index].start);
+				fprintf(stderr, "[%s][%s] processing [%d] %p, %u\n",
+						pThis->m_dev_name, __func__,
+						buf.index, pThis->m_buffers[buf.index].start, buf.bytesused);
 
 
 
@@ -363,7 +511,45 @@ void* CV4l2Cam::DoCapture(void* arg)
 				}
 				break;
 			case IO_METHOD_USERPTR:
+				memset(&buf, 0x0, sizeof(buf));
 
+				buf.type 	= V4L2_BUF_TYPE_VIDEO_CAPTURE;
+				buf.memory 	= V4L2_MEMORY_USERPTR;
+
+				// Dequeue buffer
+				if (-1 == pThis->XIoctl(pThis->m_fd, VIDIOC_DQBUF, &buf))
+				{
+					fprintf(stderr, "[%s][%s] VIDIOC_DQBUF failed(%d, %s)\n", pThis->m_dev_name, __func__, errno, strerror(errno));
+					pThis->StopCapture();
+					break;
+				}
+
+				for (i=0 ; i < pThis->m_n_buffer ; ++i)
+				{
+					if ((unsigned long)pThis->m_buffers[i].start == buf.m.userptr && pThis->m_buffers[i].length == buf.length)
+						break;
+				}
+
+				if (buf.index >= pThis->m_n_buffer)
+				{
+					fprintf(stderr, "[%s][%s] Incorrect buffer index(%d/%d)\n", pThis->m_dev_name, __func__, buf.index, pThis->m_n_buffer);
+					pThis->StopCapture();
+					break;
+				}
+
+				// Process
+				fprintf(stderr, "[%s][%s] processing [%d] %p, %u\n",
+						pThis->m_dev_name, __func__,
+						buf.index, pThis->m_buffers[buf.index].start, buf.bytesused);
+
+
+				// Queue buffer.
+				if (-1 == pThis->XIoctl(pThis->m_fd, VIDIOC_QBUF, &buf))
+				{
+					fprintf(stderr, "[%s][%s] VIDIOC_QBUF failed(%d, %s)\n", pThis->m_dev_name, __func__, errno, strerror(errno));
+					pThis->StopCapture();
+					break;
+				}
 				break;
 			}
 		}
@@ -379,7 +565,7 @@ CV4l2Cam::CV4l2Cam()
 	m_fd 		= 0;
 	m_dev_name 	= NULL;
 
-	m_io_method = IO_METHOD_MMAP;
+	m_io_method = IO_METHOD_USERPTR;
 	m_n_buffer	= 0;
 	m_buffers	= NULL;
 
@@ -416,9 +602,11 @@ bool CV4l2Cam::Init(const char* dev_name)
 
 	QueryCap();
 
-	Setup(800, 600);
+	Setup(1920, 1080);
 
-	InitMem();
+	InitMem(m_fmt.fmt.pix.sizeimage);
+
+	MMAL_STATUS_T status = CreateSplitterComponent();
 
 	m_cam_type = CamType_V4l2;
 
@@ -429,15 +617,44 @@ bool CV4l2Cam::Init(const char* dev_name)
 
 bool CV4l2Cam::Setup(uint32_t width, uint32_t height)
 {
-	m_fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-	m_fmt.fmt.pix.width = width;
-	m_fmt.fmt.pix.height = height;
+    char fourcc[5] = {0};
 
+	m_fmt.type 				= V4L2_BUF_TYPE_VIDEO_CAPTURE;
+	m_fmt.fmt.pix.width 	= width;
+	m_fmt.fmt.pix.height 	= height;
+
+	printf("Set Format:\n");
 	if (-1 == XIoctl(m_fd, VIDIOC_S_FMT, &m_fmt))
 	{
 		perror("Querying VIDIOC_S_FMT");
 		return false;
 	}
+
+    m_fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+    if ( -1 == XIoctl(m_fd, VIDIOC_G_FMT, &m_fmt))
+	{
+		perror("Querying VIDIOC_G_FMT");
+		return false;
+	}
+
+    printf("Get Format:\n");
+    struct v4l2_pix_format		pix;
+    memcpy(&pix, &m_fmt.fmt.pix, sizeof(pix));
+
+    strncpy(fourcc, (char *)&pix.pixelformat, 4);
+
+    printf("%u %ux%u, pixelformat %s, field %u, byteperline %u, sizeimage %u, colorspace %u, flags 0x%X\n",
+    		m_fmt.type,
+			pix.width, pix.height,
+			fourcc,
+			pix.field,
+			pix.bytesperline,
+			pix.sizeimage,
+			pix.colorspace,
+			pix.flags);
+
+	m_width 	= m_fmt.fmt.pix.width;
+	m_height 	= m_fmt.fmt.pix.height;
 
 	return true;
 }
@@ -451,7 +668,6 @@ bool CV4l2Cam::StartCapture()
 	switch (m_io_method)
 	{
 	case IO_METHOD_READ:
-
 		break;
 	case IO_METHOD_MMAP:
 		for (i = 0 ; i < m_n_buffer ; ++i)
@@ -485,7 +701,37 @@ bool CV4l2Cam::StartCapture()
 		pthread_create(&m_capture_thread, NULL, DoCapture, this);
 		break;
 	case IO_METHOD_USERPTR:
+		for (i = 0 ; i < m_n_buffer ; ++i)
+		{
+			struct v4l2_buffer buf;
 
+			memset(&buf, 0x0, sizeof(buf));
+			buf.type 		= V4L2_BUF_TYPE_VIDEO_CAPTURE;
+			buf.memory 		= V4L2_MEMORY_USERPTR;
+			buf.index		= i;
+			buf.m.userptr 	= (unsigned long)m_buffers[i].start;
+			buf.length  	= m_buffers[i].length;
+
+			if (-1 == XIoctl(m_fd, VIDIOC_QBUF, &buf))
+			{
+				ret = false;
+				fprintf(stderr, "[%s][%s] VIDIOC_QBUF [%d] failed.\n", m_dev_name, __func__, i);
+				break;
+			}
+		}
+
+		if (ret == true)
+		{
+			buf_type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+			if (-1 == XIoctl(m_fd, VIDIOC_STREAMON, &buf_type))
+			{
+				ret = false;
+				fprintf(stderr, "[%s][%s] VIDIOC_STREAMON failed.\n", m_dev_name, __func__);
+			}
+		}
+
+		m_do_capture = true;
+		pthread_create(&m_capture_thread, NULL, DoCapture, this);
 		break;
 	}
 
@@ -499,6 +745,8 @@ bool CV4l2Cam::StopCapture()
 
 	if (!m_do_capture)
 		return true;
+
+	m_do_capture = false;
 
 	switch (m_io_method)
 	{
@@ -514,8 +762,6 @@ bool CV4l2Cam::StopCapture()
 		}
 		break;
 	}
-
-	m_do_capture = false;
 
 	return true;
 }
