@@ -140,6 +140,7 @@ static MMAL_STATUS_T mmal_component_create_core(const char *name,
       (*component)->control->buffer_num_min = MMAL_CONTROL_PORT_BUFFERS_MIN;
 
    /* Create the event pool */
+   LOG_TRACE("event pool: %d X %d bytes", (*component)->control->buffer_num_min, (*component)->control->buffer_size_min);
    (*component)->priv->event_pool = mmal_pool_create((*component)->control->buffer_num_min,
          (*component)->control->buffer_size_min);
    if (!(*component)->priv->event_pool)
@@ -732,7 +733,9 @@ static MMAL_STATUS_T mmal_component_supplier_create(const char *name, MMAL_COMPO
    /* walk list of suppliers to see if any can create this component */
    while (supplier)
    {
-      if (strlen(supplier->prefix) == dot_size && !memcmp(supplier->prefix, name, dot_size))
+	   LOG_TRACE("%s: %s", __func__, supplier->prefix);
+
+	   if (strlen(supplier->prefix) == dot_size && !memcmp(supplier->prefix, name, dot_size))
       {
          status = supplier->create(name, component);
          if (status == MMAL_SUCCESS)
