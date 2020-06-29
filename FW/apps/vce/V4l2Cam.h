@@ -20,6 +20,17 @@ struct buffer {
 	void*  start;
 	size_t length;
 };
+
+struct splitter {
+	MMAL_COMPONENT_T* component;
+	MMAL_PORT_T*	  input_port;
+	MMAL_POOL_T*	  input_pool;
+
+	MMAL_PORT_T*	  output_port;
+	MMAL_POOL_T*	  output_pool;
+
+};
+
 class CV4l2Cam : public CCam
 {
 protected:
@@ -38,6 +49,8 @@ protected:
 	struct v4l2_cropcap 	m_cropcap;
 	struct v4l2_fmtdesc 	m_fmtdesc;
 	struct v4l2_format 		m_fmt;
+
+	struct splitter			m_splitter;
 public:
 
 protected:
@@ -57,7 +70,11 @@ protected:
 
 	void DeInit();
 
-	MMAL_STATUS_T CreateSplitterComponent();
+	static void Splitter_Input_Port_CB(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer);
+
+	static void Splitter_Outputput_Port_CB(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer);
+
+	MMAL_STATUS_T CreateSplitterComponent(unsigned int buffer_size);
 
 	MMAL_STATUS_T DestroySplitterComponent();
 

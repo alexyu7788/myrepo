@@ -347,14 +347,58 @@ void CV4l2Cam::DeInit()
 	}
 }
 
-MMAL_STATUS_T CV4l2Cam::CreateSplitterComponent()
+void CV4l2Cam::Splitter_Input_Port_CB(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer)
+{
+	CV4l2Cam* pThis = (CV4l2Cam*)port->userdata;
+	MMAL_BUFFER_HEADER_T* new_buffer;
+    MMAL_STATUS_T status;
+
+	if (buffer->cmd != 0)
+   {
+      LOG_INFO("%s callback: event %u not supported", port->name, buffer->cmd);
+   }
+
+   LOG_TRACE("%s\n", port->name);
+
+   mmal_buffer_header_release(buffer);
+
+   // and send one back to the port (if still open)
+   if (port->is_enabled)
+   {
+      new_buffer = mmal_queue_get(pThis->m_splitter.input_pool->queue);
+
+      if (new_buffer)
+      {
+    	  LOG_TRACE("new_buffer %p\n", new_buffer);
+    	  status = mmal_port_send_buffer(port, new_buffer);
+      }
+
+      if (!new_buffer || status != MMAL_SUCCESS)
+         fprintf(stderr, "Unable to return a buffer to the splitter port");
+   }
+
+//   LOG_TRACE("%s-%d\n", __func__, __LINE__);
+}
+
+void CV4l2Cam::Splitter_Outputput_Port_CB(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer)
+{
+   if (buffer->cmd != 0)
+   {
+      LOG_INFO("%s callback: event %u not supported", port->name, buffer->cmd);
+   }
+
+   mmal_buffer_header_release(buffer);
+   LOG_TRACE("%s-%d\n", __func__, __LINE__);
+}
+
+MMAL_STATUS_T CV4l2Cam::CreateSplitterComponent(unsigned int buffer_size)
 {
 	MMAL_STATUS_T status = MMAL_SUCCESS;
 
-	if (m_component_splitter)
+	if (m_splitter.component)
 		return status;
 
-	status = mmal_component_create(MMAL_COMPONENT_DEFAULT_VIDEO_SPLITTER, &m_component_splitter);
+	status = mmal_component_create(MMAL_COMPONENT_DEFAULT_VIDEO_SPLITTER, &m_splitter.component);
 
 	if (status != MMAL_SUCCESS)
 	{
@@ -362,65 +406,100 @@ MMAL_STATUS_T CV4l2Cam::CreateSplitterComponent()
 	}
 	else
 	{
-		fprintf(stderr, "[%s] %s has been created with id %d, in %d, out %d\n", __func__, m_component_splitter->name,
-				m_component_splitter->id, m_component_splitter->input_num, m_component_splitter->output_num);
+		fprintf(stderr, "[%s] %s has been created with id %d, in %d, out %d\n", __func__, m_splitter.component->name,
+				m_splitter.component->id, m_splitter.component->input_num, m_splitter.component->output_num);
 
-		if (!m_component_splitter->input_num)
+		if (!m_splitter.component->input_num)
 		{
 		      status = MMAL_ENOSYS;
-		      fprintf(stderr, "[%s] %s doesn't have any input port\n", __func__, m_component_splitter->name);
+		      fprintf(stderr, "[%s] %s doesn't have any input port\n", __func__, m_splitter.component->name);
 		      goto error;
 		}
 
-		if (m_component_splitter->output_num < 2)
+		if (m_splitter.component->output_num < 2)
 		{
 			status = MMAL_ENOSYS;
-			fprintf(stderr, "[%s] %s doesn't have enough output ports", __func__, m_component_splitter->name);
+			fprintf(stderr, "[%s] %s doesn't have enough output ports", __func__, m_splitter.component->name);
 			goto error;
 		}
 
-		if (m_component_splitter->input[0]->format)
+		if (m_splitter.component->input[0]->format)
 		{
-			m_component_splitter->input[0]->format->type	 = MMAL_ES_TYPE_VIDEO;
-			m_component_splitter->input[0]->format->encoding = MMAL_ENCODING_I420;
+			m_splitter.component->input[0]->format->type	 = MMAL_ES_TYPE_VIDEO;
+			m_splitter.component->input[0]->format->encoding = MMAL_ENCODING_I420;
 
-			fprintf(stderr, "[%s] %s format: %d, %4.4s, %4.4s\n", __func__, m_component_splitter->name,
-					(int)m_component_splitter->input[0]->format->type,
-					(char*)&m_component_splitter->input[0]->format->encoding,
-					(char*)&m_component_splitter->input[0]->format->encoding_variant);
+			fprintf(stderr, "[%s] %s format: %d, %4.4s, %4.4s\n", __func__, m_splitter.component->name,
+					(int)m_splitter.component->input[0]->format->type,
+					(char*)&m_splitter.component->input[0]->format->encoding,
+					(char*)&m_splitter.component->input[0]->format->encoding_variant);
 		}
 
-		if (m_component_splitter->input[0]->buffer_num < 3)
-			m_component_splitter->input[0]->buffer_num = 3;
+		if (m_splitter.component->input[0]->buffer_num < 3)
+			m_splitter.component->input[0]->buffer_num = 3;
 
-		status = mmal_port_format_commit(m_component_splitter->input[0]);
+		status = mmal_port_format_commit(m_splitter.component->input[0]);
 
 		if (status != MMAL_SUCCESS)
 		{
-			fprintf(stderr, "[%s] Unable to set format on %s input port\n", __func__, m_component_splitter->name);
+			fprintf(stderr, "[%s] Unable to set format on %s input port\n", __func__, m_splitter.component->name);
 			goto error;
 		}
 
-		status = mmal_component_enable(m_component_splitter);
+		status = mmal_component_enable(m_splitter.component);
 		if (status != MMAL_SUCCESS)
 		{
-			fprintf(stderr, "[%s] %s couldn't enabled.\n", __func__, m_component_splitter->name);
+			fprintf(stderr, "[%s] %s couldn't enabled.\n", __func__, m_splitter.component->name);
 			goto error;
 		}
 
-		MMAL_PORT_T* inport = m_component_splitter->input[0];
-		MMAL_POOL_T* pool = NULL;
-		if (inport)
+		m_splitter.input_port = m_splitter.component->input[0];
+		if (m_splitter.input_port)
 		{
-			fprintf(stderr, "[%s] inport port %s, %d, %d\n", __func__, inport->name,
-					inport->buffer_num, inport->buffer_size);
+			m_splitter.input_port->buffer_size = buffer_size;
+			fprintf(stderr, "[%s] input port %s, %d, %d\n", __func__, m_splitter.input_port->name,
+					m_splitter.input_port->buffer_num, m_splitter.input_port->buffer_size);
 
-			pool = mmal_port_pool_create(inport, inport->buffer_num, inport->buffer_size);
+			m_splitter.input_pool = mmal_port_pool_create(m_splitter.input_port, m_splitter.input_port->buffer_num, m_splitter.input_port->buffer_size);
 
-			   if (!pool)
-			   {
-				   fprintf(stderr, "[%s] Failed to create buffer header pool for splitter output port %s", __func__, inport->name);
-			   }
+			if (!m_splitter.input_pool)
+			{
+				fprintf(stderr, "[%s] Failed to create buffer header pool for splitter input port %s", __func__, m_splitter.input_port->name);
+				goto error;
+			}
+
+			m_splitter.input_port->userdata = (MMAL_PORT_USERDATA_T*)this;
+			mmal_port_enable(m_splitter.input_port, Splitter_Input_Port_CB);
+		}
+
+		m_splitter.output_port = m_splitter.component->output[0];
+		if (m_splitter.output_port)
+		{
+			mmal_format_copy(m_splitter.output_port->format, m_splitter.input_port->format);
+
+			if (m_splitter.output_port->buffer_num < 3)
+				m_splitter.output_port->buffer_num = 3;
+
+			status = mmal_port_format_commit(m_splitter.output_port);
+
+			if (status != MMAL_SUCCESS)
+			{
+				fprintf(stderr, "[%s] Unable to set format on %s output port\n", __func__, m_splitter.component->name);
+				goto error;
+			}
+
+			m_splitter.output_port->buffer_size = buffer_size;
+			fprintf(stderr, "[%s] output port %s, %d, %d\n", __func__, m_splitter.output_port->name,
+					m_splitter.output_port->buffer_num, m_splitter.output_port->buffer_size);
+
+			m_splitter.output_pool = mmal_port_pool_create(m_splitter.output_port, m_splitter.output_port->buffer_num, m_splitter.output_port->buffer_size);
+
+			if (!m_splitter.output_pool)
+			{
+				fprintf(stderr, "[%s] Failed to create buffer header pool for splitter output port %s", __func__, m_splitter.output_port->name);
+				goto error;
+			}
+
+			mmal_port_enable(m_splitter.output_port, Splitter_Outputput_Port_CB);
 		}
 	}
 
@@ -437,11 +516,25 @@ MMAL_STATUS_T CV4l2Cam::DestroySplitterComponent()
 {
 	MMAL_STATUS_T status = MMAL_SUCCESS;
 
-	if (!m_component_splitter)
+	if (!m_splitter.component)
 		 return status;
 
-	status = mmal_component_destroy(m_component_splitter);
-	m_component_splitter = NULL;
+	if (m_splitter.input_pool)
+	{
+		mmal_port_pool_destroy(m_splitter.input_port, m_splitter.input_pool);
+		m_splitter.input_pool = NULL;
+	}
+
+	if (m_splitter.output_pool)
+	{
+		mmal_port_pool_destroy(m_splitter.output_port, m_splitter.output_pool);
+		m_splitter.output_pool = NULL;
+	}
+
+	status = mmal_component_destroy(m_splitter.component);
+
+	m_splitter.input_port = NULL;
+	m_splitter.component = NULL;
 
 	return status;
 }
@@ -542,6 +635,22 @@ void* CV4l2Cam::DoCapture(void* arg)
 						pThis->m_dev_name, __func__,
 						buf.index, pThis->m_buffers[buf.index].start, buf.bytesused);
 
+				MMAL_BUFFER_HEADER_T *buffer = mmal_queue_get(pThis->m_splitter.input_pool->queue);
+				if (buffer)
+				{
+					mmal_buffer_header_mem_lock(buffer);
+
+					fprintf(stderr, "[%s][%s] buffer %p, %d\n",
+							pThis->m_dev_name, __func__,
+							buffer, buffer->alloc_size);
+
+					buffer->offset = 0;
+					memcpy(buffer->data, pThis->m_buffers[buf.index].start, buf.bytesused);
+					mmal_buffer_header_mem_unlock(buffer);
+
+                    if (mmal_port_send_buffer(pThis->m_splitter.input_port, buffer)!= MMAL_SUCCESS)
+                       fprintf(stderr, "[%s][%s] Unable to send a buffer to splitter input port\n", pThis->m_dev_name, __func__);
+				}
 
 				// Queue buffer.
 				if (-1 == pThis->XIoctl(pThis->m_fd, VIDIOC_QBUF, &buf))
@@ -573,6 +682,8 @@ CV4l2Cam::CV4l2Cam()
 	memset(&m_cropcap, 0x0, sizeof(m_cropcap));
 	memset(&m_fmtdesc, 0x0, sizeof(m_fmtdesc));
 	memset(&m_fmt, 0x0, sizeof(m_fmt));
+
+	memset(&m_splitter, 0x0, sizeof(m_splitter));
 }
 
 CV4l2Cam::~CV4l2Cam()
@@ -582,6 +693,8 @@ CV4l2Cam::~CV4l2Cam()
 	pthread_join(m_capture_thread, NULL);
 
 	StopCapture();
+
+	DestroySplitterComponent();
 
 	DeInitMem();
 
@@ -606,7 +719,7 @@ bool CV4l2Cam::Init(const char* dev_name)
 
 	InitMem(m_fmt.fmt.pix.sizeimage);
 
-	MMAL_STATUS_T status = CreateSplitterComponent();
+	MMAL_STATUS_T status = CreateSplitterComponent(m_fmt.fmt.pix.sizeimage);
 
 	m_cam_type = CamType_V4l2;
 
