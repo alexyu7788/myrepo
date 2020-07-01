@@ -38,6 +38,7 @@ enum cam_type_e
 	CamType_V4l2,
 };
 
+#define ARRAY_SIZE(x)	(sizeof(x) / sizeof((x)[0]))
 
 class CCam
 {

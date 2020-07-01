@@ -7,18 +7,25 @@
 #include <errno.h>
 #include <poll.h>
 #include <pthread.h>
+#include <user-vcsm.h>
 
 #include "Camera.h"
 
+// ---------------------------------------------------------------------------------
 enum io_method {
 	IO_METHOD_READ,
 	IO_METHOD_MMAP,
 	IO_METHOD_USERPTR,
 };
-
+// ---------------------------------------------------------------------------------
 struct buffer {
+	unsigned int idx;
 	void*  start;
 	size_t length;
+
+	MMAL_BUFFER_HEADER_T *bufferheader;
+	int dma_fd;
+	unsigned int vcsm_handle;
 };
 
 struct splitter {
@@ -31,6 +38,14 @@ struct splitter {
 
 };
 
+struct v4l2_mmal_format_info
+{
+	const char *name;
+	unsigned int fourcc;
+	unsigned char n_planes;
+	MMAL_FOURCC_T mmal_encoding;
+};
+// ---------------------------------------------------------------------------------
 class CV4l2Cam : public CCam
 {
 protected:
@@ -70,9 +85,15 @@ protected:
 
 	void DeInit();
 
+	int QueueBuffer(unsigned int idx);
+
+	int QueueAllBuffer();
+
 	static void Splitter_Input_Port_CB(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer);
 
 	static void Splitter_Outputput_Port_CB(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer);
+
+	const v4l2_mmal_format_info* ConvertV4l2FormatToMmalByFourcc(unsigned int forcc);
 
 	MMAL_STATUS_T CreateSplitterComponent(unsigned int buffer_size);
 

@@ -262,7 +262,6 @@ int vcsm_init_ex( int want_export, int fd )
    if ( vcsm_refcount != 0 )
    {
       // Note that in this case the external fd is ignored.
-
       if (want_export && !using_vc_sm_cma)
       {
          vcos_log_trace( "[%s]: fail as already open and export not available",
@@ -276,7 +275,6 @@ int vcsm_init_ex( int want_export, int fd )
    if (fd != -1)
    {
       vcsm_handle = dup(fd);
-
       // FIXME: Sanity check which device that the fd actually relates to.
       // For now we have to guess based on whether export is requested.
       // (the main use case is from Chromium which will be requesting export).
@@ -289,7 +287,6 @@ int vcsm_init_ex( int want_export, int fd )
    if (want_export)
    {
       vcsm_handle = open( VCSM_CMA_DEVICE_NAME, O_RDWR, 0 );
-
       if (vcsm_handle >= 0)
       {
          using_vc_sm_cma = 1;
@@ -300,14 +297,14 @@ int vcsm_init_ex( int want_export, int fd )
 
    if (vcsm_handle < 0)
    {
-      vcos_log_trace( "[%s]: NOT using vc-sm-cma as handle was %d",
+	   vcos_log_trace( "[%s]: NOT using vc-sm-cma as handle was %d",
                       __func__, vcsm_handle);
       vcsm_handle = open( VCSM_DEVICE_NAME, O_RDWR, 0 );
    }
 
    if (vcsm_handle < 0 && !want_export)
    {
-      // vcsm failed and not tried vcsm-cma yet.
+	   // vcsm failed and not tried vcsm-cma yet.
       vcsm_handle = open( VCSM_CMA_DEVICE_NAME, O_RDWR, 0 );
 
       if (vcsm_handle >= 0)
@@ -322,7 +319,6 @@ out:
    if ( vcsm_handle >= 0 )
    {
       vcsm_page_size = getpagesize();
-
       result = 0;
       vcsm_refcount++;
 

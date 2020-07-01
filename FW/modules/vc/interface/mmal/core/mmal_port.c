@@ -919,7 +919,8 @@ void mmal_port_buffer_header_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *b
 /** Event callback */
 void mmal_port_event_send(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer)
 {
-   if (port->priv->core->buffer_header_callback)
+   LOG_INFO("%s-%d\n", __func__, __LINE__);
+	if (port->priv->core->buffer_header_callback)
    {
       port->priv->core->buffer_header_callback(port, buffer);
    }
