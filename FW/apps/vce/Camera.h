@@ -46,6 +46,7 @@ protected:
 	enum cam_type_e		m_cam_type;
 	uint32_t			m_width;
 	uint32_t			m_height;
+	unsigned char		m_num_planes;
 
 	bool				m_terminate;
 	bool				m_do_capture;

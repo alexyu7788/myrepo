@@ -898,7 +898,7 @@ static void buffers_to_isp(struct device *dev)
 }
 static void isp_output_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer)
 {
-	//print("Buffer %p from isp, filled %d, timestamp %llu, flags %04X\n", buffer, buffer->length, buffer->pts, buffer->flags);
+	print("Buffer %p from isp, filled %d, timestamp %llu, flags %04X\n", buffer, buffer->length, buffer->pts, buffer->flags);
 	//vcos_log_error("File handle: %p", port->userdata);
 	struct device *dev = (struct device*)port->userdata;
 	int i;

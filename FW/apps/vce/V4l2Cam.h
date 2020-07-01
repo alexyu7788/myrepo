@@ -20,9 +20,9 @@ enum io_method {
 // ---------------------------------------------------------------------------------
 struct buffer {
 	unsigned int idx;
-	void*  start;
-	size_t length;
-
+	unsigned int padding[VIDEO_MAX_PLANES];
+	unsigned int length[VIDEO_MAX_PLANES];
+	void *start[VIDEO_MAX_PLANES];
 	MMAL_BUFFER_HEADER_T *bufferheader;
 	int dma_fd;
 	unsigned int vcsm_handle;
@@ -45,6 +45,12 @@ struct v4l2_mmal_format_info
 	unsigned char n_planes;
 	MMAL_FOURCC_T mmal_encoding;
 };
+
+struct v4l2_field_name_s{
+	const char *name;
+	enum v4l2_field field;
+};
+
 // ---------------------------------------------------------------------------------
 class CV4l2Cam : public CCam
 {
@@ -55,6 +61,11 @@ protected:
 	enum   io_method		m_io_method;
 	uint32_t				m_n_buffer;
 	struct buffer*			m_buffers;
+	unsigned int			m_fps;
+	unsigned int 			m_frame_time_usec;
+	MMAL_BOOL_T				m_zero_copy;
+	uint32_t 				m_timestamp_type;
+	struct timeval 			m_starttime;
 
 	pthread_cond_t			m_cond;
 	pthread_mutex_t			m_mutex;
@@ -69,9 +80,24 @@ protected:
 public:
 
 protected:
+	void DumpMmalPortFormat(MMAL_ES_FORMAT_T* format);
+
+	void DumpMmalPort(MMAL_PORT_T* port);
+
 	int XIoctl(int fd, int request, void *arg);
 
 	bool QueryCap();
+
+	int  QueryFps();
+
+	int video_set_format(unsigned int w, unsigned int h,
+							unsigned int format, unsigned int stride,
+							unsigned int buffer_size, __u32 field,
+							unsigned int flags);
+
+	int video_get_format();
+
+	void get_ts_flags(uint32_t flags, const char **ts_type, const char **ts_source);
 
 	bool InitMemRead(unsigned int buffer_size);
 
@@ -89,11 +115,19 @@ protected:
 
 	int QueueAllBuffer();
 
+	void buffers_to_isp();
+
 	static void Splitter_Input_Port_CB(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer);
 
 	static void Splitter_Outputput_Port_CB(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer);
 
 	const v4l2_mmal_format_info* ConvertV4l2FormatToMmalByFourcc(unsigned int forcc);
+
+	int format_bpp(unsigned int  pixfmt);
+
+	const char *v4l2_field_name(__u32 field);
+
+	const char *v4l2_format_name(unsigned int fourcc);
 
 	MMAL_STATUS_T CreateSplitterComponent(unsigned int buffer_size);
 

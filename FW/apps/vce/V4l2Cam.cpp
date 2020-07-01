@@ -6,6 +6,19 @@
 
 #define MMAL_ENCODING_UNUSED 	0
 
+static struct v4l2_field_name_s v4l2_field_name_tbl[] = {
+	{ "any", V4L2_FIELD_ANY },
+	{ "none", V4L2_FIELD_NONE },
+	{ "top", V4L2_FIELD_TOP },
+	{ "bottom", V4L2_FIELD_BOTTOM },
+	{ "interlaced", V4L2_FIELD_INTERLACED },
+	{ "seq-tb", V4L2_FIELD_SEQ_TB },
+	{ "seq-bt", V4L2_FIELD_SEQ_BT },
+	{ "alternate", V4L2_FIELD_ALTERNATE },
+	{ "interlaced-tb", V4L2_FIELD_INTERLACED_TB },
+	{ "interlaced-bt", V4L2_FIELD_INTERLACED_BT },
+};
+
 static struct v4l2_mmal_format_info v4l2_mmal_formats_tbl[] = {
 	{ "RGB332", V4L2_PIX_FMT_RGB332, 1, 	MMAL_ENCODING_UNUSED },
 	{ "RGB444", V4L2_PIX_FMT_RGB444, 1,	MMAL_ENCODING_UNUSED },
@@ -77,6 +90,65 @@ static struct v4l2_mmal_format_info v4l2_mmal_formats_tbl[] = {
 	{ "MPEG", V4L2_PIX_FMT_MPEG, 1,		MMAL_ENCODING_UNUSED },
 };
 // ---------------------------------------------------------------------------------
+void CV4l2Cam::DumpMmalPortFormat(MMAL_ES_FORMAT_T* format)
+{
+	   const char *name_type;
+
+	   if (!format)
+	      return;
+
+	   switch(format->type)
+	   {
+	   case MMAL_ES_TYPE_AUDIO: name_type = "audio"; break;
+	   case MMAL_ES_TYPE_VIDEO: name_type = "video"; break;
+	   case MMAL_ES_TYPE_SUBPICTURE: name_type = "subpicture"; break;
+	   default: name_type = "unknown"; break;
+	   }
+
+	   LOG_INFO(" type: %s, fourcc: %4.4s", name_type, (char *)&format->encoding);
+	   LOG_INFO(" bitrate: %i, framed: %i", format->bitrate,
+	            !!(format->flags & MMAL_ES_FORMAT_FLAG_FRAMED));
+	   LOG_INFO(" extra data: %i, %p", format->extradata_size, format->extradata);
+	   switch(format->type)
+	   {
+	   case MMAL_ES_TYPE_AUDIO:
+		   LOG_INFO(" samplerate: %i, channels: %i, bps: %i, block align: %i",
+	               format->es->audio.sample_rate, format->es->audio.channels,
+	               format->es->audio.bits_per_sample, format->es->audio.block_align);
+	      break;
+
+	   case MMAL_ES_TYPE_VIDEO:
+		   LOG_INFO(" width: %i, height: %i, (%i,%i,%i,%i)",
+	               format->es->video.width, format->es->video.height,
+	               format->es->video.crop.x, format->es->video.crop.y,
+	               format->es->video.crop.width, format->es->video.crop.height);
+		   LOG_INFO(" pixel aspect ratio: %i/%i, frame rate: %i/%i",
+	               format->es->video.par.num, format->es->video.par.den,
+	               format->es->video.frame_rate.num, format->es->video.frame_rate.den);
+	      break;
+
+	   case MMAL_ES_TYPE_SUBPICTURE:
+	      break;
+
+	   default: break;
+	   }
+}
+
+void CV4l2Cam::DumpMmalPort(MMAL_PORT_T* port)
+{
+	   if (!port)
+	      return;
+
+	   LOG_INFO("%s(%p)", port->name, port);
+
+	   DumpMmalPortFormat(port->format);
+
+	   LOG_INFO(" buffers num: %i(opt %i, min %i), size: %i(opt %i, min: %i), align: %i",
+	            port->buffer_num, port->buffer_num_recommended, port->buffer_num_min,
+	            port->buffer_size, port->buffer_size_recommended, port->buffer_size_min,
+	            port->buffer_alignment_min);
+}
+
 int CV4l2Cam::XIoctl(int fd, int request, void *arg)
 {
 	int r;
@@ -220,6 +292,129 @@ bool CV4l2Cam::QueryCap()
 	return ret;
 }
 
+int CV4l2Cam::QueryFps()
+{
+	struct v4l2_streamparm parm;
+	int ret;
+
+	memset(&parm, 0, sizeof parm);
+	parm.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+
+	ret = ioctl(m_fd, VIDIOC_G_PARM, &parm);
+	if (ret < 0) {
+		printf("Unable to get frame rate: %s (%d).\n",
+			strerror(errno), errno);
+		/* Make a wild guess at the frame rate */
+		m_fps = 15;
+		return ret;
+	}
+
+	printf("Current frame rate: %u/%u\n",
+		parm.parm.capture.timeperframe.denominator,
+		parm.parm.capture.timeperframe.numerator);
+
+	m_fps = parm.parm.capture.timeperframe.denominator/
+			parm.parm.capture.timeperframe.numerator;
+
+	return 0;
+}
+
+int CV4l2Cam::video_set_format(unsigned int w, unsigned int h,
+							unsigned int format, unsigned int stride,
+							unsigned int buffer_size, __u32 field,
+							unsigned int flags)
+{
+	struct v4l2_format fmt;
+	int ret;
+
+	memset(&fmt, 0, sizeof fmt);
+	fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+
+	fmt.fmt.pix.width = w;
+	fmt.fmt.pix.height = h;
+	fmt.fmt.pix.pixelformat = format;
+	fmt.fmt.pix.field = field;
+	printf("stride is %d\n",stride);
+	if (!stride)
+		stride = ((w+31) &~31)*format_bpp(format);
+	printf("stride is now %d\n",stride);
+	fmt.fmt.pix.bytesperline = stride;
+	fmt.fmt.pix.sizeimage = buffer_size;
+	fmt.fmt.pix.priv = V4L2_PIX_FMT_PRIV_MAGIC;
+	fmt.fmt.pix.flags = flags;
+
+	ret = ioctl(m_fd, VIDIOC_S_FMT, &fmt);
+	if (ret < 0) {
+		printf("Unable to set format: %s (%d).\n", strerror(errno),
+			errno);
+		return ret;
+	}
+
+	printf("Video format set: %s (%08x) %ux%u (stride %u) field %s buffer size %u\n",
+		v4l2_format_name(fmt.fmt.pix.pixelformat), fmt.fmt.pix.pixelformat,
+		fmt.fmt.pix.width, fmt.fmt.pix.height, fmt.fmt.pix.bytesperline,
+		v4l2_field_name(fmt.fmt.pix.field),
+		fmt.fmt.pix.sizeimage);
+
+	return 0;
+}
+
+int CV4l2Cam::video_get_format()
+{
+	struct v4l2_format fmt;
+	int ret;
+
+	memset(&fmt, 0, sizeof fmt);
+	fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+
+	ret = ioctl(m_fd, VIDIOC_G_FMT, &fmt);
+	if (ret < 0) {
+		printf("Unable to get format: %s (%d).\n", strerror(errno),
+			errno);
+		return ret;
+	}
+
+	m_width = fmt.fmt.pix.width;
+	m_height = fmt.fmt.pix.height;
+	m_num_planes = 1;
+
+	printf("Video format: %s (%08x) %ux%u (stride %u) field %s buffer size %u\n",
+		v4l2_format_name(fmt.fmt.pix.pixelformat), fmt.fmt.pix.pixelformat,
+		fmt.fmt.pix.width, fmt.fmt.pix.height, fmt.fmt.pix.bytesperline,
+		v4l2_field_name(fmt.fmt.pix_mp.field),
+		fmt.fmt.pix.sizeimage);
+
+	return 0;
+}
+
+void CV4l2Cam::get_ts_flags(uint32_t flags, const char **ts_type, const char **ts_source)
+{
+	switch (flags & V4L2_BUF_FLAG_TIMESTAMP_MASK) {
+	case V4L2_BUF_FLAG_TIMESTAMP_UNKNOWN:
+		*ts_type = "unk";
+		break;
+	case V4L2_BUF_FLAG_TIMESTAMP_MONOTONIC:
+		*ts_type = "mono";
+		break;
+	case V4L2_BUF_FLAG_TIMESTAMP_COPY:
+		*ts_type = "copy";
+		break;
+	default:
+		*ts_type = "inv";
+	}
+
+	switch (flags & V4L2_BUF_FLAG_TSTAMP_SRC_MASK) {
+	case V4L2_BUF_FLAG_TSTAMP_SRC_EOF:
+		*ts_source = "EoF";
+		break;
+	case V4L2_BUF_FLAG_TSTAMP_SRC_SOE:
+		*ts_source = "SoE";
+		break;
+	default:
+		*ts_source = "inv";
+	}
+}
+
 bool CV4l2Cam::InitMemRead(unsigned int buffer_size)
 {
 	bool  ret = true;
@@ -230,7 +425,9 @@ bool CV4l2Cam::InitMemRead(unsigned int buffer_size)
 bool CV4l2Cam::InitMemMmap()
 {
 	bool  ret = true;
+	struct v4l2_buffer	buf;
 	struct v4l2_requestbuffers req;
+	struct v4l2_plane planes[VIDEO_MAX_PLANES];
 
 	memset(&req, 0x0, sizeof(req));
 
@@ -265,7 +462,9 @@ bool CV4l2Cam::InitMemMmap()
 		return ret;
 	}
 
-	m_buffers = (struct buffer*)calloc(req.count, sizeof(*m_buffers));
+	fprintf(stderr, "[%s] %u buffers requested.\n", __func__, req.count);
+
+	m_buffers = (struct buffer*)malloc(req.count * sizeof(struct buffer));
 	if (!m_buffers)
 	{
 		fprintf(stderr, "[%s]: Out of memory.\n", __func__);
@@ -274,13 +473,16 @@ bool CV4l2Cam::InitMemMmap()
 
 	for (m_n_buffer = 0 ; m_n_buffer < req.count ; ++m_n_buffer)
 	{
-		struct v4l2_buffer	buf;
+		const char *ts_type, *ts_source;
 
 		memset(&buf, 0x0, sizeof(buf));
+		memset(planes, 0x0, sizeof(planes));
 
+		buf.index	= m_n_buffer;
 		buf.type 	= V4L2_BUF_TYPE_VIDEO_CAPTURE;
 		buf.memory 	= V4L2_MEMORY_MMAP;
-		buf.index	= m_n_buffer;
+		buf.length  = VIDEO_MAX_PLANES;
+		buf.m.planes = planes;
 
 		if (-1 == XIoctl(m_fd, VIDIOC_QUERYBUF, &buf))
 		{
@@ -289,18 +491,33 @@ bool CV4l2Cam::InitMemMmap()
 			break;
 		}
 
-		// Memory Mapping...
-		m_buffers[m_n_buffer].length = buf.length;
-		m_buffers[m_n_buffer].start = (struct buffer*)mmap(NULL, buf.length, PROT_READ | PROT_WRITE, MAP_SHARED, m_fd, buf.m.offset);
+		get_ts_flags(buf.flags, &ts_type, &ts_source);
+		fprintf(stderr, "[%s] buf[%d] length: %u offset: %u timestamp type/source: %s/%s\n", __func__, m_n_buffer,
+		       buf.length, buf.m.offset, ts_type, ts_source);
 
-		if (MAP_FAILED == m_buffers[m_n_buffer].start)
+		m_buffers[m_n_buffer].idx = m_n_buffer;
+
+		// Memory Mapping...
+		for (unsigned char i=0 ; i<m_num_planes ; ++i)
 		{
-			fprintf(stderr, "[%s] MMAP failed.\n", __func__);
-			ret = false;
-			break;
+			m_buffers[m_n_buffer].length[i] = buf.length;
+			m_buffers[m_n_buffer].start[i] = (struct buffer*)mmap(NULL, buf.length, PROT_READ | PROT_WRITE, MAP_SHARED, m_fd, buf.m.offset);
+
+			if (MAP_FAILED == m_buffers[m_n_buffer].start[i])
+			{
+				fprintf(stderr, "[%s] MMAP failed.\n", __func__);
+				ret = false;
+				break;
+			}
+
+			if (ret == false)
+				break;
+
+			fprintf(stderr, "[%s] Buffer %u/%u mapped at address %p.\n", __func__, m_buffers[m_n_buffer].idx, i, m_buffers[m_n_buffer].start[i]);
 		}
 
-		fprintf(stderr, "[%s] MMAP [%d]: %p, %d.\n", __func__, m_n_buffer, m_buffers[m_n_buffer].start, m_buffers[m_n_buffer].length);
+		if (ret == false)
+			return ret;
 
 		// Exporting mmal buffer as dmafd
 		if (m_splitter.input_pool)
@@ -335,28 +552,27 @@ bool CV4l2Cam::InitMemMmap()
 
 			if (m_buffers[m_n_buffer].vcsm_handle)
 			{
-//				dev->can_zero_copy = MMAL_TRUE;
+				m_zero_copy = MMAL_TRUE;
 				fprintf(stderr, "Exported buffer %d to dmabuf %d, vcsm handle %u\n", m_n_buffer, m_buffers[m_n_buffer].dma_fd, m_buffers[m_n_buffer].vcsm_handle);
 				bh->data = (uint8_t*)vcsm_vc_hdl_from_hdl(m_buffers[m_n_buffer].vcsm_handle);
 			}
 			else
 			{
-//				dev->can_zero_copy = MMAL_FALSE;
-				bh->data = (uint8_t*)m_buffers[m_n_buffer].start;	//Only deal with the single planar API
+				m_zero_copy = MMAL_FALSE;
+				bh->data = (uint8_t*)m_buffers[m_n_buffer].start[0];	//Only deal with the single planar API
 			}
 
 			bh->alloc_size = buf.length;
-			m_buffers[m_n_buffer].idx = m_n_buffer;
 			m_buffers[m_n_buffer].bufferheader = bh;
 			fprintf(stderr, "Linking V4L2 buffer[%d] %p to buffer header %p. bh->data 0x%x, dmafd %d\n",
 					m_n_buffer, &m_buffers[m_n_buffer], bh, (uint32_t)bh->data, m_buffers[m_n_buffer].dma_fd);
 
 			/* Put buffer back in the pool */
-			mmal_queue_put(m_splitter.input_pool->queue, bh);
-//			mmal_buffer_header_release(bh);
+			mmal_buffer_header_release(bh);
 		}
-
 	}
+
+	m_timestamp_type = buf.flags & V4L2_BUF_FLAG_TIMESTAMP_MASK;
 
 	return ret;
 }
@@ -364,50 +580,50 @@ bool CV4l2Cam::InitMemMmap()
 bool CV4l2Cam::InitMemUserPtr(unsigned int buffer_size)
 {
 	bool  ret = true;
-	struct v4l2_requestbuffers req;
-
-	memset(&req, 0x0, sizeof(req));
-
-	req.count 	= 4;
-	req.type 	= V4L2_BUF_TYPE_VIDEO_CAPTURE;
-	req.memory 	= V4L2_MEMORY_USERPTR;
-
-	if (-1 == XIoctl(m_fd, VIDIOC_REQBUFS, &req))
-	{
-		switch (errno)
-		{
-		case EINVAL:
-			fprintf(stderr, "[%s] does not support memory mapping.\n", m_dev_name);
-			ret = false;
-			break;
-		default:
-			fprintf(stderr, "[%s] VIDIOC_REQBUFS: %d, %s\n", m_dev_name, errno, strerror(errno));
-			ret = false;
-			break;
-		}
-	}
-
-	m_buffers = (struct buffer*)calloc(req.count, sizeof(*m_buffers));
-	if (!m_buffers)
-	{
-		fprintf(stderr, "[%s][%s]: Out of memory.\n", m_dev_name, __func__);
-		return false;
-	}
-
-	for (m_n_buffer = 0 ; m_n_buffer < req.count ; ++m_n_buffer)
-	{
-		m_buffers[m_n_buffer].length = buffer_size;
-		m_buffers[m_n_buffer].start  = malloc(buffer_size);
-
-		if (!m_buffers[m_n_buffer].start)
-		{
-			fprintf(stderr, "[%s][%s] UserPtr failed.\n", m_dev_name, __func__);
-			ret = false;
-			break;
-		}
-
-		fprintf(stderr, "[%s][%s] UserPtr [%d]: %p, %d.\n", m_dev_name, __func__, m_n_buffer, m_buffers[m_n_buffer].start, m_buffers[m_n_buffer].length);
-	}
+//	struct v4l2_requestbuffers req;
+//
+//	memset(&req, 0x0, sizeof(req));
+//
+//	req.count 	= 4;
+//	req.type 	= V4L2_BUF_TYPE_VIDEO_CAPTURE;
+//	req.memory 	= V4L2_MEMORY_USERPTR;
+//
+//	if (-1 == XIoctl(m_fd, VIDIOC_REQBUFS, &req))
+//	{
+//		switch (errno)
+//		{
+//		case EINVAL:
+//			fprintf(stderr, "[%s] does not support memory mapping.\n", m_dev_name);
+//			ret = false;
+//			break;
+//		default:
+//			fprintf(stderr, "[%s] VIDIOC_REQBUFS: %d, %s\n", m_dev_name, errno, strerror(errno));
+//			ret = false;
+//			break;
+//		}
+//	}
+//
+//	m_buffers = (struct buffer*)calloc(req.count, sizeof(*m_buffers));
+//	if (!m_buffers)
+//	{
+//		fprintf(stderr, "[%s][%s]: Out of memory.\n", m_dev_name, __func__);
+//		return false;
+//	}
+//
+//	for (m_n_buffer = 0 ; m_n_buffer < req.count ; ++m_n_buffer)
+//	{
+//		m_buffers[m_n_buffer].length = buffer_size;
+//		m_buffers[m_n_buffer].start  = malloc(buffer_size);
+//
+//		if (!m_buffers[m_n_buffer].start)
+//		{
+//			fprintf(stderr, "[%s][%s] UserPtr failed.\n", m_dev_name, __func__);
+//			ret = false;
+//			break;
+//		}
+//
+//		fprintf(stderr, "[%s][%s] UserPtr [%d]: %p, %d.\n", m_dev_name, __func__, m_n_buffer, m_buffers[m_n_buffer].start, m_buffers[m_n_buffer].length);
+//	}
 
 	return ret;
 }
@@ -445,11 +661,14 @@ void CV4l2Cam::DeInitMem()
 		fprintf(stderr, "[%s][%s] IO_METHOD_MMAP.\n", m_dev_name, __func__);
 		for (uint32_t i=0 ; i < m_n_buffer ; ++i)
 		{
-			if (m_buffers[i].start)
+			for (unsigned char j=0 ; j<m_num_planes ; ++j)
 			{
-				if (-1 == munmap(m_buffers[i].start, m_buffers[i].length))
+				if (m_buffers[i].start[j])
 				{
-					fprintf(stderr, "[%s][%s] munmap failed.(%d, %s)\n", m_dev_name, __func__, errno, strerror(errno));
+					if (-1 == munmap(m_buffers[i].start[j], m_buffers[i].length[j]))
+					{
+						fprintf(stderr, "[%s][%s] munmap failed.(%d, %s)\n", m_dev_name, __func__, errno, strerror(errno));
+					}
 				}
 			}
 		}
@@ -501,19 +720,19 @@ int CV4l2Cam::QueueBuffer(unsigned int idx)
 		}
 		break;
 	case IO_METHOD_USERPTR:
-		memset(&buf, 0x0, sizeof(buf));
-		buf.type 		= V4L2_BUF_TYPE_VIDEO_CAPTURE;
-		buf.memory 		= V4L2_MEMORY_USERPTR;
-		buf.index		= idx;
-		buf.m.userptr 	= (unsigned long)m_buffers[idx].start;
-		buf.length  	= m_buffers[idx].length;
-
-		if (-1 == XIoctl(m_fd, VIDIOC_QBUF, &buf))
-		{
-			ret = -1;
-			fprintf(stderr, "[%s][%s] VIDIOC_QBUF [%d] failed.\n", m_dev_name, __func__, idx);
-			break;
-		}
+//		memset(&buf, 0x0, sizeof(buf));
+//		buf.type 		= V4L2_BUF_TYPE_VIDEO_CAPTURE;
+//		buf.memory 		= V4L2_MEMORY_USERPTR;
+//		buf.index		= idx;
+//		buf.m.userptr 	= (unsigned long)m_buffers[idx].start;
+//		buf.length  	= m_buffers[idx].length;
+//
+//		if (-1 == XIoctl(m_fd, VIDIOC_QBUF, &buf))
+//		{
+//			ret = -1;
+//			fprintf(stderr, "[%s][%s] VIDIOC_QBUF [%d] failed.\n", m_dev_name, __func__, idx);
+//			break;
+//		}
 		break;
 	}
 
@@ -534,6 +753,16 @@ int CV4l2Cam::QueueAllBuffer()
 	return ret;
 }
 
+void CV4l2Cam::buffers_to_isp()
+{
+	MMAL_BUFFER_HEADER_T *buffer;
+
+	while ((buffer = mmal_queue_get(m_splitter.output_pool->queue)) != NULL)
+	{
+		mmal_port_send_buffer(m_splitter.output_port, buffer);
+	}
+}
+
 void CV4l2Cam::Splitter_Input_Port_CB(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer)
 {
 	CV4l2Cam* pThis = (CV4l2Cam*)port->userdata;
@@ -545,7 +774,7 @@ void CV4l2Cam::Splitter_Input_Port_CB(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *b
 		fprintf(stderr, "%s callback: event %u not supported", port->name, buffer->cmd);
    }
 
-   fprintf(stderr, "%s\n", port->name);
+   fprintf(stderr, "[%s] %s\n", __func__, port->name);
 
    for (unsigned int i=0 ; i<pThis->m_n_buffer ; ++i)
    {
@@ -553,7 +782,7 @@ void CV4l2Cam::Splitter_Input_Port_CB(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *b
 	   {
 		   pThis->QueueBuffer(pThis->m_buffers[i].idx);
 		   mmal_buffer_header_release(buffer);
-		   buffer == NULL;
+		   buffer = NULL;
 		   break;
 	   }
    }
@@ -585,13 +814,17 @@ void CV4l2Cam::Splitter_Input_Port_CB(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *b
 
 void CV4l2Cam::Splitter_Outputput_Port_CB(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer)
 {
-   if (buffer->cmd != 0)
+	CV4l2Cam* pThis = (CV4l2Cam*)port->userdata;
+
+	if (buffer->cmd != 0)
    {
 	   fprintf(stderr, "%s callback: event %u not supported", port->name, buffer->cmd);
    }
 
    mmal_buffer_header_release(buffer);
-   LOG_TRACE("%s-%d\n", __func__, __LINE__);
+   pThis->buffers_to_isp();
+
+   fprintf(stderr, "[%s]\n", __func__);
 }
 
 const v4l2_mmal_format_info* CV4l2Cam::ConvertV4l2FormatToMmalByFourcc(unsigned int forcc)
@@ -607,6 +840,59 @@ const v4l2_mmal_format_info* CV4l2Cam::ConvertV4l2FormatToMmalByFourcc(unsigned 
 	printf("%s: Unknown format %s\n", __func__, (char*)&forcc);
 
 	return NULL;
+}
+
+int CV4l2Cam::format_bpp(unsigned int  pixfmt)
+{
+	switch(pixfmt)
+	{
+		case V4L2_PIX_FMT_BGR24:
+		case V4L2_PIX_FMT_RGB24:
+			return 4;
+		case V4L2_PIX_FMT_YUYV:
+		case V4L2_PIX_FMT_YVYU:
+		case V4L2_PIX_FMT_UYVY:
+		case V4L2_PIX_FMT_VYUY:
+			return 2;
+		case V4L2_PIX_FMT_SRGGB8:
+		case V4L2_PIX_FMT_SBGGR8:
+		case V4L2_PIX_FMT_SGRBG8:
+		case V4L2_PIX_FMT_SGBRG8:
+			return 1;
+		default:
+			return 1;
+	}
+}
+
+const char *CV4l2Cam::v4l2_field_name(__u32 field)
+{
+	unsigned int i;
+
+	for (i = 0; i < ARRAY_SIZE(v4l2_field_name_tbl); ++i) {
+		if (v4l2_field_name_tbl[i].field == field)
+			return v4l2_field_name_tbl[i].name;
+	}
+
+	return "unknown";
+}
+
+const char *CV4l2Cam::v4l2_format_name(unsigned int fourcc)
+{
+	const struct v4l2_mmal_format_info *info;
+	static char name[5];
+	unsigned int i;
+
+	info = ConvertV4l2FormatToMmalByFourcc(fourcc);
+	if (info)
+		return info->name;
+
+	for (i = 0; i < 4; ++i) {
+		name[i] = fourcc & 0xff;
+		fourcc >>= 8;
+	}
+
+	name[4] = '\0';
+	return name;
 }
 
 MMAL_STATUS_T CV4l2Cam::CreateSplitterComponent(unsigned int buffer_size)
@@ -631,6 +917,8 @@ MMAL_STATUS_T CV4l2Cam::CreateSplitterComponent(unsigned int buffer_size)
 	if (status != MMAL_SUCCESS)
 	{
 		fprintf(stderr, "Failed to create video splitter component\n");
+
+		goto error;
 	}
 	else
 	{
@@ -639,9 +927,9 @@ MMAL_STATUS_T CV4l2Cam::CreateSplitterComponent(unsigned int buffer_size)
 
 		if (!m_splitter.component->input_num)
 		{
-		      status = MMAL_ENOSYS;
-		      fprintf(stderr, "[%s] %s doesn't have any input port\n", __func__, m_splitter.component->name);
-		      goto error;
+			status = MMAL_ENOSYS;
+			fprintf(stderr, "[%s] %s doesn't have any input port\n", __func__, m_splitter.component->name);
+			goto error;
 		}
 
 		if (m_splitter.component->output_num < 2)
@@ -653,21 +941,19 @@ MMAL_STATUS_T CV4l2Cam::CreateSplitterComponent(unsigned int buffer_size)
 
 		format = m_splitter.component->input[0]->format;
 
-		format->type	 				= MMAL_ES_TYPE_VIDEO;
+//		format->type	 				= MMAL_ES_TYPE_VIDEO;
 		format->encoding 				= info->mmal_encoding;
 		format->es->video.crop.x 		= 0;
 		format->es->video.crop.y 		= 0;
 		format->es->video.crop.width 	= m_fmt.fmt.pix.width;
 		format->es->video.crop.height 	= m_fmt.fmt.pix.height;
 		format->es->video.width 		= VCOS_ALIGN_UP(m_fmt.fmt.pix.width, 32);
-		format->es->video.height 		= VCOS_ALIGN_UP(m_fmt.fmt.pix.width, 16);
-
-		fprintf(stderr, "[%s] %s format: %d, %4.4s, %4.4s\n", __func__, m_splitter.component->name,
-				(int)format->type,
-				(char*)&format->encoding,
-				(char*)&format->encoding_variant);
+		format->es->video.height 		= VCOS_ALIGN_UP(m_fmt.fmt.pix.height, 16);
 
 		m_splitter.component->input[0]->buffer_num = V4L2_BUFFER_DEFAULT;
+
+		if (m_fps)
+			m_frame_time_usec = (1000000 / m_fps);
 
 		status = mmal_port_format_commit(m_splitter.component->input[0]);
 
@@ -677,76 +963,102 @@ MMAL_STATUS_T CV4l2Cam::CreateSplitterComponent(unsigned int buffer_size)
 			goto error;
 		}
 
+		DumpMmalPort(m_splitter.component->input[0]);
+
+		unsigned int mmal_stride = mmal_encoding_width_to_stride(info->mmal_encoding, format->es->video.width);
+		fprintf(stderr, "[%s] stride %d/ bytesperline %d\n", __func__, mmal_stride, m_fmt.fmt.pix.bytesperline);
+
+		if (mmal_stride != m_fmt.fmt.pix.bytesperline)
+		{
+			if (video_set_format(m_fmt.fmt.pix.width, m_fmt.fmt.pix.height, m_fmt.fmt.pix.pixelformat, mmal_stride,
+					m_fmt.fmt.pix.sizeimage, m_fmt.fmt.pix.field, m_fmt.fmt.pix.flags) < 0)
+				printf("Failed to adjust stride\n");
+			else
+				// Retrieve settings again so local state is correct
+				video_get_format();
+		}
+
 		m_splitter.input_port = m_splitter.component->input[0];
-		if (m_splitter.input_port)
-		{
+
 #if 0
+		m_splitter.input_port->buffer_num = m_splitter.input_port->buffer_num_min;
+		if (m_splitter.input_port->buffer_num < m_splitter.input_port->buffer_num_min)
 			m_splitter.input_port->buffer_num = m_splitter.input_port->buffer_num_min;
-			if (m_splitter.input_port->buffer_num < m_splitter.input_port->buffer_num_min)
-				m_splitter.input_port->buffer_num = m_splitter.input_port->buffer_num_min;
 
-			m_splitter.input_port->buffer_size = m_splitter.input_port->buffer_size_recommended;
-			if (m_splitter.input_port->buffer_size < m_splitter.input_port->buffer_size_min)
-				m_splitter.input_port->buffer_size = m_splitter.input_port->buffer_size_min;
+		m_splitter.input_port->buffer_size = m_splitter.input_port->buffer_size_recommended;
+		if (m_splitter.input_port->buffer_size < m_splitter.input_port->buffer_size_min)
+			m_splitter.input_port->buffer_size = m_splitter.input_port->buffer_size_min;
 
-			fprintf(stderr, "[%s] input port %s, %d, %d\n", __func__, m_splitter.input_port->name,
-					m_splitter.input_port->buffer_num, m_splitter.input_port->buffer_size);
+		fprintf(stderr, "[%s] input port %s, %d, %d\n", __func__, m_splitter.input_port->name,
+				m_splitter.input_port->buffer_num, m_splitter.input_port->buffer_size);
 
-			m_splitter.input_pool = mmal_port_pool_create(m_splitter.input_port, m_splitter.input_port->buffer_num, m_splitter.input_port->buffer_size);
+		m_splitter.input_pool = mmal_port_pool_create(m_splitter.input_port, m_splitter.input_port->buffer_num, m_splitter.input_port->buffer_size);
 #else
-			m_splitter.input_pool = mmal_pool_create(m_splitter.input_port->buffer_num, 0);
+		m_splitter.input_pool = mmal_pool_create(m_splitter.input_port->buffer_num, 0);
 #endif
-			if (!m_splitter.input_pool)
-			{
-				fprintf(stderr, "[%s] Failed to create buffer header pool for splitter input port %s", __func__, m_splitter.input_port->name);
-				goto error;
-			}
-
-//			m_splitter.input_port->userdata = (MMAL_PORT_USERDATA_T*)this;
-//			mmal_port_enable(m_splitter.input_port, Splitter_Input_Port_CB);
-		}
-
-		m_splitter.output_port = m_splitter.component->output[0];
-		if (m_splitter.output_port)
+		if (!m_splitter.input_pool)
 		{
-			mmal_format_copy(m_splitter.output_port->format, m_splitter.input_port->format);
-
-			status = mmal_port_format_commit(m_splitter.output_port);
-
-			if (status != MMAL_SUCCESS)
-			{
-				fprintf(stderr, "[%s] Unable to set format on %s output port\n", __func__, m_splitter.component->name);
-				goto error;
-			}
-
-			m_splitter.output_port->buffer_num = m_splitter.output_port->buffer_num_min;
-			if (m_splitter.output_port->buffer_num < m_splitter.output_port->buffer_num_min)
-				m_splitter.output_port->buffer_num = m_splitter.output_port->buffer_num_min;
-
-			m_splitter.output_port->buffer_size = m_splitter.output_port->buffer_size_recommended;
-			if (m_splitter.output_port->buffer_size < m_splitter.output_port->buffer_size_min)
-				m_splitter.output_port->buffer_size = m_splitter.output_port->buffer_size_min;
-
-			fprintf(stderr, "[%s] output port %s, %d, %d\n", __func__, m_splitter.output_port->name,
-					m_splitter.output_port->buffer_num, m_splitter.output_port->buffer_size);
-
-			m_splitter.output_pool = mmal_port_pool_create(m_splitter.output_port, m_splitter.output_port->buffer_num, m_splitter.output_port->buffer_size);
-			if (!m_splitter.output_pool)
-			{
-				fprintf(stderr, "[%s] Failed to create buffer header pool for splitter output port %s", __func__, m_splitter.output_port->name);
-				goto error;
-			}
-
-			m_splitter.output_port->userdata = (MMAL_PORT_USERDATA_T*)this;
-			mmal_port_enable(m_splitter.output_port, Splitter_Outputput_Port_CB);
-		}
-
-		status = mmal_component_enable(m_splitter.component);
-		if (status != MMAL_SUCCESS)
-		{
-			fprintf(stderr, "[%s] %s couldn't enabled.\n", __func__, m_splitter.component->name);
+			fprintf(stderr, "[%s] Failed to create buffer header pool for splitter input port %s", __func__, m_splitter.input_port->name);
 			goto error;
 		}
+
+		fprintf(stderr, "[%s] Created pool of length %d, size %d\n", __func__, m_splitter.input_port->buffer_num, 0);
+		m_splitter.input_port->userdata = (struct MMAL_PORT_USERDATA_T *)this;
+
+		/* Setup Splitter output */
+		m_splitter.output_port = m_splitter.component->output[0];
+		mmal_format_copy(m_splitter.output_port->format, m_splitter.input_port->format);
+		m_splitter.output_port->format->encoding = MMAL_ENCODING_I420;
+		m_splitter.output_port->buffer_num = 3;
+
+		status = mmal_port_format_commit(m_splitter.output_port);
+
+		if (status != MMAL_SUCCESS)
+		{
+			fprintf(stderr, "[%s] Unable to set format on %s output port\n", __func__, m_splitter.component->name);
+			goto error;
+		}
+
+		fprintf(stderr, "[%s] m_splitter.output_port's format->video.size now %dx%d\n", __func__,
+				m_splitter.output_port->format->es->video.width, m_splitter.output_port->format->es->video.height);
+
+		m_splitter.output_port->userdata = (MMAL_PORT_USERDATA_T*)this;
+
+		status = mmal_port_parameter_set_boolean(m_splitter.output_port, MMAL_PARAMETER_ZERO_COPY, MMAL_TRUE);
+
+		status = mmal_port_enable(m_splitter.output_port, Splitter_Outputput_Port_CB);
+		if (status != MMAL_SUCCESS)
+		{
+			fprintf(stderr, "[%s] %s couldn't enabled.\n", __func__, m_splitter.output_port->name);
+			goto error;
+		}
+
+//		m_splitter.output_port->buffer_num = m_splitter.output_port->buffer_num_min;
+//		if (m_splitter.output_port->buffer_num < m_splitter.output_port->buffer_num_min)
+//			m_splitter.output_port->buffer_num = m_splitter.output_port->buffer_num_min;
+//
+//		m_splitter.output_port->buffer_size = m_splitter.output_port->buffer_size_recommended;
+//		if (m_splitter.output_port->buffer_size < m_splitter.output_port->buffer_size_min)
+//			m_splitter.output_port->buffer_size = m_splitter.output_port->buffer_size_min;
+
+		fprintf(stderr, "[%s] Create pool of %d buffers of size %d for %s\n", __func__,
+				m_splitter.output_port->buffer_num, m_splitter.output_port->buffer_size, m_splitter.output_port->name);
+
+		m_splitter.output_pool = mmal_port_pool_create(m_splitter.output_port, m_splitter.output_port->buffer_num, m_splitter.output_port->buffer_size);
+		if (!m_splitter.output_pool)
+		{
+			fprintf(stderr, "[%s] Failed to create buffer header pool for splitter output port %s", __func__, m_splitter.output_port->name);
+			goto error;
+		}
+
+		buffers_to_isp();
+//
+//		status = mmal_component_enable(m_splitter.component);
+//		if (status != MMAL_SUCCESS)
+//		{
+//			fprintf(stderr, "[%s] %s couldn't enabled.\n", __func__, m_splitter.component->name);
+//			goto error;
+//		}
 	}
 
 	return status;
@@ -792,13 +1104,15 @@ void* CV4l2Cam::DoCapture(void* arg)
 	int ret = 0;
 	struct pollfd fds[1];
 	struct v4l2_buffer buf;
+	struct v4l2_plane planes[VIDEO_MAX_PLANES];
 	uint32_t i;
-
-	fds[0].fd 		= pThis->m_fd;
-	fds[0].events 	= POLLIN;
+	int queue_buffer = 0;
 
 	if (!pThis)
 		return NULL;
+
+	fds[0].fd = pThis->m_fd;
+	fds[0].events = POLLIN | POLLPRI;
 
 	while (!pThis->m_terminate)
 	{
@@ -812,15 +1126,17 @@ void* CV4l2Cam::DoCapture(void* arg)
 		{
 			fprintf(stderr, "[%s][%s] %d, %s!!!\n", pThis->m_dev_name, __func__, errno, strerror(errno));
 		}
-		else
+		else if (fds[0].revents == POLLIN)
 		{
 			switch (pThis->m_io_method)
 			{
 			case IO_METHOD_READ:
 				break;
 			case IO_METHOD_MMAP:
-				buf.type 	= V4L2_BUF_TYPE_VIDEO_CAPTURE;
-				buf.memory 	= V4L2_MEMORY_MMAP;
+				buf.type 		= V4L2_BUF_TYPE_VIDEO_CAPTURE;
+				buf.memory 		= V4L2_MEMORY_MMAP;
+				buf.length 		= VIDEO_MAX_PLANES;
+				buf.m.planes 	= planes;
 
 				if (-1 == pThis->XIoctl(pThis->m_fd, VIDIOC_DQBUF, &buf))
 				{
@@ -837,9 +1153,15 @@ void* CV4l2Cam::DoCapture(void* arg)
 				}
 
 				// Process
-				fprintf(stderr, "[%s][%s] processing [%d] %p, %u\n",
+				const char *ts_type, *ts_source;
+				queue_buffer = 1;
+
+				pThis->get_ts_flags(buf.flags, &ts_type, &ts_source);
+
+				fprintf(stderr, "[%s][%s] processing [%d] %p, %u, %s/%s\n",
 						pThis->m_dev_name, __func__,
-						buf.index, pThis->m_buffers[buf.index].start, buf.bytesused);
+						buf.index, pThis->m_buffers[buf.index].start, buf.bytesused,
+						ts_type, ts_source);
 
 				if (pThis->m_splitter.input_pool)
 				{
@@ -850,6 +1172,7 @@ void* CV4l2Cam::DoCapture(void* arg)
 						fprintf(stderr, "[%s] Failed to get buffer header\n", __func__);
 					else
 					{
+						queue_buffer = 0;
 						fprintf(stderr, "[%s] V4L2 gave idx %d, MMAL expecting %d\n", __func__, ((struct buffer*)bh->user_data)->idx, buf.index);
 
 						if (((struct buffer*)bh->user_data)->idx != buf.index)
@@ -857,18 +1180,24 @@ void* CV4l2Cam::DoCapture(void* arg)
 
 						bh->length = buf.length;	//Deliberately use length as MMAL wants the padding
 
+						if (!pThis->m_starttime.tv_sec)
+							pThis->m_starttime = buf.timestamp;
+
+						struct timeval pts;
+						timersub(&buf.timestamp, &pThis->m_starttime, &pts);
+						//MMAL PTS is in usecs, so convert from struct timeval
+						bh->pts = (pts.tv_sec * 1000000) + pts.tv_usec;
+						fprintf(stderr, "[%s] buffer header's pts %lld ms\n", __func__, bh->pts);
 
 						bh->flags = MMAL_BUFFER_HEADER_FLAG_FRAME_END;
 
-//						mmal_queue_put(pThis->m_splitter.input_pool->queue, bh);
 						status = mmal_port_send_buffer(pThis->m_splitter.input_port, bh);
 						if (status != MMAL_SUCCESS)
 							fprintf(stderr, "[%s] mmal_port_send_buffer fail\n", __func__);
-
 					}
 				}
 
-				if (-1 == pThis->XIoctl(pThis->m_fd, VIDIOC_QBUF, &buf))
+				if (queue_buffer && (-1 == pThis->QueueBuffer(buf.index)))
 				{
 					fprintf(stderr, "[%s][%s] VIDIOC_QBUF failed(%d, %s)\n", pThis->m_dev_name, __func__, errno, strerror(errno));
 					pThis->StopCapture();
@@ -876,70 +1205,74 @@ void* CV4l2Cam::DoCapture(void* arg)
 				}
 				break;
 			case IO_METHOD_USERPTR:
-				memset(&buf, 0x0, sizeof(buf));
-
-				buf.type 	= V4L2_BUF_TYPE_VIDEO_CAPTURE;
-				buf.memory 	= V4L2_MEMORY_USERPTR;
-
-				// Dequeue buffer
-				if (-1 == pThis->XIoctl(pThis->m_fd, VIDIOC_DQBUF, &buf))
-				{
-					fprintf(stderr, "[%s][%s] VIDIOC_DQBUF failed(%d, %s)\n", pThis->m_dev_name, __func__, errno, strerror(errno));
-					pThis->StopCapture();
-					break;
-				}
-
-				for (i=0 ; i < pThis->m_n_buffer ; ++i)
-				{
-					if ((unsigned long)pThis->m_buffers[i].start == buf.m.userptr && pThis->m_buffers[i].length == buf.length)
-						break;
-				}
-
-				if (buf.index >= pThis->m_n_buffer)
-				{
-					fprintf(stderr, "[%s][%s] Incorrect buffer index(%d/%d)\n", pThis->m_dev_name, __func__, buf.index, pThis->m_n_buffer);
-					pThis->StopCapture();
-					break;
-				}
-
-				// Process
-				fprintf(stderr, "[%s][%s] processing [%d] %p, %u\n",
-						pThis->m_dev_name, __func__,
-						buf.index, pThis->m_buffers[buf.index].start, buf.bytesused);
-
-				if (pThis->m_splitter.input_pool)
-				{
-					MMAL_BUFFER_HEADER_T *buffer = mmal_queue_get(pThis->m_splitter.input_pool->queue);
-					if (buffer)
-					{
-						mmal_buffer_header_mem_lock(buffer);
-
-						buffer->length = buf.length;
-
-						fprintf(stderr, "[%s][%s] buffer %p, %d\n",
-								pThis->m_dev_name, __func__,
-								buffer, buffer->alloc_size);
-
-						buffer->offset = 0;
-						memcpy(buffer->data, pThis->m_buffers[buf.index].start, buf.bytesused);
-						mmal_buffer_header_mem_unlock(buffer);
-
-						buffer->flags = MMAL_BUFFER_HEADER_FLAG_FRAME_END;
-
-						if (mmal_port_send_buffer(pThis->m_splitter.input_port, buffer)!= MMAL_SUCCESS)
-						   fprintf(stderr, "[%s][%s] Unable to send a buffer to splitter input port\n", pThis->m_dev_name, __func__);
-					}
-				}
-
-				// Queue buffer.
-				if (-1 == pThis->XIoctl(pThis->m_fd, VIDIOC_QBUF, &buf))
-				{
-					fprintf(stderr, "[%s][%s] VIDIOC_QBUF failed(%d, %s)\n", pThis->m_dev_name, __func__, errno, strerror(errno));
-					pThis->StopCapture();
-					break;
-				}
+//				memset(&buf, 0x0, sizeof(buf));
+//
+//				buf.type 	= V4L2_BUF_TYPE_VIDEO_CAPTURE;
+//				buf.memory 	= V4L2_MEMORY_USERPTR;
+//
+//				// Dequeue buffer
+//				if (-1 == pThis->XIoctl(pThis->m_fd, VIDIOC_DQBUF, &buf))
+//				{
+//					fprintf(stderr, "[%s][%s] VIDIOC_DQBUF failed(%d, %s)\n", pThis->m_dev_name, __func__, errno, strerror(errno));
+//					pThis->StopCapture();
+//					break;
+//				}
+//
+//				for (i=0 ; i < pThis->m_n_buffer ; ++i)
+//				{
+//					if ((unsigned long)pThis->m_buffers[i].start == buf.m.userptr && pThis->m_buffers[i].length == buf.length)
+//						break;
+//				}
+//
+//				if (buf.index >= pThis->m_n_buffer)
+//				{
+//					fprintf(stderr, "[%s][%s] Incorrect buffer index(%d/%d)\n", pThis->m_dev_name, __func__, buf.index, pThis->m_n_buffer);
+//					pThis->StopCapture();
+//					break;
+//				}
+//
+//				// Process
+//				fprintf(stderr, "[%s][%s] processing [%d] %p, %u\n",
+//						pThis->m_dev_name, __func__,
+//						buf.index, pThis->m_buffers[buf.index].start, buf.bytesused);
+//
+//				if (pThis->m_splitter.input_pool)
+//				{
+//					MMAL_BUFFER_HEADER_T *buffer = mmal_queue_get(pThis->m_splitter.input_pool->queue);
+//					if (buffer)
+//					{
+//						mmal_buffer_header_mem_lock(buffer);
+//
+//						buffer->length = buf.length;
+//
+//						fprintf(stderr, "[%s][%s] buffer %p, %d\n",
+//								pThis->m_dev_name, __func__,
+//								buffer, buffer->alloc_size);
+//
+//						buffer->offset = 0;
+//						memcpy(buffer->data, pThis->m_buffers[buf.index].start, buf.bytesused);
+//						mmal_buffer_header_mem_unlock(buffer);
+//
+//						buffer->flags = MMAL_BUFFER_HEADER_FLAG_FRAME_END;
+//
+//						if (mmal_port_send_buffer(pThis->m_splitter.input_port, buffer)!= MMAL_SUCCESS)
+//						   fprintf(stderr, "[%s][%s] Unable to send a buffer to splitter input port\n", pThis->m_dev_name, __func__);
+//					}
+//				}
+//
+//				// Queue buffer.
+//				if (-1 == pThis->XIoctl(pThis->m_fd, VIDIOC_QBUF, &buf))
+//				{
+//					fprintf(stderr, "[%s][%s] VIDIOC_QBUF failed(%d, %s)\n", pThis->m_dev_name, __func__, errno, strerror(errno));
+//					pThis->StopCapture();
+//					break;
+//				}
 				break;
 			}
+		}
+		else if (fds[0].revents == POLLPRI)
+		{
+			fprintf(stderr, "[%s][%s] POLLPRI\n", pThis->m_dev_name, __func__);
 		}
 	}
 
@@ -953,9 +1286,15 @@ CV4l2Cam::CV4l2Cam()
 	m_fd 		= 0;
 	m_dev_name 	= NULL;
 
-	m_io_method = IO_METHOD_MMAP;
-	m_n_buffer	= 0;
-	m_buffers	= NULL;
+	m_io_method 		= IO_METHOD_MMAP;
+	m_n_buffer			= 0;
+	m_buffers			= NULL;
+	m_fps				= 0;
+	m_frame_time_usec 	= 0;
+	m_zero_copy 		= MMAL_FALSE;
+	m_timestamp_type	= 0;
+	m_starttime.tv_sec	= 0;
+	m_starttime.tv_usec	= 0;
 
 	memset(&m_caps, 0x0, sizeof(m_caps));
 	memset(&m_cropcap, 0x0, sizeof(m_cropcap));
@@ -996,13 +1335,25 @@ bool CV4l2Cam::Init(const char* dev_name)
 
 	Setup(1920, 1080);
 
+	video_get_format();
+
+	QueryFps();
+
 	CreateSplitterComponent(m_fmt.fmt.pix.sizeimage);
 
 	InitMem(m_fmt.fmt.pix.sizeimage);
 
 	m_cam_type = CamType_V4l2;
 
+	if (mmal_port_parameter_set_boolean(m_splitter.input_port, MMAL_PARAMETER_ZERO_COPY, m_zero_copy) != MMAL_SUCCESS)
+	{
+		printf("Failed to set zero copy\n");
+		return -1;
+	}
+
 	mmal_port_enable(m_splitter.input_port, Splitter_Input_Port_CB);
+
+	QueueAllBuffer();
 
 	StartCapture();
 
@@ -1031,25 +1382,6 @@ bool CV4l2Cam::Setup(uint32_t width, uint32_t height)
 		return false;
 	}
 
-    printf("Get Format:\n");
-    struct v4l2_pix_format		pix;
-    memcpy(&pix, &m_fmt.fmt.pix, sizeof(pix));
-
-    strncpy(fourcc, (char *)&pix.pixelformat, 4);
-
-    printf("%u %ux%u, pixelformat %s, field %u, byteperline %u, sizeimage %u, colorspace %u, flags 0x%X\n",
-    		m_fmt.type,
-			pix.width, pix.height,
-			fourcc,
-			pix.field,
-			pix.bytesperline,
-			pix.sizeimage,
-			pix.colorspace,
-			pix.flags);
-
-	m_width 	= m_fmt.fmt.pix.width;
-	m_height 	= m_fmt.fmt.pix.height;
-
 	return true;
 }
 
@@ -1065,11 +1397,6 @@ bool CV4l2Cam::StartCapture()
 		break;
 	case IO_METHOD_MMAP:
 	case IO_METHOD_USERPTR:
-		if (-1 == QueueAllBuffer())
-		{
-			fprintf(stderr, "[%s] Can not queue buffers before VIDIOC_STREAMON.\n", __func__);
-		}
-
 		buf_type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 		if (-1 == XIoctl(m_fd, VIDIOC_STREAMON, &buf_type))
 		{
