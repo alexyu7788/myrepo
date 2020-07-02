@@ -10,7 +10,10 @@
 #include <user-vcsm.h>
 
 #include "Camera.h"
-
+// ---------------------------------------------------------------------------------
+class CV4l2Cam;
+struct port_info;
+typedef void (*PFUNC_RETURNBUFFERSTOPORT)(struct port_info* port_info);
 // ---------------------------------------------------------------------------------
 enum io_method {
 	IO_METHOD_READ,
@@ -28,14 +31,20 @@ struct buffer {
 	unsigned int vcsm_handle;
 };
 
+struct port_info
+{
+	uint32_t	idx;
+	class CV4l2Cam* cam_obj;
+	MMAL_PORT_T* port;
+	MMAL_POOL_T* pool;
+	MMAL_CONNECTION_T	connect;
+	PFUNC_RETURNBUFFERSTOPORT	return_buf_to_port;
+};
+
 struct splitter {
 	MMAL_COMPONENT_T* component;
-	MMAL_PORT_T*	  input_port;
-	MMAL_POOL_T*	  input_pool;
-
-	MMAL_PORT_T*	  output_port;
-	MMAL_POOL_T*	  output_pool;
-
+	struct port_info  input;
+	struct port_info* output;
 };
 
 struct v4l2_mmal_format_info
@@ -71,7 +80,7 @@ protected:
 	pthread_mutex_t			m_mutex;
 	pthread_t				m_capture_thread;
 
-	struct v4l2_capability m_caps;
+	struct v4l2_capability  m_caps;
 	struct v4l2_cropcap 	m_cropcap;
 	struct v4l2_fmtdesc 	m_fmtdesc;
 	struct v4l2_format 		m_fmt;
@@ -115,13 +124,13 @@ protected:
 
 	int QueueAllBuffer();
 
-	void buffers_to_isp();
+	static void ReturnBuffersToPort(struct port_info* port_info);
 
 	static void Splitter_Input_Port_CB(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer);
 
 	static void Splitter_Outputput_Port_CB(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer);
 
-	const v4l2_mmal_format_info* ConvertV4l2FormatToMmalByFourcc(unsigned int forcc);
+	const v4l2_mmal_format_info* V4l2FormatToMmalByFourcc(unsigned int forcc);
 
 	int format_bpp(unsigned int  pixfmt);
 
