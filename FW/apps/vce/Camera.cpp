@@ -2,6 +2,7 @@
 
 CCam::CCam()
 {
+	m_id		= -1;
 	m_cam_type 	= CamType_Unknown;
 	m_width 	= 0;
 	m_height	= 0;

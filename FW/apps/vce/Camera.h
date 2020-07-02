@@ -43,6 +43,7 @@ enum cam_type_e
 class CCam
 {
 protected:
+	int					m_id;
 	enum cam_type_e		m_cam_type;
 	uint32_t			m_width;
 	uint32_t			m_height;
@@ -65,7 +66,7 @@ public:
 
 	enum cam_type_e GetCamType() {return m_cam_type;};
 
-	virtual bool Init(const char* dev_name = NULL) = 0;
+	virtual bool Init(int id, const char* dev_name = NULL) = 0;
 
 	virtual bool Setup(uint32_t width, uint32_t height) = 0;
 

@@ -25,6 +25,11 @@ CVceCtrl::~CVceCtrl()
 	}
 }
 
+void CVceCtrl::ProcessMessage(MsgContext* msg, void* user_data)
+{
+
+}
+
 bool CVceCtrl::SetupUpCameara()
 {
 	int i;
@@ -45,7 +50,7 @@ bool CVceCtrl::SetupUpCameara()
 				fprintf(stderr, "Unknown Camera Type\n");
 
 			if (m_camera[i])
-				ret = m_camera[i]->Init("/dev/video0");
+				ret = m_camera[i]->Init(i, "/dev/video0");
 		}
 	}
 

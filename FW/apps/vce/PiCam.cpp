@@ -434,7 +434,7 @@ CPiCam::~CPiCam()
 	destroy_camera_component();
 }
 
-bool CPiCam::Init(const char* dev_name)
+bool CPiCam::Init(int id, const char* dev_name)
 {
 	bool ret = false;
 	MMAL_STATUS_T status;

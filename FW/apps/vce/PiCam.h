@@ -435,7 +435,7 @@ public:
 
 	~CPiCam();
 
-	bool Init(const char* dev_name);
+	bool Init(int id, const char* dev_name);
 
 	bool Setup(uint32_t width, uint32_t height);
 

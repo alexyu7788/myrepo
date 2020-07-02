@@ -10,6 +10,7 @@
 #include <user-vcsm.h>
 
 #include "Camera.h"
+#include "Component.h"
 // ---------------------------------------------------------------------------------
 class CV4l2Cam;
 struct port_info;
@@ -86,6 +87,8 @@ protected:
 	struct v4l2_format 		m_fmt;
 
 	struct splitter			m_splitter;
+
+	CComponent*				m_capture;
 public:
 
 protected:
@@ -149,7 +152,7 @@ public:
 
 	~CV4l2Cam();
 
-	bool Init(const char* dev_name);
+	bool Init(int id, const char* dev_name);
 
 	bool Setup(uint32_t width, uint32_t height);
 
