@@ -7,8 +7,7 @@ SET(SRC_LIST vce.cpp
              PiCamCtrl.cpp
              PiCamHelpers.cpp
              PiCamCli.cpp
-             V4l2Cam.cpp
-             Component.cpp)
+             V4l2Cam.cpp)
 
 LIST(APPEND LINK_LIST msgbroker 
                       iniparser

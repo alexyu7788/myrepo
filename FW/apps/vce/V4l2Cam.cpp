@@ -684,12 +684,6 @@ void CV4l2Cam::DeInit()
 		free (m_dev_name);
 		m_dev_name = NULL;
 	}
-
-	if (m_capture)
-	{
-		delete m_capture;
-		m_capture = NULL;
-	}
 }
 
 
@@ -895,9 +889,6 @@ MMAL_STATUS_T CV4l2Cam::CreateSplitterComponent(unsigned int buffer_size)
 		fprintf(stderr, "[%s] %s Unsupported encoding\n", __func__, m_splitter.component->name);
 		goto error;
 	}
-
-	m_capture = new CComponent();
-	m_capture->CreateVideoSplitter(info->mmal_encoding, m_fmt.fmt.pix.width, m_fmt.fmt.pix.height, m_fmt.fmt.pix.bytesperline, V4L2_BUFFER_DEFAULT);
 
 	status = mmal_component_create(MMAL_COMPONENT_DEFAULT_VIDEO_SPLITTER, &m_splitter.component);
 
@@ -1297,8 +1288,6 @@ CV4l2Cam::CV4l2Cam()
 	memset(&m_fmt, 0x0, sizeof(m_fmt));
 
 	memset(&m_splitter, 0x0, sizeof(m_splitter));
-
-	m_capture = NULL;
 }
 
 CV4l2Cam::~CV4l2Cam()
