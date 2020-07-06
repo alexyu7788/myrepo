@@ -37,12 +37,12 @@ struct port_info
 	class CV4l2Cam* cam_obj;
 	MMAL_PORT_T* port;
 	MMAL_POOL_T* pool;
-	MMAL_CONNECTION_T	connect;
+	MMAL_CONNECTION_T*	connect;
 	PFUNC_RETURNBUFFERSTOPORT	return_buf_to_port;
 };
 
-struct splitter {
-	MMAL_COMPONENT_T* component;
+struct component {
+	MMAL_COMPONENT_T*  comp;
 	struct port_info  input;
 	struct port_info* output;
 };
@@ -80,12 +80,12 @@ protected:
 	pthread_mutex_t			m_mutex;
 	pthread_t				m_capture_thread;
 
-	struct v4l2_capability  m_caps;
+	struct v4l2_capability m_caps;
 	struct v4l2_cropcap 	m_cropcap;
 	struct v4l2_fmtdesc 	m_fmtdesc;
 	struct v4l2_format 		m_fmt;
 
-	struct splitter			m_splitter;
+	struct component		m_splitter;
 public:
 
 protected:

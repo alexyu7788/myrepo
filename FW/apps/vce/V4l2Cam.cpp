@@ -879,18 +879,18 @@ MMAL_STATUS_T CV4l2Cam::CreateSplitterComponent(unsigned int buffer_size)
 	const v4l2_mmal_format_info* info = NULL;
 	MMAL_STATUS_T status = MMAL_SUCCESS;
 
-	if (m_splitter.component)
+	if (m_splitter.comp)
 		return status;
 
 	info = V4l2FormatToMmalByFourcc(m_fmt.fmt.pix.pixelformat);
 
 	if (!info || info->mmal_encoding == MMAL_ENCODING_UNUSED)
 	{
-		fprintf(stderr, "[%s] %s Unsupported encoding\n", __func__, m_splitter.component->name);
+		fprintf(stderr, "[%s] %s Unsupported encoding\n", __func__, m_splitter.comp->name);
 		goto error;
 	}
 
-	status = mmal_component_create(MMAL_COMPONENT_DEFAULT_VIDEO_SPLITTER, &m_splitter.component);
+	status = mmal_component_create(MMAL_COMPONENT_DEFAULT_VIDEO_SPLITTER, &m_splitter.comp);
 
 	if (status != MMAL_SUCCESS)
 	{
@@ -900,33 +900,33 @@ MMAL_STATUS_T CV4l2Cam::CreateSplitterComponent(unsigned int buffer_size)
 	}
 	else
 	{
-		fprintf(stderr, "[%s] %s has been created with id %d, in %d, out %d\n", __func__, m_splitter.component->name,
-				m_splitter.component->id, m_splitter.component->input_num, m_splitter.component->output_num);
+		fprintf(stderr, "[%s] %s has been created with id %d, in %d, out %d\n", __func__, m_splitter.comp->name,
+				m_splitter.comp->id, m_splitter.comp->input_num, m_splitter.comp->output_num);
 
-		if (!m_splitter.component->input_num)
+		if (!m_splitter.comp->input_num)
 		{
 			status = MMAL_ENOSYS;
-			fprintf(stderr, "[%s] %s doesn't have any input port\n", __func__, m_splitter.component->name);
+			fprintf(stderr, "[%s] %s doesn't have any input port\n", __func__, m_splitter.comp->name);
 			goto error;
 		}
 
-		if (m_splitter.component->output_num < 2)
+		if (m_splitter.comp->output_num < 2)
 		{
 			status = MMAL_ENOSYS;
-			fprintf(stderr, "[%s] %s doesn't have enough output ports", __func__, m_splitter.component->name);
+			fprintf(stderr, "[%s] %s doesn't have enough output ports", __func__, m_splitter.comp->name);
 			goto error;
 		}
 
-		m_splitter.output = (struct port_info*)malloc(sizeof(port_info) * m_splitter.component->output_num);
+		m_splitter.output = (struct port_info*)malloc(sizeof(port_info) * m_splitter.comp->output_num);
 		if (!m_splitter.output)
 		{
 			status = MMAL_ENOMEM;
-			fprintf(stderr, "[%s] Can not allocate memory for %d output\n", __func__, m_splitter.component->name, m_splitter.component->output_num);
+			fprintf(stderr, "[%s] Can not allocate memory for %d output\n", __func__, m_splitter.comp->name, m_splitter.comp->output_num);
 			goto error;
 		}
 
 		/* Setup Format of Splitter Input */
-		format = m_splitter.component->input[0]->format;
+		format = m_splitter.comp->input[0]->format;
 
 		format->type	 				= MMAL_ES_TYPE_VIDEO;
 		format->encoding 				= info->mmal_encoding;
@@ -937,21 +937,21 @@ MMAL_STATUS_T CV4l2Cam::CreateSplitterComponent(unsigned int buffer_size)
 		format->es->video.width 		= VCOS_ALIGN_UP(format->es->video.crop.width, 32);
 		format->es->video.height 		= VCOS_ALIGN_UP(format->es->video.crop.height, 16);
 
-		m_splitter.component->input[0]->buffer_num = V4L2_BUFFER_DEFAULT;
+		m_splitter.comp->input[0]->buffer_num = V4L2_BUFFER_DEFAULT;
 
 		if (m_fps)
 			m_frame_time_usec = (1000000 / m_fps);
 
-		status = mmal_port_format_commit(m_splitter.component->input[0]);
+		status = mmal_port_format_commit(m_splitter.comp->input[0]);
 
 		if (status != MMAL_SUCCESS)
 		{
-			fprintf(stderr, "[%s] Unable to set format on %s input port\n", __func__, m_splitter.component->name);
+			fprintf(stderr, "[%s] Unable to set format on %s input port\n", __func__, m_splitter.comp->name);
 			goto error;
 		}
 
 		/* Dumo Port Info. */
-		DumpMmalPort(m_splitter.component->input[0]);
+		DumpMmalPort(m_splitter.comp->input[0]);
 
 		/* Reset Stride ? */
 		unsigned int mmal_stride = mmal_encoding_width_to_stride(info->mmal_encoding, format->es->video.width);
@@ -970,7 +970,7 @@ MMAL_STATUS_T CV4l2Cam::CreateSplitterComponent(unsigned int buffer_size)
 		/* Setup Pool of Splitter Input */
 		m_splitter.input.idx  		= 0;
 		m_splitter.input.cam_obj 	= this;
-		m_splitter.input.port 		= m_splitter.component->input[0];
+		m_splitter.input.port 		= m_splitter.comp->input[0];
 		m_splitter.input.pool 		= mmal_pool_create(m_splitter.input.port->buffer_num, 0);
 		if (!m_splitter.input.pool)
 		{
@@ -982,17 +982,17 @@ MMAL_STATUS_T CV4l2Cam::CreateSplitterComponent(unsigned int buffer_size)
 		m_splitter.input.port->userdata = (struct MMAL_PORT_USERDATA_T *)this;	/* Used for callback of input port. */
 
 		/* Setup Splitter Output */
-		for (uint32_t i=0 ; i<m_splitter.component->output_num ; ++i)
+		for (uint32_t i=0 ; i<m_splitter.comp->output_num ; ++i)
 		{
 			m_splitter.output[i].idx  		= i;
 			m_splitter.output[i].cam_obj 	= this;
-			m_splitter.output[i].port 		= m_splitter.component->output[i];
+			m_splitter.output[i].port 		= m_splitter.comp->output[i];
 			mmal_format_copy(m_splitter.output[i].port->format, m_splitter.input.port->format);
 
 			m_splitter.output[i].port->format->encoding = m_splitter.input.port->format->encoding;//MMAL_ENCODING_I420;
 			m_splitter.output[i].port->buffer_num = 3;	// why???
 
-	//		format = m_splitter.component->output[i].port->format;
+	//		format = m_splitter.comp->output[i].port->format;
 	//		format->es->video.crop.x 		= 0;
 	//		format->es->video.crop.y 		= 0;
 	//		format->es->video.crop.width 	= 800;
@@ -1004,7 +1004,7 @@ MMAL_STATUS_T CV4l2Cam::CreateSplitterComponent(unsigned int buffer_size)
 
 			if (status != MMAL_SUCCESS)
 			{
-				fprintf(stderr, "[%s] Unable to set format on %s output port[%d]\n", __func__, m_splitter.component->name, i);
+				fprintf(stderr, "[%s] Unable to set format on %s output port[%d]\n", __func__, m_splitter.comp->name, i);
 				goto error;
 			}
 
@@ -1043,6 +1043,14 @@ MMAL_STATUS_T CV4l2Cam::CreateSplitterComponent(unsigned int buffer_size)
 			m_splitter.output[i].return_buf_to_port = ReturnBuffersToPort;
 			m_splitter.output[i].return_buf_to_port(&m_splitter.output[i]);
 		}
+
+		if (mmal_port_parameter_set_boolean(m_splitter.input.port, MMAL_PARAMETER_ZERO_COPY, m_zero_copy) != MMAL_SUCCESS)
+		{
+			printf("Failed to set zero copy\n");
+//				return MMAL_SUCCESS;
+		}
+
+		mmal_port_enable(m_splitter.input.port, Splitter_Input_Port_CB);
 	}
 
 	return status;
@@ -1058,7 +1066,7 @@ MMAL_STATUS_T CV4l2Cam::DestroySplitterComponent()
 {
 	MMAL_STATUS_T status = MMAL_SUCCESS;
 
-	if (!m_splitter.component)
+	if (!m_splitter.comp)
 		 return status;
 
 	if (m_splitter.input.pool)
@@ -1076,10 +1084,10 @@ MMAL_STATUS_T CV4l2Cam::DestroySplitterComponent()
 		}
 	}
 
-	status = mmal_component_destroy(m_splitter.component);
+	status = mmal_component_destroy(m_splitter.comp);
 
 	m_splitter.input.port = NULL;
-	m_splitter.component = NULL;
+	m_splitter.comp = NULL;
 
 	return status;
 }
@@ -1335,18 +1343,24 @@ bool CV4l2Cam::Init(int id, const char* dev_name)
 
 	m_cam_type = CamType_V4l2;
 
-	if (mmal_port_parameter_set_boolean(m_splitter.input.port, MMAL_PARAMETER_ZERO_COPY, m_zero_copy) != MMAL_SUCCESS)
-	{
-		printf("Failed to set zero copy\n");
-		return -1;
-	}
-
-	mmal_port_enable(m_splitter.input.port, Splitter_Input_Port_CB);
-
 	QueueAllBuffer();
 
 	StartCapture();
 
+	{
+		struct component* encoder = NULL;
+
+		encoder = (struct component*)malloc(sizeof(struct component));
+
+		if (mmal_component_create(MMAL_COMPONENT_DEFAULT_VIDEO_ENCODER, &encoder->comp) == MMAL_SUCCESS)
+		{
+			fprintf(stderr, "Create encoder %s\n", encoder->comp->name);
+
+			mmal_component_destroy(encoder->comp);
+		}
+
+		free (encoder);
+	}
 	return true;
 }
 

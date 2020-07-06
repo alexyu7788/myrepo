@@ -1147,7 +1147,7 @@ static int setup_mmal(struct device *dev, int nbufs, const char *filename)
 
 	isp_output->userdata = (struct MMAL_PORT_USERDATA_T *)dev;
 
-#if 0
+#if 1
 	/* Set up all the sink components */
 	for(i=0; i<MAX_COMPONENTS && dests[i].component_name; i++)
 	{
