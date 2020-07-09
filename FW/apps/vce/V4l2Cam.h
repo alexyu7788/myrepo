@@ -12,8 +12,6 @@
 #include "Camera.h"
 // ---------------------------------------------------------------------------------
 class CV4l2Cam;
-struct port_info;
-typedef void (*PFUNC_RETURNBUFFERSTOPORT)(struct port_info* port_info);
 // ---------------------------------------------------------------------------------
 enum io_method {
 	IO_METHOD_READ,
@@ -29,22 +27,6 @@ struct buffer {
 	MMAL_BUFFER_HEADER_T *bufferheader;
 	int dma_fd;
 	unsigned int vcsm_handle;
-};
-
-struct port_info
-{
-	uint32_t	idx;
-	class CV4l2Cam* cam_obj;
-	MMAL_PORT_T* port;
-	MMAL_POOL_T* pool;
-	MMAL_CONNECTION_T*	connect;
-	PFUNC_RETURNBUFFERSTOPORT	return_buf_to_port;
-};
-
-struct component {
-	MMAL_COMPONENT_T*  comp;
-	struct port_info  input;
-	struct port_info* output;
 };
 
 struct v4l2_mmal_format_info
@@ -86,25 +68,23 @@ protected:
 	struct v4l2_format 		m_fmt;
 
 	struct component		m_splitter;
+
+	struct component		m_video_source;
 public:
 
 protected:
-	void DumpMmalPortFormat(MMAL_ES_FORMAT_T* format);
-
-	void DumpMmalPort(MMAL_PORT_T* port);
-
 	int XIoctl(int fd, int request, void *arg);
 
 	bool QueryCap();
 
 	int  QueryFps();
 
-	int video_set_format(unsigned int w, unsigned int h,
+	int VideoSetFormat(unsigned int w, unsigned int h,
 							unsigned int format, unsigned int stride,
 							unsigned int buffer_size, __u32 field,
 							unsigned int flags);
 
-	int video_get_format();
+	int VideoGetFormat();
 
 	void get_ts_flags(uint32_t flags, const char **ts_type, const char **ts_source);
 
@@ -138,9 +118,7 @@ protected:
 
 	const char *v4l2_format_name(unsigned int fourcc);
 
-	MMAL_STATUS_T CreateSplitterComponent(unsigned int buffer_size);
-
-	MMAL_STATUS_T DestroySplitterComponent();
+	MMAL_STATUS_T CreateSplitterComponent();
 
 	static void* DoCapture(void* arg);
 

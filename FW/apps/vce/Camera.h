@@ -31,15 +31,36 @@ extern "C"
 }
 #endif
 
+#include "common.h"
+// ---------------------------------------------------------------------------------
+#define ARRAY_SIZE(x)	(sizeof(x) / sizeof((x)[0]))
+// ---------------------------------------------------------------------------------
 enum cam_type_e
 {
 	CamType_Unknown = -1,
 	CamType_Pi = 0,
 	CamType_V4l2,
 };
+// ---------------------------------------------------------------------------------
+struct port_info;
+typedef void (*PFUNC_RETURNBUFFERSTOPORT)(struct port_info* port_info);
+// ---------------------------------------------------------------------------------
+struct port_info
+{
+	uint32_t					idx;
+	class CCam* 				cam_obj;
+	MMAL_PORT_T* 				port;
+	MMAL_POOL_T* 				pool;
+	MMAL_CONNECTION_T*			connect;
+	PFUNC_RETURNBUFFERSTOPORT	return_buf_to_port;
+};
 
-#define ARRAY_SIZE(x)	(sizeof(x) / sizeof((x)[0]))
-
+struct component {
+	MMAL_COMPONENT_T*	comp;
+	struct port_info  	input;
+	struct port_info* 	output;
+};
+// ---------------------------------------------------------------------------------
 class CCam
 {
 protected:
@@ -58,20 +79,48 @@ protected:
 public:
 
 protected:
+	void DumpMmalPortFormat(MMAL_ES_FORMAT_T* format);
+
+	void DumpMmalPort(MMAL_PORT_T* port);
+
+	MMAL_STATUS_T	CreateComponent(struct component& component, const char* name);
+
+	MMAL_STATUS_T	DestroyComponent(struct component& component);
+
+	MMAL_STATUS_T	SetupComponentVideoInput(struct component& component,
+													MMAL_FOURCC_T fourcc,
+													uint32_t x,
+													uint32_t y,
+													uint32_t w,
+													uint32_t h,
+													uint32_t buf_num,
+													void* user_data,
+													MMAL_PORT_BH_CB_T in_cb);
+
+	MMAL_STATUS_T	SetupComponentVideoOutput(struct component& component,
+													MMAL_ES_FORMAT_T* format,
+													uint32_t buf_num,
+													PFUNC_RETURNBUFFERSTOPORT pfunc,
+													MMAL_PORT_BH_CB_T out_cb);
+
+	MMAL_STATUS_T	EnableComponentPorts(struct component& component, MMAL_PORT_BH_CB_T in_cb, MMAL_PORT_BH_CB_T out_cb);
+
+
+
 
 public:
 	CCam();
 
-	virtual ~CCam() = 0;
+	virtual ~CCam();
 
 	enum cam_type_e GetCamType() {return m_cam_type;};
 
-	virtual bool Init(int id, const char* dev_name = NULL) = 0;
+	virtual bool Init(int id, const char* dev_name = NULL);
 
-	virtual bool Setup(uint32_t width, uint32_t height) = 0;
+	virtual bool Setup(uint32_t width, uint32_t height);
 
-	virtual bool StartCapture() = 0;
+	virtual bool StartCapture();
 
-	virtual bool StopCapture() = 0;
+	virtual bool StopCapture();
 };
 #endif
