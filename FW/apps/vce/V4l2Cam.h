@@ -62,12 +62,10 @@ protected:
 	pthread_mutex_t			m_mutex;
 	pthread_t				m_capture_thread;
 
-	struct v4l2_capability m_caps;
+	struct v4l2_capability  m_caps;
 	struct v4l2_cropcap 	m_cropcap;
 	struct v4l2_fmtdesc 	m_fmtdesc;
 	struct v4l2_format 		m_fmt;
-
-	struct component		m_splitter;
 
 	struct component		m_video_source;
 public:

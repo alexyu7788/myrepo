@@ -1125,18 +1125,20 @@ bool CV4l2Cam::Init(int id, const char* dev_name)
 	StartCapture();
 
 //	printf("===========Test Start==================\n");
-//	CreateComponent(m_test_component, MMAL_COMPONENT_DEFAULT_VIDEO_ENCODER);
-//	CreateComponent(m_test_component, MMAL_COMPONENT_DEFAULT_VIDEO_RENDERER);
-//	CreateComponent(m_test_component, MMAL_COMPONENT_DEFAULT_IMAGE_DECODER);
-//	CreateComponent(m_test_component, MMAL_COMPONENT_DEFAULT_VIDEO_CONVERTER);
-//	CreateComponent(m_test_component, MMAL_COMPONENT_DEFAULT_SPLITTER);
-//	CreateComponent(m_test_component, MMAL_COMPONENT_DEFAULT_SCHEDULER);
-//	CreateComponent(m_test_component, MMAL_COMPONENT_DEFAULT_VIDEO_INJECTER);
-//	CreateComponent(m_test_component, MMAL_COMPONENT_DEFAULT_VIDEO_SPLITTER);
-//	CreateComponent(m_test_component, MMAL_COMPONENT_DEFAULT_AUDIO_RENDERER);
-//	CreateComponent(m_test_component, MMAL_COMPONENT_DEFAULT_MIRACAST);
-//	CreateComponent(m_test_component, MMAL_COMPONENT_DEFAULT_CLOCK);
-//	CreateComponent(m_test_component, MMAL_COMPONENT_DEFAULT_CAMERA_INFO);
+//	struct component test_component;
+//	CreateComponent(test_component, MMAL_COMPONENT_DEFAULT_VIDEO_ENCODER);
+//	CreateComponent(test_component, MMAL_COMPONENT_DEFAULT_VIDEO_RENDERER);
+//	CreateComponent(test_component, MMAL_COMPONENT_DEFAULT_IMAGE_DECODER);
+//	CreateComponent(test_component, MMAL_COMPONENT_DEFAULT_VIDEO_CONVERTER);
+//	CreateComponent(test_component, MMAL_COMPONENT_DEFAULT_SPLITTER);
+//	CreateComponent(test_component, MMAL_COMPONENT_DEFAULT_SCHEDULER);
+//	CreateComponent(test_component, MMAL_COMPONENT_DEFAULT_VIDEO_INJECTER);
+//	CreateComponent(test_component, MMAL_COMPONENT_DEFAULT_VIDEO_SPLITTER);
+//	CreateComponent(test_component, MMAL_COMPONENT_DEFAULT_AUDIO_RENDERER);
+//	CreateComponent(test_component, MMAL_COMPONENT_DEFAULT_MIRACAST);
+//	CreateComponent(test_component, MMAL_COMPONENT_DEFAULT_CLOCK);
+//	CreateComponent(test_component, MMAL_COMPONENT_DEFAULT_CAMERA_INFO);
+//	DestroyComponent(test_component);
 //	printf("===========Test End==================\n");
 
 	return true;

@@ -2,6 +2,7 @@ SET( CMAKE_EXE_LINKER_FLAGS "-Wl,--no-as-needed" )
 
 SET(SRC_LIST vce.cpp
              VceCtrl.cpp
+             Encoder.cpp
              Camera.cpp
              PiCam.cpp
              PiCamCtrl.cpp
