@@ -67,7 +67,6 @@ protected:
 	struct v4l2_fmtdesc 	m_fmtdesc;
 	struct v4l2_format 		m_fmt;
 
-	struct component		m_video_source;
 public:
 
 protected:

@@ -826,7 +826,7 @@ MMAL_STATUS_T CV4l2Cam::CreateSplitterComponent()
 		goto error;
 	}
 
-	status = CreateComponent(m_video_source, MMAL_COMPONENT_DEFAULT_VIDEO_SPLITTER);
+	status = CreateComponent(&m_video_source, MMAL_COMPONENT_DEFAULT_VIDEO_SPLITTER);
 	if (status != MMAL_SUCCESS)
 	{
 		fprintf(stderr, PRINTF_COLOR_RED "Failed to create %s\n" PRINTF_COLOR_NONE, MMAL_COMPONENT_DEFAULT_VIDEO_SPLITTER);
@@ -834,7 +834,7 @@ MMAL_STATUS_T CV4l2Cam::CreateSplitterComponent()
 		goto error;
 	}
 
-	status = SetupComponentVideoInput(m_video_source,
+	status = SetupComponentVideoInput(&m_video_source,
 								info->mmal_encoding,
 								0, 0, m_fmt.fmt.pix.width, m_fmt.fmt.pix.height,
 								V4L2_BUFFER_DEFAULT,
@@ -851,7 +851,7 @@ MMAL_STATUS_T CV4l2Cam::CreateSplitterComponent()
 	if (m_fps)
 		m_frame_time_usec = (1000000 / m_fps);
 
-	status = SetupComponentVideoOutput(m_video_source, NULL, 3, ReturnBuffersToPort, Splitter_Outputput_Port_CB);
+	status = SetupComponentVideoOutput(&m_video_source, NULL, 3, ReturnBuffersToPort, Splitter_Outputput_Port_CB);
 
 	if (status != MMAL_SUCCESS)
 	{
@@ -864,7 +864,7 @@ MMAL_STATUS_T CV4l2Cam::CreateSplitterComponent()
 
 error:
 
-	DestroyComponent(m_video_source);
+	DestroyComponent(&m_video_source);
 
 	return status;
 }
@@ -1070,8 +1070,6 @@ CV4l2Cam::CV4l2Cam()
 	memset(&m_cropcap, 0x0, sizeof(m_cropcap));
 	memset(&m_fmtdesc, 0x0, sizeof(m_fmtdesc));
 	memset(&m_fmt, 0x0, sizeof(m_fmt));
-
-	memset(&m_video_source, 0x0, sizeof(m_video_source));
 }
 
 CV4l2Cam::~CV4l2Cam()
@@ -1082,7 +1080,7 @@ CV4l2Cam::~CV4l2Cam()
 
 	StopCapture();
 
-	DestroyComponent(m_video_source);
+	DestroyComponent(&m_video_source);
 
 	DeInitMem();
 

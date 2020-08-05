@@ -8,7 +8,8 @@ SET(SRC_LIST vce.cpp
              PiCamCtrl.cpp
              PiCamHelpers.cpp
              PiCamCli.cpp
-             V4l2Cam.cpp)
+             V4l2Cam.cpp
+             ${CMAKE_CURRENT_SOURCE_DIR}/../common/component.c)
 
 LIST(APPEND LINK_LIST msgbroker 
                       iniparser

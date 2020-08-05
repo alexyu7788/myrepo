@@ -1,6 +1,15 @@
 #ifndef __COMMON_H__
 #define __COMMON_H__
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <string.h>
+
 //----------------------------------------------------------------------------------------------
 #define PRINTF_COLOR_NONE         "\033[m"
 #define PRINTF_COLOR_RED          "\033[0;32;31m"
