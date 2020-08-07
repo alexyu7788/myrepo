@@ -68,8 +68,14 @@ protected:
 public:
 
 protected:
+	static void InputPort_CB(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer);
 
+	static void OutputPort_CB(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer);
+
+	static void ControlPort_CB(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer);
 public:
+	friend class CCam;
+
 	CEncoder();
 
 	~CEncoder();

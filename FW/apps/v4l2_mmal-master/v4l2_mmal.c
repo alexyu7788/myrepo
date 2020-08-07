@@ -70,9 +70,10 @@ static void encoder_buffer_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buf
 
 struct destinations dests[MAX_COMPONENTS] = {
 	{"vc.ril.video_encode", MMAL_ENCODING_H264, encoder_buffer_callback},
-	{"vc.ril.image_encode", MMAL_ENCODING_JPEG, encoder_buffer_callback},
-	{"vc.ril.video_render", MMAL_ENCODING_UNUSED, NULL},
 	{NULL, MMAL_ENCODING_UNUSED, NULL}
+//	{"vc.ril.image_encode", MMAL_ENCODING_JPEG, encoder_buffer_callback},
+//	{"vc.ril.video_render", MMAL_ENCODING_UNUSED, NULL},
+//	{NULL, MMAL_ENCODING_UNUSED, NULL}
 };
 
 
@@ -366,7 +367,8 @@ static int video_open(struct device *dev, const char *devname)
 		print("Can't open device (already open).\n");
 		return -1;
 	}
-	printf("%s: %s\n", __func__, devname);
+
+	printf("%s: devname %s\n", __func__, devname);
 	dev->fd = open(devname, O_RDWR);
 	if (dev->fd < 0) {
 		print("Error opening device %s: %s (%d).\n", devname,
@@ -805,7 +807,7 @@ static void isp_ip_cb(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer)
 {
 	struct device *dev = (struct device *)port->userdata;
 	unsigned int i;
-	print("Buffer %p (->data %p) returned\n", buffer, buffer->data);
+//	print("Buffer %p (->data %p) returned\n", buffer, buffer->data);
 	for (i = 0; i < dev->nbufs; i++) {
 		if (dev->buffers[i].mmal == buffer) {
 //			print("Matches V4L2 buffer index %d / %d\n", i, dev->buffers[i].idx);
@@ -898,7 +900,7 @@ static void buffers_to_isp(struct device *dev)
 }
 static void isp_output_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer)
 {
-	print("Buffer %p from isp, filled %d, timestamp %llu, flags %04X\n", buffer, buffer->length, buffer->pts, buffer->flags);
+	//print("Buffer %p from isp, filled %d, timestamp %llu, flags %04X\n", buffer, buffer->length, buffer->pts, buffer->flags);
 	//vcos_log_error("File handle: %p", port->userdata);
 	struct device *dev = (struct device*)port->userdata;
 	int i;
@@ -1061,6 +1063,7 @@ static int setup_mmal(struct device *dev, int nbufs, const char *filename)
 
 	//FIXME: Clean up after errors
 
+	printf("=======%s-%d: mmal_component_create vc.ril.isp=========\n", __func__, __LINE__);
 	status = mmal_component_create("vc.ril.isp", &dev->isp);
 	if(status != MMAL_SUCCESS)
 	{
@@ -1102,6 +1105,7 @@ static int setup_mmal(struct device *dev, int nbufs, const char *filename)
 		dev->frame_time_usec = 1000000/dev->fps;
 	}
 
+	printf("=======%s-%d: mmal_port_format_commit %s=========\n", __func__, __LINE__, port->name);
 	status = mmal_port_format_commit(port);
 	if (status != MMAL_SUCCESS)
 	{
@@ -1121,6 +1125,7 @@ static int setup_mmal(struct device *dev, int nbufs, const char *filename)
 	}
 
 
+	printf("=======%s-%d: mmal_pool_create=========\n", __func__, __LINE__);
 	dev->mmal_pool = mmal_pool_create(nbufs, 0);
 	if (!dev->mmal_pool) {
 		print("Failed to create pool\n");
@@ -1137,6 +1142,7 @@ static int setup_mmal(struct device *dev, int nbufs, const char *filename)
 	isp_output->format->encoding = MMAL_ENCODING_I420;
 	isp_output->buffer_num = 3;
 
+	printf("=======%s-%d: mmal_port_format_commit %s=========\n", __func__, __LINE__, isp_output->name);
 	status = mmal_port_format_commit(isp_output);
 	if (status != MMAL_SUCCESS)
 	{
@@ -1147,12 +1153,13 @@ static int setup_mmal(struct device *dev, int nbufs, const char *filename)
 
 	isp_output->userdata = (struct MMAL_PORT_USERDATA_T *)dev;
 
-#if 1
 	/* Set up all the sink components */
 	for(i=0; i<MAX_COMPONENTS && dests[i].component_name; i++)
 	{
 		MMAL_COMPONENT_T *comp;
 		MMAL_PORT_T *ip, *op = NULL;
+
+		printf("=======%s-%d: mmal_component_create %s=========\n", __func__, __LINE__, dests[i].component_name);
 		status = mmal_component_create(dests[i].component_name, &comp);
 		if(status != MMAL_SUCCESS)
 		{
@@ -1347,10 +1354,11 @@ static int setup_mmal(struct device *dev, int nbufs, const char *filename)
 			return -1;
 		}
 	}
-#endif
+
 	status = mmal_port_parameter_set_boolean(isp_output, MMAL_PARAMETER_ZERO_COPY, MMAL_TRUE);
 
 	/* All setup, so enable the ISP output and feed it the buffers */
+	printf("=======%s-%d: mmal_port_enable %s=========\n", __func__, __LINE__, isp_output->name);
 	status = mmal_port_enable(isp_output, isp_output_callback);
 	if (status != MMAL_SUCCESS)
 		return -1;
@@ -1856,7 +1864,7 @@ int main(int argc, char *argv[])
 
 	opterr = 0;
 	while ((c = getopt_long(argc, argv, "c::E:f:F::hn:pr:s:t:T", opts, NULL)) != -1) {
-		printf("c: %c\n", c);
+
 		switch (c) {
 		case 'c':
 			do_capture = 1;
@@ -1981,8 +1989,7 @@ int main(int argc, char *argv[])
 			usage(argv[0]);
 			return 1;
 		}
-		ret = video_open(&dev, (const char*)"/dev/video0");
-//		ret = video_open(&dev, argv[optind]);
+		ret = video_open(&dev, argv[optind]);
 		if (ret < 0)
 			return 1;
 	}

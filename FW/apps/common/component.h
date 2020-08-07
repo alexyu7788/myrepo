@@ -25,6 +25,9 @@ struct port_info
 	MMAL_POOL_T* 				pool;
 	MMAL_CONNECTION_T*			connect;
 	PFUNC_RETURNBUFFERSTOPORT	return_buf_to_port;
+
+	MMAL_COMPONENT_T*			conn_comp;	// component connected to this port.
+	MMAL_POOL_T*				sink_pool;
 };
 
 struct component {

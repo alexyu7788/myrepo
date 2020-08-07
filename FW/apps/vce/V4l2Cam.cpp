@@ -1,7 +1,7 @@
 #include "V4l2Cam.h"
 
 // ---------------------------------------------------------------------------------
-#define V4L2_BUFFER_DEFAULT		4
+#define V4L2_BUFFER_DEFAULT		8
 #define V4L2_BUFFER_MAX			32
 
 #define MMAL_ENCODING_UNUSED 	0
@@ -574,6 +574,9 @@ bool CV4l2Cam::InitMem(unsigned int buffer_size)
 
 void CV4l2Cam::DeInitMem()
 {
+	int ret;
+	struct v4l2_requestbuffers rb;
+
 	switch (m_io_method)
 	{
 	case IO_METHOD_READ:
@@ -585,6 +588,18 @@ void CV4l2Cam::DeInitMem()
 		fprintf(stderr, "[%s] IO_METHOD_MMAP.\n", __func__);
 		for (uint32_t i=0 ; i < m_n_buffer ; ++i)
 		{
+			if (m_buffers[i].vcsm_handle)
+			{
+				fprintf(stderr, "[%s] Releasing vcsm handle %u\n", __func__, m_buffers[i].vcsm_handle);
+				vcsm_free(m_buffers[i].vcsm_handle);
+			}
+
+			if (m_buffers[i].dma_fd >= 0)
+			{
+				fprintf(stderr, "[%s] Closing dma_buf %d\n", __func__, m_buffers[i].dma_fd);
+				close(m_buffers[i].dma_fd);
+			}
+
 			for (unsigned char j=0 ; j<m_num_planes ; ++j)
 			{
 				if (m_buffers[i].start[j])
@@ -595,6 +610,18 @@ void CV4l2Cam::DeInitMem()
 					}
 				}
 			}
+		}
+
+		memset(&rb, 0, sizeof rb);
+		rb.count = 0;
+		rb.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+		rb.memory = V4L2_MEMORY_MMAP;
+
+		ret = ioctl(m_fd, VIDIOC_REQBUFS, &rb);
+		if (ret < 0) {
+			fprintf(stderr, "[%s] Unable to release buffers: %s (%d).\n", __func__,
+				strerror(errno), errno);
+			return;
 		}
 		break;
 	case IO_METHOD_USERPTR:
@@ -609,6 +636,9 @@ void CV4l2Cam::DeInitMem()
 
 	if (m_buffers)
 		free (m_buffers);
+
+	m_n_buffer = 0;
+	m_buffers = NULL;
 }
 
 void CV4l2Cam::DeInit()
@@ -736,6 +766,19 @@ void CV4l2Cam::Splitter_Outputput_Port_CB(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_
 	if (buffer->length)
 		fprintf(stderr, PRINTF_COLOR_BLUE "[%s] buffer header's pts %lld ms of port[%d]\n" PRINTF_COLOR_NONE, __func__, buffer->pts, pThis->idx);
 
+	// Transmit buffer to port pool of sink component.
+	if (pThis->conn_comp && pThis->sink_pool)
+	{
+//		fprintf(stderr, PRINTF_COLOR_BLUE "[%s] conn_comp %s\n" PRINTF_COLOR_NONE, __func__, pThis->conn_comp->name);
+
+		MMAL_BUFFER_HEADER_T *out = mmal_queue_get(pThis->sink_pool->queue);
+		if (out)
+		{
+			mmal_buffer_header_replicate(out, buffer);
+			mmal_port_send_buffer(pThis->conn_comp->input[0], out);
+		}
+	}
+
 	mmal_buffer_header_release(buffer);
 
 	if (pThis->return_buf_to_port)
@@ -826,7 +869,8 @@ MMAL_STATUS_T CV4l2Cam::CreateSplitterComponent()
 		goto error;
 	}
 
-	status = CreateComponent(&m_video_source, MMAL_COMPONENT_DEFAULT_VIDEO_SPLITTER);
+	status = CreateComponent(&m_video_source, "vc.ril.isp");
+//	status = CreateComponent(&m_video_source, MMAL_COMPONENT_DEFAULT_VIDEO_SPLITTER);
 	if (status != MMAL_SUCCESS)
 	{
 		fprintf(stderr, PRINTF_COLOR_RED "Failed to create %s\n" PRINTF_COLOR_NONE, MMAL_COMPONENT_DEFAULT_VIDEO_SPLITTER);
@@ -1108,7 +1152,7 @@ bool CV4l2Cam::Init(int id, const char* dev_name)
 	m_id = id;
 	m_cam_type = CamType_V4l2;
 
-	Setup(1920, 1080);
+	Setup(640,480);
 
 	VideoGetFormat();
 
@@ -1120,7 +1164,7 @@ bool CV4l2Cam::Init(int id, const char* dev_name)
 
 	QueueAllBuffer();
 
-	StartCapture();
+//	StartCapture();
 
 //	printf("===========Test Start==================\n");
 //	struct component test_component;

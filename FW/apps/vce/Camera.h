@@ -81,6 +81,8 @@ public:
 protected:
 
 public:
+	friend class CEncoder;
+
 	CCam();
 
 	virtual ~CCam();
@@ -94,7 +96,5 @@ public:
 	virtual bool StartCapture();
 
 	virtual bool StopCapture();
-
-	friend class CEncoder;
 };
 #endif

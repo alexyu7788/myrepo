@@ -14,6 +14,12 @@ CVceCtrl::CVceCtrl()
 	SetupUpCameara();
 
 	SetupEncoder();
+
+	for (int i=0 ; i<MAX_CAMERA_NUM ; ++i)
+	{
+		if (m_camera[i])
+			m_camera[i]->StartCapture();
+	}
 }
 
 CVceCtrl::~CVceCtrl()
