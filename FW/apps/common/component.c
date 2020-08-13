@@ -224,7 +224,7 @@ MMAL_STATUS_T SetupComponentVideoOutput(struct component* component,
 
 	in_format = component->input.port->format;
 
-	for (uint32_t idx = 0 ; idx < 1/*component->comp->output_num*/; ++idx)
+	for (uint32_t idx = 0 ; idx < component->comp->output_num ; ++idx)
 	{
 		component->output[idx].idx 	= idx;
 //		component.output[idx].cam_obj = this;

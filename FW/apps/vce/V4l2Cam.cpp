@@ -1152,7 +1152,7 @@ bool CV4l2Cam::Init(int id, const char* dev_name)
 	m_id = id;
 	m_cam_type = CamType_V4l2;
 
-	Setup(640,480);
+	Setup(1280, 720);
 
 	VideoGetFormat();
 

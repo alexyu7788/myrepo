@@ -52,7 +52,6 @@ protected:
 	enum   io_method		m_io_method;
 	uint32_t				m_n_buffer;
 	struct buffer*			m_buffers;
-	unsigned int			m_fps;
 	unsigned int 			m_frame_time_usec;
 	MMAL_BOOL_T				m_zero_copy;
 	uint32_t 				m_timestamp_type;

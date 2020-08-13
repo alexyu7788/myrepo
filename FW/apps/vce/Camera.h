@@ -71,6 +71,7 @@ protected:
 	uint32_t			m_width;
 	uint32_t			m_height;
 	unsigned char		m_num_planes;
+	unsigned int		m_fps;
 
 	bool				m_terminate;
 	bool				m_do_capture;

@@ -27,6 +27,8 @@ extern "C"
 #include "interface/mmal/util/mmal_connection.h"
 #include "interface/vmcs_host/vc_vchi_gencmd.h"
 
+#include <libavcodec/avcodec.h>
+#include <libavformat/avformat.h>
 #ifdef __cplusplus
 }
 #endif
@@ -57,13 +59,23 @@ protected:
 	MMAL_CONNECTION_T*	m_connect;
 
 	ENC_TYPE_E			m_enc_type;
-	MMAL_FOURCC_T 		m_encoding;	/// Requested codec video encoding (MJPEG or H264)
-	int					m_level;	/// H264 level to use for encoding
-	int 				m_bitrate; 	/// Requested bitrate
-	int					m_profile;	/// H264 profile to use for encoding
-	int 				m_intraperiod;  /// Intra-refresh period (key frame rate)
-	int 				m_quantisationParameter;          /// Quantisation parameter - quality. Set bitrate 0 and set this for variable bitrate
+	MMAL_FOURCC_T 		m_encoding;						/// Requested codec video encoding (MJPEG or H264)
+	MMAL_VIDEO_LEVEL_T	m_level;						/// H264 level to use for encoding
+	int 				m_bitrate; 						/// Requested bitrate
+	MMAL_VIDEO_PROFILE_T m_profile;						/// H264 profile to use for encoding
+	int 				m_intraperiod;  				/// Intra-refresh period (key frame rate)
+	int 				m_quantisationParameter;        /// Quantisation parameter - quality. Set bitrate 0 and set this for variable bitrate
+	int					m_InlineHeaders;				/// Insert inline headers to stream (SPS, PPS)
+	int					m_addSPSTiming;
+	int					m_inlineMotionVectors;			/// Encoder outputs inline Motion Vectors
+	MMAL_VIDEO_INTRA_REFRESH_T	m_intrarefreshtype;				/// What intra refresh type to use. -1 to not set.
 
+	VCOS_THREAD_T 		m_save_thread;
+	MMAL_QUEUE_T*		m_save_queue;
+	int 				m_thread_quit;
+
+	/* ffmpeg related */
+	AVOutputFormat 		*m_outputfmt;
 
 public:
 
@@ -73,6 +85,9 @@ protected:
 	static void OutputPort_CB(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer);
 
 	static void ControlPort_CB(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer);
+
+	static void* SaveThread(void* arg);
+
 public:
 	friend class CCam;
 
@@ -80,13 +95,21 @@ public:
 
 	~CEncoder();
 
-	bool Init(int idx, class CCam* cam, MMAL_FOURCC_T encoding, int level, int bitrate);
+	bool Init(int idx, class CCam* cam, MMAL_FOURCC_T encoding, MMAL_VIDEO_LEVEL_T level, int bitrate);
 
 	MMAL_STATUS_T SetupIntraPeroid();
 
 	MMAL_STATUS_T SetupQP();
 
 	MMAL_STATUS_T SetupProfile();
+
+	MMAL_STATUS_T SetupInlineHeaders();
+
+	MMAL_STATUS_T SetupSPSTimeing();
+
+	MMAL_STATUS_T SetupInlineVectors();
+
+	MMAL_STATUS_T SetupIntraRefreshType();
 
 	MMAL_STATUS_T Start();
 

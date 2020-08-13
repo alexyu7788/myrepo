@@ -22,7 +22,12 @@ LIST(APPEND LINK_LIST msgbroker
                       vcos
                       vcsm
                       bcm_host
-                      )
+                      avdevice
+                      avfilter
+                      avcodec
+                      avresample
+                      avutil
+                      avformat)
 
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/../common ${CMAKE_CURRENT_SOURCE_DIR} ${MODULE_INC}/ ${MODULE_INC2})
 
