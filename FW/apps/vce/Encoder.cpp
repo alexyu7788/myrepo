@@ -80,10 +80,11 @@ void* CEncoder::SaveThread(void* arg)
 	MMAL_BUFFER_HEADER_T *buffer;
 	MMAL_STATUS_T status;
 
-	int err = 0;
+	int err = 0, rsp;
 	AVOutputFormat* 	op_fmt = NULL;
 	AVFormatContext* 	fmt_ctx = NULL;
 	AVStream*			video_st = NULL;
+	AVPacket*			pkt = NULL;
 //	AVCodec*			pCodec = NULL;
 //	AVCodecContext*		pCodecCtx = NULL;
 
@@ -141,8 +142,6 @@ void* CEncoder::SaveThread(void* arg)
 //				}
 			}
 
-			av_dump_format(fmt_ctx, 0, test_fn, 1);
-
 			video_st = avformat_new_stream(fmt_ctx, NULL);
 			if (!video_st)
 		    {
@@ -151,19 +150,20 @@ void* CEncoder::SaveThread(void* arg)
 
 			fprintf(stderr, PRINTF_COLOR_GREEN "[%s] video_st %p.\n" PRINTF_COLOR_NONE, __func__, video_st);
 
+			video_st->id = 0;
 			video_st->time_base.num = pThis->m_src->m_fps;
 			video_st->time_base.den = 1;
+			video_st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+			video_st->codecpar->codec_id = AV_CODEC_ID_H264;
+			video_st->codecpar->width = pThis->m_width;
+			video_st->codecpar->height = pThis->m_height;
 
 			if (avformat_write_header(fmt_ctx, NULL) < 0)
 				fprintf(stderr, PRINTF_COLOR_RED "[%s] Unable to write header %s.\n" PRINTF_COLOR_NONE, __func__, test_fn);
 
+			av_dump_format(fmt_ctx, 0, test_fn, 1);
 
-
-//			pCodec = avcodec_find_decoder(video_st->codecpar->codec_id);
-//			if (!pCodec)
-//			{
-//		    	fprintf(stderr, PRINTF_COLOR_RED "[%s] Unable to allocate new stream for %s.\n" PRINTF_COLOR_NONE, __func__, test_fn);
-//			}
+			pkt = av_packet_alloc();
 	    }
 	}
 
@@ -178,17 +178,15 @@ void* CEncoder::SaveThread(void* arg)
 
 		fprintf(stderr, PRINTF_COLOR_YELLOW "[%s] buffer header's len %u Bytes. flag 0x%X\n" PRINTF_COLOR_NONE, __func__, buffer->length >> 3, buffer->flags);
 
+		if (fmt_ctx && pkt)
+		{
+			pkt->stream_index = 0;
+			pkt->data = buffer->data;
+			rsp = av_interleaved_write_frame(fmt_ctx, pkt);
+			fprintf(stderr, PRINTF_COLOR_YELLOW "[%s] rsp %d\n" PRINTF_COLOR_NONE, __func__, rsp);
 
-
-
-
-
-
-
-
-
-
-
+			av_packet_unref(pkt);
+		}
 
 		buffer->length = 0;
 		status = mmal_port_send_buffer(pThis->m_encoder.comp->output[0], buffer);
@@ -196,8 +194,17 @@ void* CEncoder::SaveThread(void* arg)
 	}
 
 	// close ffmpeg contexts
+	if (pkt)
+	{
+		av_packet_free(&pkt);
+		pkt = NULL;
+	}
+
 	if (fmt_ctx)
 	{
+		av_write_trailer(fmt_ctx);
+
+		avio_close(fmt_ctx->pb);
 		avformat_free_context(fmt_ctx);
 		fmt_ctx = NULL;
 	}
@@ -257,6 +264,11 @@ bool CEncoder::Init(int idx, class CCam* cam, MMAL_FOURCC_T encoding, MMAL_VIDEO
 		return false;
 
 	m_src 		= cam;
+	if (m_src)
+	{
+		m_width = m_src->m_width;
+		m_height = m_src->m_height;
+	}
 
 	m_encoding 	= encoding;
 	m_level 	= level;
