@@ -2003,7 +2003,6 @@ static MMAL_STATUS_T create_encoder_component(RASPIVID_STATE *state)
 
    // Commit the port changes to the output port
    status = mmal_port_format_commit(encoder_output);
-
    if (status != MMAL_SUCCESS)
    {
       vcos_log_error("Unable to set format on video encoder output port");

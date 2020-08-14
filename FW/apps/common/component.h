@@ -21,6 +21,7 @@ typedef void (*PFUNC_RETURNBUFFERSTOPORT)(struct port_info* port_info);
 struct port_info
 {
 	uint32_t					idx;
+	uint32_t					frames;
 	MMAL_PORT_T* 				port;
 	MMAL_POOL_T* 				pool;
 	MMAL_CONNECTION_T*			connect;

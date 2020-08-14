@@ -756,7 +756,30 @@ void CV4l2Cam::Splitter_Input_Port_CB(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *b
 
 void CV4l2Cam::Splitter_Outputput_Port_CB(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer)
 {
+	struct timespec spec;
+	static int64_t starttime = -1, curtime;
 	struct port_info* pThis = (struct port_info*)port->userdata;
+
+	clock_gettime(CLOCK_MONOTONIC_RAW, &spec);
+
+	curtime = (spec.tv_sec * 1000000ULL) + (spec.tv_nsec / 1000);
+
+	if (starttime == -1)
+	{
+		starttime = curtime;
+		pThis->frames = 0;
+	}
+	else
+	{
+		if ((curtime - starttime) >= 1000000)
+		{
+			fprintf(stderr, PRINTF_COLOR_GREEN "[%s] %s, frame %u\n" PRINTF_COLOR_NONE, __func__, port->name, pThis->frames);
+			starttime = -1;
+			pThis->frames = 0;
+		}
+	}
+
+	++pThis->frames;
 
 	if (buffer->cmd != 0)
 	{
@@ -784,7 +807,7 @@ void CV4l2Cam::Splitter_Outputput_Port_CB(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_
 	if (pThis->return_buf_to_port)
 		pThis->return_buf_to_port(pThis);
 
-	fprintf(stderr, PRINTF_COLOR_BLUE "[%s] %s\n" PRINTF_COLOR_NONE, __func__, port->name);
+//	fprintf(stderr, PRINTF_COLOR_BLUE "[%s] %s\n" PRINTF_COLOR_NONE, __func__, port->name);
 }
 
 const v4l2_mmal_format_info* CV4l2Cam::V4l2FormatToMmalByFourcc(unsigned int forcc)
@@ -1152,7 +1175,10 @@ bool CV4l2Cam::Init(int id, const char* dev_name)
 	m_id = id;
 	m_cam_type = CamType_V4l2;
 
-	Setup(1280, 960);
+//	Setup(1920, 1080);
+//	Setup(1280, 760);
+//	Setup(800, 600);
+	Setup(640, 480);
 
 	VideoGetFormat();
 

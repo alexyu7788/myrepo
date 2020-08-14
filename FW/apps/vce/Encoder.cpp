@@ -4,7 +4,30 @@
 // ---------------------------------------------------------------------------------
 void CEncoder::InputPort_CB(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer)
 {
+	struct timespec spec;
+	static int64_t starttime = -1, curtime, frames = 0;
 	CEncoder* pThis = (CEncoder*)port->userdata;
+
+	clock_gettime(CLOCK_MONOTONIC_RAW, &spec);
+
+	curtime = (spec.tv_sec * 1000000ULL) + (spec.tv_nsec / 1000);
+
+	if (starttime == -1)
+	{
+		starttime = curtime;
+		frames = 0;
+	}
+	else
+	{
+		if ((curtime - starttime) >= 1000000)
+		{
+			fprintf(stderr, PRINTF_COLOR_GREEN "[%s] %s, frame %lld\n" PRINTF_COLOR_NONE, __func__, port->name, frames);
+			starttime = -1;
+			frames = 0;
+		}
+	}
+
+	++frames;
 
 	if (buffer->length)
 		fprintf(stderr, PRINTF_COLOR_YELLOW "[%s] buffer header's pts %lld ms.\n" PRINTF_COLOR_NONE, __func__, buffer->pts);
@@ -14,19 +37,39 @@ void CEncoder::InputPort_CB(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer)
 
 void CEncoder::OutputPort_CB(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer)
 {
+	struct timespec spec;
+	static int64_t starttime = -1, curtime, frames = 0;
 	MMAL_STATUS_T status;
-
 	CEncoder* pThis = (CEncoder*)port->userdata;
 
 	if (!pThis)
 		return;
 
+	clock_gettime(CLOCK_MONOTONIC_RAW, &spec);
+
+	curtime = (spec.tv_sec * 1000000ULL) + (spec.tv_nsec / 1000);
+
+	if (starttime == -1)
+	{
+		starttime = curtime;
+		frames = 0;
+	}
+	else
+	{
+		if ((curtime - starttime) >= 1000000)
+		{
+			fprintf(stderr, PRINTF_COLOR_GREEN "[%s] %s, frame %lld\n" PRINTF_COLOR_NONE, __func__, port->name, frames);
+			starttime = -1;
+			frames = 0;
+		}
+	}
+
+	++frames;
+
 	fprintf(stderr, PRINTF_COLOR_YELLOW "[%s] buffer header's len %u Bytes. flag 0x%X\n" PRINTF_COLOR_NONE, __func__, buffer->length >> 3, buffer->flags);
 
 	if (buffer->flags & MMAL_BUFFER_HEADER_FLAG_KEYFRAME)
 		fprintf(stderr, PRINTF_COLOR_YELLOW "[%s] buffer is key frame\n" PRINTF_COLOR_NONE, __func__);
-//	else if (buffer->flags & MMAL_BUFFER_HEADER_FLAG_FRAME_END)
-//		fprintf(stderr, PRINTF_COLOR_YELLOW "[%s] buffer is frame end\n" PRINTF_COLOR_NONE, __func__);
 
 	if (pThis->m_save_queue)
 	{
@@ -85,10 +128,10 @@ void* CEncoder::SaveThread(void* arg)
 	AVFormatContext* 	fmt_ctx = NULL;
 	AVStream*			video_st = NULL;
 	AVPacket*			pkt = NULL;
-//	AVCodec*			pCodec = NULL;
-//	AVCodecContext*		pCodecCtx = NULL;
 
 	char test_fn[] = "/tmp/sdc/test/test.mp4";
+	struct timespec spec;
+	static int64_t starttime = -1, curtime, frames = 0;
 
 	av_log_set_level(AV_LOG_TRACE);
 
@@ -150,7 +193,7 @@ void* CEncoder::SaveThread(void* arg)
 			fprintf(stderr, PRINTF_COLOR_GREEN "[%s] video_st %p.\n" PRINTF_COLOR_NONE, __func__, video_st);
 
 			video_st->id = 0;
-			video_st->time_base = (AVRational){1, (int)pThis->m_src->m_fps};
+			video_st->time_base = (AVRational){1, (int)pThis->m_framerate};
 			video_st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
 			video_st->codecpar->codec_id = AV_CODEC_ID_H264;
 			video_st->codecpar->width = pThis->m_width;
@@ -176,9 +219,34 @@ void* CEncoder::SaveThread(void* arg)
 			continue;
 		}
 
+		clock_gettime(CLOCK_MONOTONIC_RAW, &spec);
+
+		curtime = (spec.tv_sec * 1000000ULL) + (spec.tv_nsec / 1000);
+
+		if (starttime == -1)
+		{
+			starttime = curtime;
+			frames = 0;
+		}
+		else
+		{
+			if ((curtime - starttime) >= 1000000)
+			{
+				fprintf(stderr, PRINTF_COLOR_GREEN "[%s] frame %lld\n" PRINTF_COLOR_NONE, __func__, frames);
+				starttime = -1;
+				frames = 0;
+			}
+		}
+
+		++frames;
+
 		fprintf(stderr, PRINTF_COLOR_YELLOW "[%s] buffer header's len %u Bytes. flag 0x%X\n" PRINTF_COLOR_NONE, __func__, buffer->length >> 3, buffer->flags);
 
-		if (fmt_ctx && pkt)
+		/* Get first key frame? */
+		if (!pThis->m_get_first_key_frame && (buffer->flags & MMAL_BUFFER_HEADER_FLAG_KEYFRAME))
+			pThis->m_get_first_key_frame = 1;
+
+		if (fmt_ctx && pkt && pThis->m_get_first_key_frame)
 		{
 			pkt->stream_index = 0;
 			pkt->data = buffer->data;
@@ -223,6 +291,7 @@ CEncoder::CEncoder()
 	m_id 		= 0;
 	m_width 	= 0;
 	m_height 	= 0;
+	m_framerate = 0;
 
 	m_src		= NULL;
 
@@ -235,7 +304,7 @@ CEncoder::CEncoder()
 	m_encoding  = 0;
 	m_level		= MMAL_VIDEO_LEVEL_H264_4;
 	m_bitrate	= 0;
-	m_profile	= MMAL_VIDEO_PROFILE_H264_HIGH10;
+	m_profile	= MMAL_VIDEO_PROFILE_H264_HIGH;
 	m_intraperiod = -1;
 	m_quantisationParameter = 0;
 	m_InlineHeaders = 1;
@@ -248,12 +317,19 @@ CEncoder::CEncoder()
 
 	m_outputfmt   = NULL;
 	m_sample_count = 0;
+	m_get_first_key_frame = 0;
 }
 
 CEncoder::~CEncoder()
 {
 	m_thread_quit = 1;
 	vcos_thread_join(&m_save_thread, NULL);
+
+	if (m_save_queue)
+	{
+		mmal_queue_destroy(m_save_queue);
+		m_save_queue = NULL;
+	}
 
 	DestroyComponent(&m_encoder);
 	DestroyComponent(&m_splitter);
@@ -274,7 +350,7 @@ bool CEncoder::Init(int idx, class CCam* cam, MMAL_FOURCC_T encoding, MMAL_VIDEO
 	{
 		m_width = m_src->m_width;
 		m_height = m_src->m_height;
-
+		m_framerate = m_src->m_fps;
 		m_intraperiod = m_src->m_fps;
 	}
 
@@ -317,7 +393,9 @@ bool CEncoder::Init(int idx, class CCam* cam, MMAL_FOURCC_T encoding, MMAL_VIDEO
 
 	// Setup output of encoder.
 	encoder_output 	= m_encoder.comp->output[0];
-	encoder_output->format->encoding =m_encoding;
+
+	mmal_format_copy(encoder_output->format, encoder_input->format);
+	encoder_output->format->encoding = m_encoding;
 
 	if(m_encoding == MMAL_ENCODING_H264)
 	{
@@ -397,6 +475,13 @@ bool CEncoder::Init(int idx, class CCam* cam, MMAL_FOURCC_T encoding, MMAL_VIDEO
 	if (status != MMAL_SUCCESS)
 	{
 		fprintf(stderr, PRINTF_COLOR_RED "[%s] Unable to set QP on %s output port.\n" PRINTF_COLOR_NONE, __func__, m_encoder.comp->name);
+		goto fail;
+	}
+
+	status = SetupProfile();
+	if (status != MMAL_SUCCESS)
+	{
+		fprintf(stderr, PRINTF_COLOR_RED "[%s] Unable to set profile.\n" PRINTF_COLOR_NONE, __func__, m_encoder.comp->name);
 		goto fail;
 	}
 
@@ -565,11 +650,28 @@ MMAL_STATUS_T CEncoder::SetupProfile()
 
 		param.profile[0].profile = m_profile;
 
-		param.profile[0].level = m_level;
+		if ((VCOS_ALIGN_UP(m_width, 16) >> 4) * (VCOS_ALIGN_UP(m_height, 16) >> 4) * m_framerate > 245760)
+		{
+	         if((VCOS_ALIGN_UP(m_width,16) >> 4) * (VCOS_ALIGN_UP(m_height,16) >> 4) * m_framerate <= 522240)
+	         {
+	        	fprintf(stderr, PRINTF_COLOR_RED "[%s] Too many macroblocks/s: Increasing H264 Level to 4.2\n" PRINTF_COLOR_NONE, __func__);
+	            m_level = MMAL_VIDEO_LEVEL_H264_42;
+	         }
+	         else
+	         {
+		        fprintf(stderr, PRINTF_COLOR_RED "[%s] Too many macroblocks/s requested\n" PRINTF_COLOR_NONE, __func__);
+	            status = MMAL_EINVAL;
+	         }
+		}
 
-		status = mmal_port_parameter_set(encoder_output, &param.hdr);
-		if (status != MMAL_SUCCESS)
-			fprintf(stderr, PRINTF_COLOR_RED "[%s] Unable to set Profile QP.\n" PRINTF_COLOR_NONE, __func__);
+		if (status == MMAL_SUCCESS)
+		{
+			param.profile[0].level = m_level;
+
+			status = mmal_port_parameter_set(encoder_output, &param.hdr);
+			if (status != MMAL_SUCCESS)
+				fprintf(stderr, PRINTF_COLOR_RED "[%s] Unable to set Profile.\n" PRINTF_COLOR_NONE, __func__);
+		}
 	}
 
 	return status;

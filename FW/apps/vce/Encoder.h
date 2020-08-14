@@ -51,6 +51,7 @@ protected:
 	int					m_id;
 	uint32_t			m_width;
 	uint32_t			m_height;
+	int					m_framerate;
 
 	class CCam*			m_src;
 	struct component	m_encoder;
@@ -77,6 +78,7 @@ protected:
 	/* ffmpeg related */
 	AVOutputFormat*		m_outputfmt;
 	uint64_t			m_sample_count;
+	int					m_get_first_key_frame;
 
 public:
 
