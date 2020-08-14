@@ -75,7 +75,8 @@ protected:
 	int 				m_thread_quit;
 
 	/* ffmpeg related */
-	AVOutputFormat 		*m_outputfmt;
+	AVOutputFormat*		m_outputfmt;
+	uint64_t			m_sample_count;
 
 public:
 

@@ -1000,7 +1000,7 @@ void* CV4l2Cam::DoCapture(void* arg)
 						struct timeval pts;
 						timersub(&buf.timestamp, &pThis->m_starttime, &pts);
 						//MMAL PTS is in usecs, so convert from struct timeval
-						bh->pts = (pts.tv_sec * 1000000) + pts.tv_usec;
+						bh->pts = (pts.tv_sec * 1000) + (pts.tv_usec / 1000);
 						fprintf(stderr, "[%s] buffer header's pts %lld ms\n", __func__, bh->pts);
 
 						bh->flags = MMAL_BUFFER_HEADER_FLAG_FRAME_END;
@@ -1152,7 +1152,7 @@ bool CV4l2Cam::Init(int id, const char* dev_name)
 	m_id = id;
 	m_cam_type = CamType_V4l2;
 
-	Setup(1280, 720);
+	Setup(1280, 960);
 
 	VideoGetFormat();
 

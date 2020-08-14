@@ -92,6 +92,9 @@ void* CEncoder::SaveThread(void* arg)
 
 	av_log_set_level(AV_LOG_TRACE);
 
+	if (access(test_fn, F_OK) == 0)
+		unlink(test_fn);
+
 	op_fmt = av_guess_format(NULL, test_fn, NULL);
 	if (!op_fmt)
 		fprintf(stderr, PRINTF_COLOR_RED "[%s] Unknown format %s.\n" PRINTF_COLOR_NONE, __func__, "test.mp4");
@@ -135,13 +138,9 @@ void* CEncoder::SaveThread(void* arg)
 			{
 				if (avio_open(&fmt_ctx->pb, test_fn, AVIO_FLAG_WRITE) < 0)
 			    	fprintf(stderr, PRINTF_COLOR_RED "[%s] Unable to avio_open %s.\n" PRINTF_COLOR_NONE, __func__, test_fn);
-//				else
-//				{
-//					if (avformat_write_header(fmt_ctx, NULL) < 0)
-//						fprintf(stderr, PRINTF_COLOR_RED "[%s] Unable to write header %s.\n" PRINTF_COLOR_NONE, __func__, test_fn);
-//				}
 			}
 
+			/* Add video stream for AVFormatContext */
 			video_st = avformat_new_stream(fmt_ctx, NULL);
 			if (!video_st)
 		    {
@@ -151,8 +150,7 @@ void* CEncoder::SaveThread(void* arg)
 			fprintf(stderr, PRINTF_COLOR_GREEN "[%s] video_st %p.\n" PRINTF_COLOR_NONE, __func__, video_st);
 
 			video_st->id = 0;
-			video_st->time_base.num = pThis->m_src->m_fps;
-			video_st->time_base.den = 1;
+			video_st->time_base = (AVRational){1, (int)pThis->m_src->m_fps};
 			video_st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
 			video_st->codecpar->codec_id = AV_CODEC_ID_H264;
 			video_st->codecpar->width = pThis->m_width;
@@ -164,6 +162,8 @@ void* CEncoder::SaveThread(void* arg)
 			av_dump_format(fmt_ctx, 0, test_fn, 1);
 
 			pkt = av_packet_alloc();
+
+			pThis->m_sample_count = 0;
 	    }
 	}
 
@@ -182,9 +182,15 @@ void* CEncoder::SaveThread(void* arg)
 		{
 			pkt->stream_index = 0;
 			pkt->data = buffer->data;
-			rsp = av_interleaved_write_frame(fmt_ctx, pkt);
-			fprintf(stderr, PRINTF_COLOR_YELLOW "[%s] rsp %d\n" PRINTF_COLOR_NONE, __func__, rsp);
+			pkt->size = buffer->length;
+			pkt->pos  = -1;
+			pkt->pts = pkt->dts = (pThis->m_sample_count++) * 1000;
+			av_packet_rescale_ts(pkt, video_st->time_base, video_st->time_base);
 
+			if (buffer->flags & MMAL_BUFFER_HEADER_FLAG_KEYFRAME)
+				pkt->flags |= AV_PKT_FLAG_KEY;
+
+			rsp = av_interleaved_write_frame(fmt_ctx, pkt);
 			av_packet_unref(pkt);
 		}
 
@@ -229,19 +235,19 @@ CEncoder::CEncoder()
 	m_encoding  = 0;
 	m_level		= MMAL_VIDEO_LEVEL_H264_4;
 	m_bitrate	= 0;
-	m_profile	= MMAL_VIDEO_PROFILE_H264_HIGH;
+	m_profile	= MMAL_VIDEO_PROFILE_H264_HIGH10;
 	m_intraperiod = -1;
 	m_quantisationParameter = 0;
-	m_InlineHeaders = 0;
-	m_addSPSTiming = 0;
+	m_InlineHeaders = 1;
+	m_addSPSTiming = 1;
 	m_inlineMotionVectors = 0;
 	m_intrarefreshtype = MMAL_VIDEO_INTRA_REFRESH_MAX;
 
-//	m_save_thread = 0;
 	m_save_queue  = NULL;
 	m_thread_quit = 0;
 
-	m_outputfmt = NULL;
+	m_outputfmt   = NULL;
+	m_sample_count = 0;
 }
 
 CEncoder::~CEncoder()
@@ -268,6 +274,8 @@ bool CEncoder::Init(int idx, class CCam* cam, MMAL_FOURCC_T encoding, MMAL_VIDEO
 	{
 		m_width = m_src->m_width;
 		m_height = m_src->m_height;
+
+		m_intraperiod = m_src->m_fps;
 	}
 
 	m_encoding 	= encoding;
