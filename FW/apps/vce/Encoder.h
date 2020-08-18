@@ -69,8 +69,10 @@ protected:
 	int					m_InlineHeaders;				/// Insert inline headers to stream (SPS, PPS)
 	int					m_addSPSTiming;
 	int					m_inlineMotionVectors;			/// Encoder outputs inline Motion Vectors
-	MMAL_VIDEO_INTRA_REFRESH_T	m_intrarefreshtype;				/// What intra refresh type to use. -1 to not set.
-
+	MMAL_VIDEO_INTRA_REFRESH_T	m_intrarefreshtype;		/// What intra refresh type to use. -1 to not set.
+	int 				m_immutableInput;               /// Flag to specify whether encoder works in place or creates a new buffer.
+														/// Result is preview can display either
+	   	   	   	   	   	   	   	   	   	   	   	   	    /// the camera output or the encoder output (with compression artifacts)
 	VCOS_THREAD_T 		m_save_thread;
 	MMAL_QUEUE_T*		m_save_queue;
 	int 				m_thread_quit;

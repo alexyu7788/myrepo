@@ -729,17 +729,28 @@ void CV4l2Cam::Splitter_Input_Port_CB(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *b
 	MMAL_BUFFER_HEADER_T* new_buffer;
     MMAL_STATUS_T status;
 
+	char yuv_fn[128];
+	FILE* file_handle = NULL;
+	int bytes_to_write;
+	int bytes_written = 0;
+
 	if (buffer->cmd != 0)
 	{
 		fprintf(stderr, PRINTF_COLOR_RED "%s callback: event %u not supported.\n" PRINTF_COLOR_NONE, port->name, buffer->cmd);
 	}
 
-	fprintf(stderr, PRINTF_COLOR_LIGHT_BLUE "[%s] %s\n" PRINTF_COLOR_NONE, __func__, port->name);
+//	fprintf(stderr, PRINTF_COLOR_LIGHT_BLUE "[%s] %s\n" PRINTF_COLOR_NONE, __func__, port->name);
 
 	for (unsigned int i=0 ; i<pThis->m_n_buffer ; ++i)
 	{
 	   if (pThis->m_buffers[i].bufferheader == buffer)
 	   {
+			if (buffer->length)
+			{
+				fprintf(stderr, PRINTF_COLOR_LIGHT_BLUE "[%s] %s\n" PRINTF_COLOR_NONE, __func__, port->name);
+
+			}
+
 		   pThis->QueueBuffer(pThis->m_buffers[i].idx);
 		   mmal_buffer_header_release(buffer);
 		   buffer = NULL;
@@ -759,6 +770,11 @@ void CV4l2Cam::Splitter_Outputput_Port_CB(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_
 	struct timespec spec;
 	static int64_t starttime = -1, curtime;
 	struct port_info* pThis = (struct port_info*)port->userdata;
+	char yuv_fn[128];
+	FILE* file_handle = NULL;
+	int bytes_to_write;
+	int bytes_written = 0;
+	static uint64_t frame_count = 0;
 
 	clock_gettime(CLOCK_MONOTONIC_RAW, &spec);
 
@@ -780,6 +796,7 @@ void CV4l2Cam::Splitter_Outputput_Port_CB(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_
 	}
 
 	++pThis->frames;
+	++frame_count;
 
 	if (buffer->cmd != 0)
 	{
@@ -787,19 +804,44 @@ void CV4l2Cam::Splitter_Outputput_Port_CB(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_
 	}
 
 	if (buffer->length)
-		fprintf(stderr, PRINTF_COLOR_BLUE "[%s] buffer header's pts %lld ms of port[%d]\n" PRINTF_COLOR_NONE, __func__, buffer->pts, pThis->idx);
-
-	// Transmit buffer to port pool of sink component.
-	if (pThis->conn_comp && pThis->sink_pool)
 	{
-//		fprintf(stderr, PRINTF_COLOR_BLUE "[%s] conn_comp %s\n" PRINTF_COLOR_NONE, __func__, pThis->conn_comp->name);
+		mmal_buffer_header_mem_lock(buffer);
 
-		MMAL_BUFFER_HEADER_T *out = mmal_queue_get(pThis->sink_pool->queue);
-		if (out)
+		bytes_to_write = buffer->length;
+		bytes_to_write = vcos_max(buffer->length, pThis->port->format->es->video.width * pThis->port->format->es->video.height);
+
+		fprintf(stderr, PRINTF_COLOR_BLUE "[%s] [%d] buffer header's pts %lld ms of port[%d]. %ux%u, %d->%d\n" PRINTF_COLOR_NONE, __func__, pThis->frames,
+				buffer->pts, pThis->idx, pThis->port->format->es->video.width, pThis->port->format->es->video.height, buffer->length, bytes_to_write);
+
+		snprintf(yuv_fn, 128, "%stest/yuv/%s_%08lld.yuv", MMC_PATH, __func__, buffer->pts);
+
+		if (0 && bytes_to_write && frame_count >= 300)
 		{
-			mmal_buffer_header_replicate(out, buffer);
-			mmal_port_send_buffer(pThis->conn_comp->input[0], out);
+			file_handle = fopen(yuv_fn, "w");
+
+			if (file_handle)
+			{
+				bytes_written = fwrite(buffer->data, 1, bytes_to_write, file_handle);
+
+				printf("%s, %d,%d\n", yuv_fn, bytes_to_write, bytes_written);
+				fclose(file_handle);
+			}
 		}
+
+		// Transmit buffer to port pool of sink component.
+		if (pThis->conn_comp && pThis->sink_pool)
+		{
+	//		fprintf(stderr, PRINTF_COLOR_BLUE "[%s] conn_comp %s\n" PRINTF_COLOR_NONE, __func__, pThis->conn_comp->name);
+
+			MMAL_BUFFER_HEADER_T *out = mmal_queue_get(pThis->sink_pool->queue);
+			if (out)
+			{
+				mmal_buffer_header_replicate(out, buffer);
+				mmal_port_send_buffer(pThis->conn_comp->input[0], out);
+			}
+		}
+
+		mmal_buffer_header_mem_unlock(buffer);
 	}
 
 	mmal_buffer_header_release(buffer);
@@ -892,8 +934,7 @@ MMAL_STATUS_T CV4l2Cam::CreateSplitterComponent()
 		goto error;
 	}
 
-	status = CreateComponent(&m_video_source, "vc.ril.isp");
-//	status = CreateComponent(&m_video_source, MMAL_COMPONENT_DEFAULT_VIDEO_SPLITTER);
+	status = CreateComponent(&m_video_source, MMAL_COMPONENT_DEFAULT_VIDEO_SPLITTER);
 	if (status != MMAL_SUCCESS)
 	{
 		fprintf(stderr, PRINTF_COLOR_RED "Failed to create %s\n" PRINTF_COLOR_NONE, MMAL_COMPONENT_DEFAULT_VIDEO_SPLITTER);
@@ -945,6 +986,12 @@ void* CV4l2Cam::DoCapture(void* arg)
 	struct v4l2_plane planes[VIDEO_MAX_PLANES];
 	uint32_t i;
 	int queue_buffer = 0;
+
+	char yuv_fn[128];
+	FILE* file_handle = NULL;
+	int bytes_to_write;
+	int bytes_written = 0;
+	uint64_t frame_count = 0;
 
 	if (!pThis)
 		return NULL;
@@ -999,6 +1046,28 @@ void* CV4l2Cam::DoCapture(void* arg)
 				fprintf(stderr, "[%s] processing [%d] %p, %u, %s/%s\n", __func__,
 						buf.index, pThis->m_buffers[buf.index].start, buf.bytesused,
 						ts_type, ts_source);
+
+				if (0)
+				{
+					snprintf(yuv_fn, 128, "%stest/yuv/%s_%llu.yuv", MMC_PATH, __func__, frame_count++);
+
+					bytes_to_write = buf.bytesused;
+
+					if (bytes_to_write)
+					{
+						file_handle = fopen(yuv_fn, "w");
+						if (file_handle)
+						{
+							bytes_written = fwrite(pThis->m_buffers[buf.index].start, 1, bytes_to_write, file_handle);
+
+							fclose(file_handle);
+							file_handle = NULL;
+
+							printf("Write %s: %d->%d\n", yuv_fn, bytes_to_write, bytes_written);
+						}
+					}
+				}
+
 
 				if (pThis->m_video_source.input.pool)
 				{
@@ -1175,10 +1244,11 @@ bool CV4l2Cam::Init(int id, const char* dev_name)
 	m_id = id;
 	m_cam_type = CamType_V4l2;
 
-//	Setup(1920, 1080);
+	Setup(1920, 1080);
 //	Setup(1280, 760);
 //	Setup(800, 600);
-	Setup(640, 480);
+//	Setup(640, 480);
+//	Setup(352, 288);
 
 	VideoGetFormat();
 

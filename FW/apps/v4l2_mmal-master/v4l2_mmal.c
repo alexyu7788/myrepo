@@ -838,7 +838,7 @@ static void * save_thread(void *arg)
 		if (!buffer)
 			continue;
 
-		//print("Buffer %p saving, filled %d, timestamp %llu, flags %04X\n", buffer, buffer->length, buffer->pts, buffer->flags);
+//		print("Buffer %p saving, filled %d, timestamp %llu, flags %04X\n", buffer, buffer->length, buffer->pts, buffer->flags);
 		if (comp->stream_fd)
 		{
 			bytes_written = fwrite(buffer->data, 1, buffer->length, comp->stream_fd);
@@ -869,7 +869,7 @@ static void encoder_buffer_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buf
 {
 	struct component *comp = (struct component *)port->userdata;
 
-	//print("Buffer %p returned, filled %d, timestamp %llu, flags %04X\n", buffer, buffer->length, buffer->pts, buffer->flags);
+//	print("Buffer %p returned, filled %d, timestamp %llu, flags %04X\n", buffer, buffer->length, buffer->pts, buffer->flags);
 	//vcos_log_error("File handle: %p", port->userdata);
 
 	if (port->is_enabled)
@@ -900,7 +900,7 @@ static void buffers_to_isp(struct device *dev)
 }
 static void isp_output_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer)
 {
-	//print("Buffer %p from isp, filled %d, timestamp %llu, flags %04X\n", buffer, buffer->length, buffer->pts, buffer->flags);
+//	print("Buffer %p from isp, filled %d, timestamp %llu, flags %04X\n", buffer, buffer->length, buffer->pts, buffer->flags);
 	//vcos_log_error("File handle: %p", port->userdata);
 	struct device *dev = (struct device*)port->userdata;
 	int i;
@@ -1256,6 +1256,7 @@ static int setup_mmal(struct device *dev, int nbufs, const char *filename)
 			op->userdata = (struct MMAL_PORT_USERDATA_T *)&dev->components[i];
 
 			/* Setup the output files */
+			printf("%s-%d: [%d]\n", __func__, __LINE__, i);
 			if (filename[0] == '-' && filename[1] == '\0')
 			{
 				dev->components[i].stream_fd = stdout;
@@ -1264,20 +1265,20 @@ static int setup_mmal(struct device *dev, int nbufs, const char *filename)
 			else
 			{
 				char tmp_filename[128];
-				sprintf(tmp_filename, "%u_%s", i, filename);
+				sprintf(tmp_filename, "%s", filename);
 
 				printf("Writing data to %s\n", tmp_filename);
 				dev->components[i].stream_fd = fopen(tmp_filename, "wb");
 			}
 
-			{
-				char tmp_filename[128];
-				sprintf(tmp_filename, "%u_%s.pts", i, filename);
-
-				dev->components[i].pts_fd = (void*)fopen(tmp_filename, "wb");
-				if (dev->components[i].pts_fd) /* save header for mkvmerge */
-					fprintf(dev->components[i].pts_fd, "# timecode format v2\n");
-			}
+//			{
+//				char tmp_filename[128];
+//				sprintf(tmp_filename, "%s.pts", filename);
+//
+//				dev->components[i].pts_fd = (void*)fopen(tmp_filename, "wb");
+//				if (dev->components[i].pts_fd) /* save header for mkvmerge */
+//					fprintf(dev->components[i].pts_fd, "# timecode format v2\n");
+//			}
 
 			dev->components[i].save_queue = mmal_queue_create();
 			if(!dev->components[i].save_queue)
@@ -1401,13 +1402,17 @@ static void destroy_mmal(struct device *dev)
 	//FIXME: Clean up everything properly
 	for (i=0; i<MAX_COMPONENTS; i++)
 	{
-		dev->components[i].thread_quit = 1;
-		vcos_thread_join(&dev->components[i].save_thread, NULL);
+		if (dev->components[i].comp)
+		{
+			dev->components[i].thread_quit = 1;
+			vcos_thread_join(&dev->components[i].save_thread, NULL);
 
-		if (dev->components[i].stream_fd)
-			fclose(dev->components[i].stream_fd);
-		if (dev->components[i].pts_fd)
-			fclose(dev->components[i].pts_fd);
+			if (dev->components[i].stream_fd)
+				fclose(dev->components[i].stream_fd);
+
+			if (dev->components[i].pts_fd)
+				fclose(dev->components[i].pts_fd);
+		}
 	}
 }
 
@@ -1863,7 +1868,7 @@ int main(int argc, char *argv[])
 	bcm_host_init();
 
 	opterr = 0;
-	while ((c = getopt_long(argc, argv, "c::E:f:F::hn:pr:s:t:T", opts, NULL)) != -1) {
+	while ((c = getopt_long(argc, argv, "c:E:f:F:hn:pr:s:t:T", opts, NULL)) != -1) {
 
 		switch (c) {
 		case 'c':
@@ -2067,6 +2072,7 @@ int main(int argc, char *argv[])
 	destroy_mmal(&dev);
 
 	video_close(&dev);
+
 	return 0;
 }
 

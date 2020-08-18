@@ -5,8 +5,16 @@
 void CEncoder::InputPort_CB(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer)
 {
 	struct timespec spec;
-	static int64_t starttime = -1, curtime, frames = 0;
+	static int64_t starttime = -1, curtime, frames = 0, frame_count = 0;
 	CEncoder* pThis = (CEncoder*)port->userdata;
+
+	char yuv_fn[128];
+	FILE* file_handle = NULL;
+	int bytes_to_write;
+	int bytes_written = 0;
+
+	if (!pThis)
+		return;
 
 	clock_gettime(CLOCK_MONOTONIC_RAW, &spec);
 
@@ -28,11 +36,50 @@ void CEncoder::InputPort_CB(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer)
 	}
 
 	++frames;
+	++frame_count;
 
 	if (buffer->length)
 		fprintf(stderr, PRINTF_COLOR_YELLOW "[%s] buffer header's pts %lld ms.\n" PRINTF_COLOR_NONE, __func__, buffer->pts);
 
+	switch (port->format->encoding)
+	{
+	case MMAL_ENCODING_YUYV:
+		bytes_to_write = vcos_max(buffer->length, port->format->es->video.width * port->format->es->video.height * 2);
+		break;
+	case MMAL_ENCODING_I420:
+		bytes_to_write = vcos_max(buffer->length, ((port->format->es->video.width * port->format->es->video.height) * 3 ) >> 1);
+		break;
+	}
+
+	if (0 && bytes_to_write)
+	{
+		fprintf(stderr, PRINTF_COLOR_YELLOW "[%s] buffer header's pts %lld ms. %ux%u.\n" PRINTF_COLOR_NONE, __func__, buffer->pts,
+				port->format->es->video.width,  port->format->es->video.height);
+
+		snprintf(yuv_fn, 128, "%stest/yuv/%s_%08lld.yuv", MMC_PATH, __func__, buffer->pts);
+
+		if (bytes_to_write /*&& frame_count >= 300*/)
+		{
+			file_handle = fopen(yuv_fn, "w");
+
+			if (file_handle)
+			{
+				mmal_buffer_header_mem_lock(buffer);
+				bytes_written = fwrite(buffer->data, 1, bytes_to_write, file_handle);
+				mmal_buffer_header_mem_unlock(buffer);
+
+				printf("%s, %d,%d\n", yuv_fn, bytes_to_write, bytes_written);
+
+				fclose(file_handle);
+			}
+		}
+	}
+
+
 	mmal_buffer_header_release(buffer);
+
+	if (pThis->m_src && pThis->m_src->m_video_source.output[0].return_buf_to_port)
+		pThis->m_src->m_video_source.output[0].return_buf_to_port(&pThis->m_src->m_video_source.output[0]);
 }
 
 void CEncoder::OutputPort_CB(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer)
@@ -70,6 +117,9 @@ void CEncoder::OutputPort_CB(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer)
 
 	if (buffer->flags & MMAL_BUFFER_HEADER_FLAG_KEYFRAME)
 		fprintf(stderr, PRINTF_COLOR_YELLOW "[%s] buffer is key frame\n" PRINTF_COLOR_NONE, __func__);
+
+	if(buffer->flags & MMAL_BUFFER_HEADER_FLAG_CONFIG)
+		fprintf(stderr, PRINTF_COLOR_YELLOW "[%s] buffer is config\n" PRINTF_COLOR_NONE, __func__);
 
 	if (pThis->m_save_queue)
 	{
@@ -192,17 +242,19 @@ void* CEncoder::SaveThread(void* arg)
 
 			fprintf(stderr, PRINTF_COLOR_GREEN "[%s] video_st %p.\n" PRINTF_COLOR_NONE, __func__, video_st);
 
-			video_st->id = 0;
-			video_st->time_base = (AVRational){1, (int)pThis->m_framerate};
-			video_st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
-			video_st->codecpar->codec_id = AV_CODEC_ID_H264;
-			video_st->codecpar->width = pThis->m_width;
-			video_st->codecpar->height = pThis->m_height;
+			video_st->id 					= 0;
+			video_st->time_base 			= (AVRational){1, (int)pThis->m_framerate * 1000};
+			video_st->codecpar->codec_type 	= AVMEDIA_TYPE_VIDEO;
+			video_st->codecpar->codec_id 	= AV_CODEC_ID_H264;
+			video_st->codecpar->width 		= pThis->m_width;
+			video_st->codecpar->height 		= pThis->m_height;
 
 			if (avformat_write_header(fmt_ctx, NULL) < 0)
 				fprintf(stderr, PRINTF_COLOR_RED "[%s] Unable to write header %s.\n" PRINTF_COLOR_NONE, __func__, test_fn);
 
 			av_dump_format(fmt_ctx, 0, test_fn, 1);
+//			fprintf(stderr, PRINTF_COLOR_GREEN "[%s] %f/%f/%f.\n" PRINTF_COLOR_NONE, __func__,
+//					av_q2d(video_st->avg_frame_rate), av_q2d(video_st->r_frame_rate), av_q2d(video_st->time_base));
 
 			pkt = av_packet_alloc();
 
@@ -240,7 +292,7 @@ void* CEncoder::SaveThread(void* arg)
 
 		++frames;
 
-		fprintf(stderr, PRINTF_COLOR_YELLOW "[%s] buffer header's len %u Bytes. flag 0x%X\n" PRINTF_COLOR_NONE, __func__, buffer->length >> 3, buffer->flags);
+		fprintf(stderr, PRINTF_COLOR_YELLOW "[%s] buffer header(%p)'s len %u Bytes. flag 0x%X\n" PRINTF_COLOR_NONE, __func__, buffer, buffer->length >> 3, buffer->flags);
 
 		/* Get first key frame? */
 		if (!pThis->m_get_first_key_frame && (buffer->flags & MMAL_BUFFER_HEADER_FLAG_KEYFRAME))
@@ -253,6 +305,7 @@ void* CEncoder::SaveThread(void* arg)
 			pkt->size = buffer->length;
 			pkt->pos  = -1;
 			pkt->pts = pkt->dts = (pThis->m_sample_count++) * 1000;
+
 			av_packet_rescale_ts(pkt, video_st->time_base, video_st->time_base);
 
 			if (buffer->flags & MMAL_BUFFER_HEADER_FLAG_KEYFRAME)
@@ -262,9 +315,10 @@ void* CEncoder::SaveThread(void* arg)
 			av_packet_unref(pkt);
 		}
 
+		mmal_buffer_header_release(buffer);
+
 		buffer->length = 0;
 		status = mmal_port_send_buffer(pThis->m_encoder.comp->output[0], buffer);
-		mmal_buffer_header_release(buffer);
 	}
 
 	// close ffmpeg contexts
@@ -311,6 +365,7 @@ CEncoder::CEncoder()
 	m_addSPSTiming = 1;
 	m_inlineMotionVectors = 0;
 	m_intrarefreshtype = MMAL_VIDEO_INTRA_REFRESH_MAX;
+	m_immutableInput = 0;
 
 	m_save_queue  = NULL;
 	m_thread_quit = 0;
@@ -348,10 +403,10 @@ bool CEncoder::Init(int idx, class CCam* cam, MMAL_FOURCC_T encoding, MMAL_VIDEO
 	m_src 		= cam;
 	if (m_src)
 	{
-		m_width = m_src->m_width;
-		m_height = m_src->m_height;
-		m_framerate = m_src->m_fps;
-		m_intraperiod = m_src->m_fps;
+		m_width 		= m_src->m_width;
+		m_height 		= m_src->m_height;
+		m_framerate 	= m_src->m_fps;
+		m_intraperiod 	= m_src->m_fps;
 	}
 
 	m_encoding 	= encoding;
@@ -378,6 +433,7 @@ bool CEncoder::Init(int idx, class CCam* cam, MMAL_FOURCC_T encoding, MMAL_VIDEO
 
 	src_output = m_src->m_video_source.comp->output[0];
 	status = mmal_format_full_copy(encoder_input->format, src_output->format);
+
 	encoder_input->buffer_num = 3;
 	if (status == MMAL_SUCCESS)
 		status = mmal_port_format_commit(encoder_input);
@@ -483,6 +539,14 @@ bool CEncoder::Init(int idx, class CCam* cam, MMAL_FOURCC_T encoding, MMAL_VIDEO
 	{
 		fprintf(stderr, PRINTF_COLOR_RED "[%s] Unable to set profile.\n" PRINTF_COLOR_NONE, __func__, m_encoder.comp->name);
 		goto fail;
+	}
+
+	/* Immutable input */
+	m_immutableInput = 1;
+	if (mmal_port_parameter_set_boolean(encoder_input, MMAL_PARAMETER_VIDEO_IMMUTABLE_INPUT, m_immutableInput) != MMAL_SUCCESS)
+	{
+		fprintf(stderr, PRINTF_COLOR_RED "[%s] Unable to set immutable input flag on %s\n" PRINTF_COLOR_NONE, __func__, encoder_input->name);
+		// Continue rather than abort..
 	}
 
 	SetupInlineHeaders();

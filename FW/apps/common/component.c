@@ -224,7 +224,7 @@ MMAL_STATUS_T SetupComponentVideoOutput(struct component* component,
 
 	in_format = component->input.port->format;
 
-	for (uint32_t idx = 0 ; idx < component->comp->output_num ; ++idx)
+	for (uint32_t idx = 0 ; idx < 1/*component->comp->output_num*/ ; ++idx)
 	{
 		component->output[idx].idx 	= idx;
 //		component.output[idx].cam_obj = this;
@@ -232,7 +232,7 @@ MMAL_STATUS_T SetupComponentVideoOutput(struct component* component,
 		out_format 	= out_port->format;
 
 		mmal_format_copy(out_format, in_format);
-		out_format->encoding = MMAL_ENCODING_I420;//in_format->encoding;//MMAL_ENCODING_I420
+		out_format->encoding = in_format->encoding;//MMAL_ENCODING_I420
 		out_port->buffer_num = 3;//why?
 
 		status = mmal_port_format_commit(out_port);
