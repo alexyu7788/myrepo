@@ -63,9 +63,13 @@
 // -----------------------------------ADAS---------------------------------------------
 #include "utils/ma.h"
 
+//#define ENABLE_FCWS
+#define ENABLE_LDWS
+
 #define HorizonPositionPercentage       0.15
 #define LDWSPositionPercentage          0.30
 // -----------------------------------FCWS---------------------------------------------
+#if (defined ENABLE_FCWS)
 #include "fcws/candidate.h"
 #include "fcws/fcws_cwrapper.h"
 
@@ -120,11 +124,13 @@ static SDL_Window *fcw_window[FCW_WINDOW_TOTAL] = {NULL};
 static SDL_Renderer *fcw_renderer[FCW_WINDOW_TOTAL] = {NULL};
 static SDL_Texture *fcw_texture[FCW_WINDOW_TOTAL] = {NULL};
 static SDL_RendererInfo fcw_renderer_info[FCW_WINDOW_TOTAL] = {{0}};
+#endif
 // -----------------------------------LDWS---------------------------------------------
+#if (defined ENABLE_LDWS)
 #include "ldws/ldws_cwrapper.h"
 
 static uint8_t* edged_img = NULL;
-
+#endif
 
 
 const char program_name[] = "ffplay";
@@ -898,10 +904,12 @@ static inline void fill_rectangle(int x, int y, int w, int h)
     if (w && h)
         SDL_RenderFillRect(renderer, &rect);
     //---------------------FCW------------------
+#if (defined ENABLE_FCWS)
     for (int i=0 ; i<FCW_WINDOW_TOTAL ; ++i) {
         if (w && h)
             SDL_RenderFillRect(fcw_renderer[i], &rect);
     }
+#endif
     //---------------------FCW------------------
 }
 
@@ -929,6 +937,7 @@ static int realloc_texture(SDL_Texture **texture, Uint32 new_format, int new_wid
     return 0;
 }
 //---------------------FCW------------------
+#if (defined ENABLE_FCWS)
 static int realloc_texture2(SDL_Texture **texture, SDL_Renderer *r, Uint32 new_format, int new_width, int new_height, SDL_BlendMode blendmode, int init_texture)
 {
     Uint32 format;
@@ -953,6 +962,7 @@ static int realloc_texture2(SDL_Texture **texture, SDL_Renderer *r, Uint32 new_f
     }
     return 0;
 }
+#endif
 //---------------------FCW------------------
 static void calculate_display_rect(SDL_Rect *rect,
                                    int scr_xleft, int scr_ytop, int scr_width, int scr_height,
@@ -1011,10 +1021,12 @@ static int upload_texture(SDL_Texture **tex, AVFrame *frame, struct SwsContext *
     if (realloc_texture(tex, sdl_pix_fmt == SDL_PIXELFORMAT_UNKNOWN ? SDL_PIXELFORMAT_ARGB8888 : sdl_pix_fmt, frame->width, frame->height, sdl_blendmode, 0) < 0)
         return -1;
     //---------------------FCW------------------
+#if (defined ENABLE_FCWS)
     for (int i=0 ; i<FCW_WINDOW_TOTAL ; ++i) {
         if (realloc_texture2(&fcw_texture[i], fcw_renderer[i], sdl_pix_fmt == SDL_PIXELFORMAT_UNKNOWN ? SDL_PIXELFORMAT_ARGB8888 : sdl_pix_fmt, frame->width, frame->height, sdl_blendmode, 0) < 0)
             return -1;
     }
+#endif
     //---------------------FCW------------------
     switch (sdl_pix_fmt) {
         case SDL_PIXELFORMAT_UNKNOWN:
@@ -1041,6 +1053,7 @@ static int upload_texture(SDL_Texture **tex, AVFrame *frame, struct SwsContext *
                                                        frame->data[2], frame->linesize[2]);
 #if 1
                 //---------------------FCW------------------
+#if (defined ENABLE_FCWS)
                 CheckOrReallocVector(&vertical_hist, frame->width, TRUE);
                 CheckOrReallocVector(&hori_hist, frame->height, TRUE);
                 CheckOrReallocVector(&grayscale_hist, 256, TRUE);
@@ -1172,9 +1185,9 @@ static int upload_texture(SDL_Texture **tex, AVFrame *frame, struct SwsContext *
                 ret = SDL_UpdateYUVTexture(fcw_texture[FCW_WINDOW_RESULT], NULL, frame->data[0], frame->linesize[0],
                                            frame->data[1], frame->linesize[1],
                                            frame->data[2], frame->linesize[2]);
-
+#endif
                 //---------------------LDW------------------
-#if 0
+#if (defined ENABLE_LDWS)
                 if (!edged_img) 
                     edged_img = av_malloc(frame->linesize[0] * frame->height + 16 + 16/*STRIDE_ALIGN*/ - 1);
 
@@ -1189,13 +1202,14 @@ static int upload_texture(SDL_Texture **tex, AVFrame *frame, struct SwsContext *
                 memset(edged_img, 0xff, sizeof(uint8_t) * frame->linesize[0] * frame->height + 16 + 16/*STRIDE_ALIGN*/ - 1);
 
                 LDW_GetEdgeImg(edged_img, frame->width, frame->height, frame->linesize[0]);
-
+#endif
+#if (defined ENABLE_FCWS)
                 ret = SDL_UpdateYUVTexture(fcw_texture[FCW_WINDOW_TAILLIGHT], NULL, edged_img, frame->linesize[0],
                                            frame->data[1], frame->linesize[1],
                                            frame->data[2], frame->linesize[2]);
 #endif
 
-#if 1
+#if 0
                 //Dlib_DoDetection(frame->data[0],
                 //                frame->width,
                 //                frame->height,
@@ -1306,9 +1320,11 @@ static void video_image_display(VideoState *is)
     set_sdl_yuv_conversion_mode(vp->frame);
     SDL_RenderCopyEx(renderer, is->vid_texture, NULL, &rect, 0, NULL, vp->flip_v ? SDL_FLIP_VERTICAL : 0);
     //----------------------FCW------------------------------------
+#if (defined ENABLE_FCWS)
     for (int i=0 ; i<FCW_WINDOW_TOTAL ; ++i) {
         SDL_RenderCopyEx(fcw_renderer[i], fcw_texture[i], NULL, &rect, 0, NULL, vp->flip_v ? SDL_FLIP_VERTICAL : 0);
     }
+#endif
     //----------------------FCW------------------------------------
     set_sdl_yuv_conversion_mode(NULL);
     if (sp) {
@@ -1331,6 +1347,7 @@ static void video_image_display(VideoState *is)
 
 #if 1
     //----------------------ADAS-----------------------------------
+#if (defined ENABLE_LDWS)
     SDL_SetRenderDrawColor(renderer, 0xff, 0, 0, 0xff);
     SDL_RenderDrawLine(renderer, rect.x, 
                                  rect.y + rect.h * HorizonPositionPercentage, 
@@ -1338,12 +1355,17 @@ static void video_image_display(VideoState *is)
                                  rect.y + rect.h * HorizonPositionPercentage);
 
     SDL_SetRenderDrawColor(renderer, 0, 0xff, 0, 0xff);
-    SDL_RenderDrawLine(renderer, rect.x, 
-                                 rect.y + rect.h * LDWSPositionPercentage, 
-                                 rect.x + rect.w, 
+    SDL_RenderDrawLine(renderer, rect.x,
+                                 rect.y + rect.h * LDWSPositionPercentage,
+                                 rect.x + rect.w,
                                  rect.y + rect.h * LDWSPositionPercentage);
 
+    LDW_DrawSplines(renderer, &rect, 4, COLOR_YELLOW);
+
+    LDW_DrawLanes(renderer, &rect, COLOR_CYAN);
+#endif
     //----------------------FCW------------------------------------
+#if (defined ENABLE_FCWS)
     {
         uint32_t i;
         double max_val;
@@ -1469,16 +1491,17 @@ static void video_image_display(VideoState *is)
             }
         }
 
-#if 0
         // LDWS
         LDW_DrawSplines(fcw_renderer[FCW_WINDOW_TAILLIGHT], &rect, 4, COLOR_YELLOW);
 
         LDW_DrawLanes(fcw_renderer[FCW_WINDOW_RESULT], &rect, COLOR_CYAN);
+
+
+//        // HOG Detector
+//        Dlib_DrawResult(fcw_renderer[FCW_WINDOW_RESULT]);
+    }
 #endif
 
-        // HOG Detector
-        Dlib_DrawResult(fcw_renderer[FCW_WINDOW_RESULT]);
-    }
 #endif
 }
 
@@ -1721,10 +1744,12 @@ static void stream_close(VideoState *is)
     if (is->sub_texture)
         SDL_DestroyTexture(is->sub_texture);
     // ---------------FCW-------------------------
+#if (defined ENABLE_FCWS)
     for (int i=0 ; i<FCW_WINDOW_TOTAL ; ++i) {
         if (fcw_texture[i])
             SDL_DestroyTexture(fcw_texture[i]);
     }
+#endif
     // ---------------FCW-------------------------
     av_free(is);
 }
@@ -1749,6 +1774,7 @@ static void do_exit(VideoState *is)
     av_log(NULL, AV_LOG_QUIET, "%s", "");
 
     // ---------------FCW-------------------------
+#if (defined ENABLE_FCWS)
     FCW_DeInit();
 
     Dlib_DeInit();
@@ -1798,12 +1824,14 @@ static void do_exit(VideoState *is)
 
     if (lab_imgv)
         av_freep(&lab_imgv);
-
+#endif
     // ---------------------- LDWS ------------------
+#if (defined ENABLE_LDWS)
     LDW_DeInit();
 
     if (edged_img)
         av_freep(&edged_img);
+#endif
 
     exit(0);
 }
@@ -1844,6 +1872,7 @@ static int video_open(VideoState *is)
     SDL_ShowWindow(window);
 
     // ---------------FCW-------------------------
+#if (defined ENABLE_FCWS)
     for (int i=0 ; i<FCW_WINDOW_TOTAL ; ++i) {
         if (!fcw_window_title[i])
             fcw_window_title[i] = input_filename;
@@ -1855,6 +1884,7 @@ static int video_open(VideoState *is)
             SDL_SetWindowFullscreen(fcw_window[i], SDL_WINDOW_FULLSCREEN_DESKTOP);
         SDL_ShowWindow(fcw_window[i]);
     }
+#endif
     // ---------------FCW-------------------------
     is->width  = w;
     is->height = h;
@@ -1871,10 +1901,12 @@ static void video_display(VideoState *is)
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     SDL_RenderClear(renderer);
     // ---------------FCW-------------------------
+#if (defined ENABLE_FCWS)
     for (int i=0 ; i<FCW_WINDOW_TOTAL ; ++i) {
         SDL_SetRenderDrawColor(fcw_renderer[i], 0, 0, 0, 255);
         SDL_RenderClear(fcw_renderer[i]);
     }
+#endif
     // ---------------FCW-------------------------
     
     if (is->audio_st && is->show_mode != SHOW_MODE_VIDEO)
@@ -1883,9 +1915,11 @@ static void video_display(VideoState *is)
         video_image_display(is);
     SDL_RenderPresent(renderer);
     // ---------------FCW-------------------------
+#if (defined ENABLE_FCWS)
     for (int i=0 ; i<FCW_WINDOW_TOTAL ; ++i) {
         SDL_RenderPresent(fcw_renderer[i]);
     }
+#endif
     // ---------------FCW-------------------------
 }
 
@@ -4272,6 +4306,7 @@ int main(int argc, char **argv)
             do_exit(NULL);
         }
         //------------FCW--------------
+#if (defined ENABLE_FCWS)
         for (int i=0 ; i<FCW_WINDOW_TOTAL ; ++i) {
             fcw_window[i] = SDL_CreateWindow(program_name, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, default_width, default_height, flags);
             SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
@@ -4291,6 +4326,7 @@ int main(int argc, char **argv)
                 do_exit(NULL);
             }
         }
+#endif
         //------------FCW--------------
     }
 
@@ -4301,12 +4337,16 @@ int main(int argc, char **argv)
     }
 
     //------------FCW--------------
-    //FCW_Init();
+#if (defined ENABLE_FCWS)
+    FCW_Init();
+#endif
     //------------LDW--------------
-    //LDW_Init();
+#if (defined ENABLE_LDWS)
+    LDW_Init();
+#endif
     //------------DLIB--------------
     //Dlib_Init((char*)"fftools/dlib/data/mmod_front_and_rear_end_vehicle_detector.dat");
-    Dlib_HogDetectorInit((char*)"fftools/dlib/data/vdetector3_80_80.svm");
+    //Dlib_HogDetectorInit((char*)"fftools/dlib/data/vdetector3_80_80.svm");
 
     event_loop(is);
 
